@@ -1,0 +1,563 @@
+<div class="security-page">
+
+  <!-- =========================================
+       SECURITY STATUS
+  ========================================== -->
+
+  <section class="security-status-card">
+
+    <div class="status-heading">
+      <h2>Security</h2>
+      <p>Manage your password, account security, and active sessions.</p>
+    </div>
+
+    <div class="security-status">
+
+      <div class="status-icon">
+        <img src="assets/icons/user-shield.svg" alt="" />
+      </div>
+
+      <div class="status-information">
+        <span class="status-title">Your account is secure</span>
+        <span class="status-date">
+          Last security check: September 16, 2026
+        </span>
+      </div>
+
+    </div>
+
+  </section>
+
+
+  <!-- =========================================
+       CHANGE PASSWORD
+  ========================================== -->
+
+  <section class="security-card password-card">
+
+    <div class="card-heading">
+      <h2>Change Password</h2>
+      <p>Update your password to keep your account secure.</p>
+    </div>
+
+    <div class="password-layout">
+
+      <!-- Password Form -->
+
+      <div class="password-form">
+
+        <!-- Current Password -->
+
+        <div class="form-field">
+
+          <label for="currentPassword">
+            Current Password
+          </label>
+
+          <div class="password-input">
+
+            <img
+              src="assets/icons/lock.svg"
+              alt=""
+              class="input-lock"
+            />
+
+            <input
+              id="currentPassword"
+              [type]="showCurrentPassword ? 'text' : 'password'"
+              [(ngModel)]="currentPassword"
+              placeholder="Enter your current password"
+              autocomplete="current-password"
+            />
+
+            <button
+              type="button"
+              class="eye-button"
+              (click)="toggleCurrentPassword()"
+              [attr.aria-label]="
+                showCurrentPassword
+                  ? 'Hide password'
+                  : 'Show password'
+              "
+            >
+              <img
+                [src]="
+                  showCurrentPassword
+                    ? 'assets/icons/eyeclose.svg'
+                    : 'assets/icons/eye.svg'
+                "
+                alt=""
+              />
+            </button>
+
+          </div>
+
+        </div>
+
+
+        <!-- New Password -->
+
+        <div class="form-field">
+
+          <label for="newPassword">
+            New Password
+          </label>
+
+          <div class="password-input">
+
+            <img
+              src="assets/icons/lock.svg"
+              alt=""
+              class="input-lock"
+            />
+
+            <input
+              id="newPassword"
+              [type]="showNewPassword ? 'text' : 'password'"
+              [(ngModel)]="newPassword"
+              placeholder="Enter your new password"
+              autocomplete="new-password"
+            />
+
+            <button
+              type="button"
+              class="eye-button"
+              (click)="toggleNewPassword()"
+              [attr.aria-label]="
+                showNewPassword
+                  ? 'Hide password'
+                  : 'Show password'
+              "
+            >
+              <img
+                [src]="
+                  showNewPassword
+                    ? 'assets/icons/eyeclose.svg'
+                    : 'assets/icons/eye.svg'
+                "
+                alt=""
+              />
+            </button>
+
+          </div>
+
+        </div>
+
+
+        <!-- Confirm Password -->
+
+        <div class="form-field">
+
+          <label for="confirmPassword">
+            Confirm New Password
+          </label>
+
+          <div class="password-input">
+
+            <img
+              src="assets/icons/lock.svg"
+              alt=""
+              class="input-lock"
+            />
+
+            <input
+              id="confirmPassword"
+              [type]="showConfirmPassword ? 'text' : 'password'"
+              [(ngModel)]="confirmPassword"
+              placeholder="Confirm your new password"
+              autocomplete="new-password"
+            />
+
+            <button
+              type="button"
+              class="eye-button"
+              (click)="toggleConfirmPassword()"
+              [attr.aria-label]="
+                showConfirmPassword
+                  ? 'Hide password'
+                  : 'Show password'
+              "
+            >
+              <img
+                [src]="
+                  showConfirmPassword
+                    ? 'assets/icons/eyeclose.svg'
+                    : 'assets/icons/eye.svg'
+                "
+                alt=""
+              />
+            </button>
+
+          </div>
+
+        </div>
+
+
+        <!-- Error -->
+
+        <div
+          class="password-message error"
+          *ngIf="passwordError"
+        >
+          {{ passwordError }}
+        </div>
+
+
+        <!-- Success -->
+
+        <div
+          class="password-message success"
+          *ngIf="passwordSuccess"
+        >
+          {{ passwordSuccess }}
+        </div>
+
+      </div>
+
+
+      <!-- Password Requirements -->
+
+      <div class="password-requirements">
+
+        <div class="requirements-heading">
+
+          <div class="requirements-icon">
+            <img
+              src="assets/icons/user-shield.svg"
+              alt=""
+            />
+          </div>
+
+          <span>Password Requirements</span>
+
+        </div>
+
+
+        <ul>
+
+          <li>
+            <img
+            src="assets/icons/check-mark.svg"
+            alt=""
+            class="requirement-check"
+            />
+            <span>At least 8 characters</span>
+          </li>
+
+          <li>
+            <img
+              src="assets/icons/check-mark.svg"
+              alt=""
+              class="requirement-check"
+            />
+            <span>Includes uppercase letter (A-Z)</span>
+          </li>
+
+          <li>
+            <img
+              src="assets/icons/check-mark.svg"
+              alt=""
+              class="requirement-check"
+            />
+            <span>Includes uppercase letter (A-Z)</span>
+          </li>
+
+          <li>
+            <img
+              src="assets/icons/check-mark.svg"
+              alt=""
+              class="requirement-check"
+            />
+            <span>Includes lowercase letter (a-z)</span>
+          </li>
+
+          <li>
+            <img
+              src="assets/icons/check-mark.svg"
+              alt=""
+              class="requirement-check"
+            />
+            <span>Includes a number (0-9)</span>
+          </li>
+
+          <li>
+            <img
+              src="assets/icons/check-mark.svg"
+              alt=""
+              class="requirement-check"
+            />
+            <span>Includes a special character (e.g !&#64;#$%)</span>
+          </li>
+
+        </ul>
+
+
+        <button
+          type="button"
+          class="update-password-button"
+          (click)="updatePassword()"
+        >
+          Update Password
+        </button>
+
+      </div>
+
+    </div>
+
+  </section>
+
+
+  <!-- =========================================
+       TWO FACTOR AUTHENTICATION
+  ========================================== -->
+
+  <section class="security-card two-factor-card">
+
+    <div class="card-heading">
+
+      <h2>
+        Two-Factor Authentication
+        <span>(Optional)</span>
+      </h2>
+
+      <p>
+        Add an extra layer of security to your account.
+      </p>
+
+    </div>
+
+
+    <div class="two-factor-content">
+
+      <div class="two-factor-information">
+
+        <div class="two-factor-icon">
+          <img
+            src="assets/icons/lock.svg"
+            alt=""
+          />
+        </div>
+
+        <div>
+
+          <h3>Two-Factor Authentication</h3>
+
+          <p>
+            Protect your account with a verification code
+            in addition to your password.
+          </p>
+
+        </div>
+
+      </div>
+
+
+      <div class="two-factor-toggle">
+
+        <button
+          type="button"
+          class="toggle-switch"
+          [class.enabled]="twoFactorEnabled"
+          (click)="toggleTwoFactor()"
+          [attr.aria-label]="
+            twoFactorEnabled
+              ? 'Disable two-factor authentication'
+              : 'Enable two-factor authentication'
+          "
+        >
+          <span></span>
+        </button>
+
+        <span>Enable 2FA</span>
+
+      </div>
+
+    </div>
+
+  </section>
+
+
+  <!-- =========================================
+       ACTIVE SESSIONS
+  ========================================== -->
+
+  <section class="security-card sessions-card">
+
+    <div class="card-heading">
+
+      <h2>Active Sessions</h2>
+
+      <p>
+        These are the devices currently logged into your account.
+      </p>
+
+    </div>
+
+
+    <!-- Table Header -->
+
+    <div class="sessions-table">
+
+      <div class="sessions-header">
+
+        <span>Device</span>
+        <span>Location</span>
+        <span>Login Time</span>
+        <span>Status</span>
+        <span>Action</span>
+
+      </div>
+
+
+      <!-- Session Rows -->
+
+      <div
+        class="session-row"
+        *ngFor="let session of sessions; let i = index"
+      >
+
+        <!-- Device -->
+
+        <div class="session-device">
+
+          <div class="device-icon">
+
+            <img
+              [src]="'assets/icons/' + session.icon"
+              alt=""
+            />
+
+          </div>
+
+          <div class="device-information">
+
+            <strong>{{ session.device }}</strong>
+
+            <span>{{ session.browser }}</span>
+
+          </div>
+
+        </div>
+
+
+        <!-- Location -->
+
+        <div class="session-location">
+          {{ session.location }}
+        </div>
+
+
+        <!-- Login Time -->
+
+        <div class="session-time">
+
+          <strong>{{ session.date }}</strong>
+          <span>{{ session.time }}</span>
+
+        </div>
+
+
+        <!-- Status -->
+
+        <div class="session-status">
+
+          <span
+            class="status-badge"
+            [class.active]="session.status === 'Active'"
+          >
+            {{ session.status }}
+          </span>
+
+        </div>
+
+
+        <!-- Action -->
+
+        <div class="session-action">
+
+          <span
+            *ngIf="session.current"
+            class="current-badge"
+          >
+            Current
+          </span>
+
+          <button
+            *ngIf="!session.current"
+            type="button"
+            class="logout-session-button"
+            (click)="logoutSession(i)"
+          >
+            Log Out
+          </button>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </section>
+
+
+  <!-- =========================================
+       ACCOUNT RECOVERY
+  ========================================== -->
+
+  <section class="security-card recovery-card">
+
+    <div class="card-heading">
+
+      <h2>Account Recovery</h2>
+
+      <p>
+        Set up recovery options in case you lose access to your account.
+      </p>
+
+    </div>
+
+
+    <div class="recovery-content">
+
+      <div class="recovery-information">
+
+        <div class="recovery-icon">
+
+          <img
+            src="assets/icons/email.svg"
+            alt=""
+          />
+
+        </div>
+
+        <div>
+
+          <h3>Recovery Email</h3>
+
+          <p>
+            Used to reset your password and receive important
+            security alerts.
+          </p>
+
+        </div>
+
+      </div>
+
+
+      <div class="recovery-email">
+        roshley.sumalpong&#64;ucebu.edu.ph
+      </div>
+
+
+      <button
+        type="button"
+        class="change-email-button"
+      >
+        Change
+      </button>
+
+    </div>
+
+  </section>
+
+</div>

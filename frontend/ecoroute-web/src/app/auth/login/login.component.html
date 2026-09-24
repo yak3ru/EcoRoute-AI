@@ -1,0 +1,167 @@
+<div class="login-page">
+
+  <!-- LEFT SIDE -->
+  <section class="login-left">
+
+    <div class="login-container">
+
+      <!-- BRAND -->
+      <div class="brand">
+
+        <img
+          class="brand-logo"
+          src="assets/icons/ecoroute-logo.svg"
+          alt="EcoRoute AI Logo"
+        >
+
+        <div class="brand-text">
+          <h1>EcoRoute AI</h1>
+          <p>The Developers Company</p>
+        </div>
+
+      </div>
+
+
+      <!-- LOGIN HEADER -->
+      <div class="login-header">
+
+        <h2>Welcome Back</h2>
+
+        <p>
+          Login to continue to EcoRoute AI
+        </p>
+
+      </div>
+
+
+      <!-- LOGIN FORM -->
+      <form class="login-form" (submit)="login($event)">
+
+        <!-- USERNAME -->
+        <div class="form-group">
+
+          <label for="username">
+            Username
+          </label>
+
+          <div class="input-wrapper">
+
+            <img
+              class="input-icon"
+              src="assets/icons/user.svg"
+              alt=""
+            >
+
+            <input
+              id="username"
+              type="text"
+              placeholder="Enter your username"
+              autocomplete="username"
+            >
+
+          </div>
+
+        </div>
+
+
+        <!-- PASSWORD -->
+        <div class="form-group password-group">
+
+          <label for="password">
+            Password
+          </label>
+
+          <div class="input-wrapper">
+
+            <img
+              class="input-icon"
+              src="assets/icons/lock.svg"
+              alt=""
+            >
+
+            <input
+              id="password"
+              [type]="showPassword ? 'text' : 'password'"
+              placeholder="Enter your password"
+              autocomplete="current-password"
+            >
+
+            <button
+              type="button"
+              class="password-toggle"
+              (click)="togglePassword()"
+              aria-label="Show or hide password"
+            >
+
+              <img
+              [src]="showPassword ? 'assets/icons/eyeclose.svg' : 'assets/icons/eye.svg'"
+              alt=""
+            >
+
+            </button>
+
+          </div>
+
+        </div>
+
+
+        <!-- OPTIONS -->
+        <div class="login-options">
+
+          <label class="remember-me">
+
+            <input
+              type="checkbox"
+            >
+
+            <span class="custom-checkbox"></span>
+
+            <span class="remember-text">
+              Remember me
+            </span>
+
+          </label>
+
+
+          <div class="account-links">
+
+            <a routerLink="/signup">
+              Sign up
+            </a>
+
+            <a href="#" (click)="$event.preventDefault()">
+              Forgot password?
+            </a>
+
+          </div>
+
+        </div>
+
+
+        <!-- LOGIN BUTTON -->
+        <button
+          type="submit"
+          class="login-button"
+        >
+          Log In
+        </button>
+
+      </form>
+
+    </div>
+
+  </section>
+
+
+  <!-- RIGHT SIDE -->
+  <section class="login-right">
+
+    <img
+      class="hero-image"
+      src="assets/images/login-hero.png"
+      alt="EcoRoute AI smarter routes cleaner communities"
+    >
+
+  </section>
+
+</div>

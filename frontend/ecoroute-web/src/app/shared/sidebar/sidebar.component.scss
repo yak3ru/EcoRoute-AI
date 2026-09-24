@@ -1,0 +1,217 @@
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+
+  width: 280px;
+  height: 100vh;
+
+  display: flex;
+  flex-direction: column;
+
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+
+  z-index: 100;
+}
+
+
+/* BRAND */
+
+.brand {
+  height: 92px;
+
+  display: flex;
+  align-items: center;
+
+  padding: 0 22px;
+
+  border-bottom: 1px solid var(--border);
+
+  text-decoration: none;
+  color: inherit;
+
+  cursor: pointer;
+}
+
+.brand-logo {
+  width: 48px;
+  height: 48px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.brand-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.brand-info {
+  margin-left: 12px;
+}
+
+.brand-name {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.brand-subtitle {
+  margin-top: 2px;
+
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+
+/* NAVIGATION */
+
+.navigation {
+  padding: 18px 0;
+
+  display: flex;
+  flex-direction: column;
+
+  gap: 4px;
+}
+
+
+/* NAV ITEM */
+
+.nav-item {
+  position: relative;
+
+  width: 100%;
+  height: 48px;
+
+  display: flex;
+  align-items: center;
+
+  padding: 0 16px 0 28px;
+
+  border: 0;
+  border-radius: 0;
+
+  background: transparent;
+
+  color: var(--text-primary);
+
+  text-decoration: none;
+
+  font-size: 14px;
+  font-weight: 500;
+
+  cursor: pointer;
+
+  transition:
+    color 0.15s ease,
+    background 0.15s ease;
+}
+
+
+/* ICON */
+
+.nav-icon {
+  width: 22px;
+  height: 22px;
+
+  margin-right: 14px;
+
+  object-fit: contain;
+
+  flex-shrink: 0;
+}
+
+
+/* ACTIVE ICON */
+
+.icon-active {
+  display: none;
+}
+
+.nav-item.active .icon-default {
+  display: none;
+}
+
+.nav-item.active .icon-active {
+  display: block;
+}
+
+
+/* ACTIVE PAGE */
+
+.nav-item.active {
+  background: transparent;
+
+  color: var(--primary);
+
+  font-weight: 600;
+}
+
+.nav-item.active::before {
+  content: "";
+
+  position: absolute;
+
+  left: 0;
+  top: 0;
+
+  width: 5px;
+  height: 100%;
+
+  background: var(--primary);
+
+  border-radius: 0 3px 3px 0;
+}
+
+
+/* HOVER */
+
+.nav-item:not(.disabled):hover {
+  color: var(--primary);
+}
+
+
+/* DISABLED */
+
+.disabled {
+  cursor: default;
+}
+
+.disabled:hover {
+  background: transparent;
+  color: var(--text-primary);
+}
+
+
+/* BOTTOM */
+
+.sidebar-bottom {
+  margin-top: auto;
+
+  padding: 12px 0;
+
+  border-top: 1px solid var(--border);
+}
+
+
+/* SETTINGS */
+
+.settings-icon {
+  font-size: 21px;
+}
+
+
+/* LOGOUT */
+
+.logout {
+  font-family: inherit;
+  text-align: left;
+}
+
+.logout-icon {
+  font-size: 21px;
+}

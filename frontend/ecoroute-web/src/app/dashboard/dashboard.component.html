@@ -1,0 +1,268 @@
+<div class="dashboard">
+
+  <!-- HEADER -->
+  <header class="dashboard-header">
+
+    <div>
+      <h1>Dashboard</h1>
+
+      <p>
+        Overview of waste collection, predictions, and operations in Barangay Talamban.
+      </p>
+    </div>
+
+    <div class="dashboard-date">
+      September 16, 2026
+    </div>
+
+  </header>
+
+
+  <!-- SUMMARY CARDS -->
+  <section class="summary-cards">
+
+    <!-- WASTE TODAY -->
+    <div class="summary-card waste-card">
+
+      <div class="summary-icon">
+  <img
+    src="/assets/icons/trash-green.svg"
+    alt=""
+  >
+</div>
+
+      <div class="summary-content">
+
+        <div class="summary-title">
+          Waste Today
+        </div>
+
+        <div class="summary-value">
+          45.7 tons
+        </div>
+
+        <div class="summary-change positive">
+          ↑ 12.4%
+          <span>since last week</span>
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <!-- PREDICTED WASTE -->
+    <div class="summary-card prediction-card">
+
+      <div class="summary-icon">
+  <img
+    src="/assets/icons/waste-data-blue.svg"
+    alt=""
+  >
+</div>
+
+      <div class="summary-content">
+
+        <div class="summary-title">
+          Predicted Waste
+        </div>
+
+        <div class="summary-value">
+          60.0 tons
+        </div>
+
+        <div class="summary-change positive">
+          ↑ 22.1%
+          <span>vs. average</span>
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <!-- ROUTE TODAY -->
+    <div class="summary-card route-card">
+
+      <div class="summary-icon">
+  <img
+    src="/assets/icons/route-orange.svg"
+    alt=""
+  >
+</div>
+
+      <div class="summary-content">
+
+        <div class="summary-title">
+          Route Today
+        </div>
+
+        <div class="summary-value">
+          8
+        </div>
+
+        <div class="summary-description">
+          Active collection routes
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <!-- VEHICLES ACTIVE -->
+    <div class="summary-card vehicle-card">
+
+      <div class="summary-icon">
+  <img
+    src="/assets/icons/truck-purple.svg"
+    alt=""
+  >
+</div>
+
+      <div class="summary-content">
+
+        <div class="summary-title">
+          Vehicles Active
+        </div>
+
+        <div class="summary-value">
+          3
+        </div>
+
+        <div class="summary-description">
+          Out of 4 total vehicles
+        </div>
+
+      </div>
+
+    </div>
+
+  </section>
+
+
+  <!-- ANALYTICS ROW -->
+  <section class="analytics-row">
+
+    <!-- WASTE COLLECTION HISTORY -->
+    <div class="history-card">
+
+      <h2>
+        Waste Collection History
+      </h2>
+
+      <div class="chart-container">
+        <canvas id="wasteChart"></canvas>
+      </div>
+
+    </div>
+
+
+    <!-- AI INSIGHT -->
+    <div class="insight-card">
+
+      <div class="insight-header">
+
+        <div class="insight-title">
+
+          <div class="insight-logo">
+            <img
+              src="assets/images/ecoroute-logo.png"
+              alt=""
+            >
+          </div>
+
+          <h2>
+            EcoRoute AI Insight
+          </h2>
+
+        </div>
+
+        <span class="prediction-badge">
+          Prediction
+        </span>
+
+      </div>
+
+
+      <p class="insight-message">
+        High waste generation predicted in
+        Barangay Talamban tomorrow.
+      </p>
+
+
+      <div class="prediction-details">
+
+        <div class="prediction-row">
+          <span>Predicted:</span>
+          <strong>60,000 kg</strong>
+        </div>
+
+        <div class="prediction-row">
+          <span>Normal:</span>
+          <strong>49,200 kg</strong>
+        </div>
+
+        <div class="prediction-row increase">
+          <span>Increase:</span>
+          <strong>+22%</strong>
+        </div>
+
+      </div>
+
+
+      <div class="suggested-action">
+
+        <div class="action-icon">
+          !
+        </div>
+
+        <div>
+          <div class="action-title">
+            Suggested Action
+          </div>
+
+          <div class="action-text">
+            Review Route #03 capacity.
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+  </section>
+
+
+  <!-- COLLECTION ROUTES -->
+  <section
+  class="map-card"
+  [class.expanded]="isMapExpanded"
+>
+
+    <div class="map-title">
+      Collection Routes
+    </div>
+
+    <div
+      id="collectionMap"
+      class="collection-map"
+    ></div>
+
+    <button
+  type="button"
+  class="map-expand"
+  (click)="toggleMapSize()"
+  [attr.aria-label]="isMapExpanded ? 'Shrink map' : 'Expand map'"
+>
+  <img
+    [src]="isMapExpanded
+      ? '/assets/icons/collapse.svg'
+      : '/assets/icons/expand.svg'"
+    alt=""
+  >
+</button>
+
+  </section>
+
+</div>

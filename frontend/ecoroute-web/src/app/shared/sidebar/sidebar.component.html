@@ -1,0 +1,171 @@
+<aside class="sidebar">
+
+  <a
+  class="brand"
+  routerLink="/dashboard"
+  >
+
+    <div class="brand-logo">
+      <img
+        src="assets/images/ecoroute-logo.png"
+        alt="EcoRoute AI logo"
+      >
+    </div>
+
+    <div class="brand-info">
+      <div class="brand-name">
+        EcoRoute AI
+      </div>
+
+      <div class="brand-subtitle">
+        The Developers Company
+      </div>
+    </div>
+
+  </a>
+
+
+  <nav class="navigation">
+
+    <!-- Dashboard -->
+    <a
+      routerLink="/dashboard"
+      routerLinkActive="active"
+      [routerLinkActiveOptions]="{ exact: true }"
+      class="nav-item"
+    >
+      <img
+        src="assets/icons/dashboard.svg"
+        alt=""
+        class="nav-icon icon-default"
+      />
+
+      <img
+        src="assets/icons/dashboard-green.svg"
+        alt=""
+        class="nav-icon icon-active"
+      />
+
+      <span>Dashboard</span>
+    </a>
+
+
+    <!-- Waste Data -->
+    <a
+      routerLink="/waste-data"
+      routerLinkActive="active"
+      class="nav-item"
+    >
+      <img
+        src="assets/icons/waste-data.svg"
+        alt=""
+        class="nav-icon icon-default"
+      />
+
+      <img
+        src="assets/icons/waste-data-green.svg"
+        alt=""
+        class="nav-icon icon-active"
+      />
+
+      <span>Waste Data</span>
+    </a>
+
+
+    <!-- Route Planning -->
+    <a
+      routerLink="/route-planning"
+      routerLinkActive="active"
+      class="nav-item"
+    >
+      <img
+        src="assets/icons/route-planning.svg"
+        alt=""
+        class="nav-icon icon-default"
+      />
+
+      <img
+        src="assets/icons/route-planning-green.svg"
+        alt=""
+        class="nav-icon icon-active"
+      />
+
+      <span>Route Planning</span>
+    </a>
+
+
+    <!-- Monitoring -->
+    <a class="nav-item disabled">
+      <img
+        src="assets/icons/monitoring.svg"
+        alt=""
+        class="nav-icon icon-default"
+      />
+
+      <img
+        src="assets/icons/monitoring-green.svg"
+        alt=""
+        class="nav-icon icon-active"
+      />
+
+      <span>Monitoring</span>
+    </a>
+
+
+    <!-- Reports -->
+    <a class="nav-item disabled">
+      <img
+        src="assets/icons/reports.svg"
+        alt=""
+        class="nav-icon icon-default"
+      />
+
+      <img
+        src="assets/icons/reports-green.svg"
+        alt=""
+        class="nav-icon icon-active"
+      />
+
+      <span>Reports</span>
+    </a>
+
+  </nav>
+
+
+  <div class="sidebar-bottom">
+
+    <!-- Settings -->
+    <a
+      routerLink="/settings"
+      routerLinkActive="active"
+      [routerLinkActiveOptions]="{ exact: true }"
+      class="nav-item"
+    >
+      <img
+        src="assets/icons/settings.svg"
+        alt=""
+        class="nav-icon icon-default"
+      />
+
+      <img
+        src="assets/icons/settings-green.svg"
+        alt=""
+        class="nav-icon icon-active"
+      />
+
+  <span>Settings</span>
+</a>
+
+    <!-- Logout -->
+    <button
+  type="button"
+  class="nav-item logout"
+  (click)="logout()"
+>
+  <span class="nav-icon logout-icon">↪</span>
+  <span>Logout</span>
+</button>
+
+  </div>
+
+</aside>

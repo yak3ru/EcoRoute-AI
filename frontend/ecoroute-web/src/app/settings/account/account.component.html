@@ -1,0 +1,308 @@
+<div class="account-page">
+
+  <!-- =========================================
+       ACCOUNT INFORMATION
+  ========================================== -->
+
+  <section class="settings-card account-information">
+
+    <!-- Card Header -->
+    <div class="card-header">
+
+      <div>
+        <h2>Account Information</h2>
+
+        <p>
+          View and update your account details.
+        </p>
+      </div>
+
+      <button
+        type="button"
+        class="edit-profile-button"
+      >
+        <img
+        src="assets/icons/pencil.svg"
+        alt=""
+        class="button-icon"
+        />
+        <span>Edit profile</span>
+      </button>
+
+    </div>
+
+
+    <!-- Account Details -->
+    <div class="account-details">
+
+      <!-- Profile Picture -->
+      <div class="profile-section">
+
+        <div class="profile-picture">
+          RS
+        </div>
+
+        <button
+        type="button"
+        class="change-photo-button"
+        aria-label="Change profile photo"
+        >
+        <img
+            src="assets/icons/camera.svg"
+            alt=""
+        />
+</button>
+
+      </div>
+
+
+      <!-- Information Grid -->
+      <div class="information-grid">
+
+        <!-- Full Name -->
+        <div class="information-item">
+
+          <span class="information-label">
+            Full Name
+          </span>
+
+          <span class="information-value">
+            Roshley Sumalpong
+          </span>
+
+        </div>
+
+
+        <!-- Email -->
+        <div class="information-item">
+
+          <span class="information-label">
+            Email Address
+          </span>
+
+          <span class="information-value">
+            roshley.sumalpong&#64;ucebu.edu.ph
+          </span>
+
+        </div>
+
+
+        <!-- Username -->
+        <div class="information-item">
+
+          <span class="information-label">
+            Username
+          </span>
+
+          <span class="information-value">
+            roshi
+          </span>
+
+        </div>
+
+
+        <!-- Role -->
+        <div class="information-item">
+
+          <span class="information-label">
+            Role
+          </span>
+
+          <span class="role-badge">
+            Administrator
+          </span>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </section>
+
+
+  <!-- =========================================
+       SECURITY
+  ========================================== -->
+
+  <section class="settings-card security-card">
+
+    <!-- Card Header -->
+    <div class="card-header">
+
+      <div>
+        <h2>Security</h2>
+
+        <p>
+          Manage your password and account security.
+        </p>
+      </div>
+
+      <!-- Navigate to Security Tab -->
+      <a
+        routerLink="../security"
+        class="change-password-button"
+        >
+        <img
+            src="assets/icons/lock.svg"
+            alt=""
+            class="change-password-icon"
+        />
+
+        <span>Change Password</span>
+        </a>
+    </div>
+
+
+    <!-- Password Information -->
+    <div class="password-row">
+
+      <div class="password-icon">
+        <img src="assets/icons/lock.svg" alt="" />
+        </div>
+
+     
+      <div class="password-information">
+
+        <span class="password-title">
+          Password
+        </span>
+
+        <span class="password-description">
+          Keep your account secured with a strong password.
+        </span>
+
+      </div>
+
+      <div class="password-status">
+
+        <span class="password-hidden">
+          ••••••••••••
+        </span>
+
+        <span class="password-date">
+          Last changed: August 12, 2026
+        </span>
+
+      </div>
+
+    </div>
+
+  </section>
+
+<!-- =========================================
+     DELETE ACCOUNT
+========================================= -->
+
+<button
+  type="button"
+  class="delete-account-bar"
+  (click)="openDeleteModal()"
+>
+  Delete Account
+</button>
+
+
+<!-- =========================================
+     DELETE ACCOUNT MODAL
+========================================= -->
+
+<div
+  class="modal-overlay"
+  *ngIf="showDeleteModal"
+  (click)="closeDeleteModal()"
+>
+
+  <div
+    class="delete-modal"
+    (click)="$event.stopPropagation()"
+  >
+
+    <!-- Modal Header -->
+    <div class="modal-header">
+
+      <div class="delete-icon">
+        <img
+            src="assets/icons/trash.svg"
+            alt=""
+        />
+        </div>
+      <div class="modal-title">
+
+        <h2>
+          Delete Account
+        </h2>
+
+        <p>
+          Permanently delete your account and all associated data.
+          This action cannot be undone.
+        </p>
+
+      </div>
+
+    </div>
+
+
+    <!-- Password -->
+    <div class="delete-password-field">
+
+      <label for="deletePassword">
+        Password
+      </label>
+
+      <div class="password-input-wrapper">
+
+        <input
+          id="deletePassword"
+          [type]="showPassword ? 'text' : 'password'"
+          [(ngModel)]="deletePassword"
+          placeholder="Enter your current password"
+          autocomplete="current-password"
+        />
+
+        <button
+        type="button"
+        class="password-toggle"
+        (click)="togglePasswordVisibility()"
+        [attr.aria-label]="showPassword ? 'Hide password' : 'Show password'"
+        >
+        <img
+            [src]="showPassword
+            ? 'assets/icons/eyeclose.svg'
+            : 'assets/icons/eye.svg'"
+            [alt]="showPassword ? 'Hide password' : 'Show password'"
+        />
+        </button>
+
+      </div>
+
+    </div>
+
+
+    <!-- Modal Actions -->
+    <div class="modal-actions">
+
+      <button
+        type="button"
+        class="cancel-button"
+        (click)="closeDeleteModal()"
+      >
+        Cancel
+      </button>
+
+      <button
+        type="button"
+        class="confirm-delete-button"
+        [disabled]="!deletePassword.trim()"
+        (click)="confirmDeleteAccount()"
+      >
+        Delete Account
+      </button>
+
+    </div>
+
+  </div>
+
+</div>
+
+</div>

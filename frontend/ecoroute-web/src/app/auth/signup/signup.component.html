@@ -1,0 +1,253 @@
+<div class="signup-page">
+
+  <!-- LEFT SIDE -->
+  <section class="signup-left">
+
+    <div class="signup-container">
+
+
+
+
+      <!-- HEADER -->
+      <div class="signup-header">
+
+        <h2>Create an account</h2>
+
+        <p>
+          Join EcoRoute AI and be a part of a cleaner, greener Cebu.
+        </p>
+
+      </div>
+
+
+      <!-- FORM -->
+      <form
+        class="signup-form"
+        (submit)="signup($event)"
+      >
+
+        <!-- FULL NAME -->
+        <div class="form-group">
+
+          <label for="fullName">
+            Full Name
+          </label>
+
+          <div class="input-wrapper">
+
+            <img
+              class="input-icon"
+              src="/assets/icons/user.svg"
+              alt=""
+            >
+
+            <input
+              id="fullName"
+              type="text"
+              placeholder="Enter your full name"
+              autocomplete="name"
+            >
+
+          </div>
+
+        </div>
+
+
+        <!-- EMAIL -->
+        <div class="form-group">
+
+          <label for="email">
+            Email Address
+          </label>
+
+          <div class="input-wrapper">
+
+            <img
+              class="input-icon"
+              src="/assets/icons/email.svg"
+              alt=""
+            >
+
+            <input
+              id="email"
+              type="email"
+              placeholder="Enter your email address"
+              autocomplete="email"
+            >
+
+          </div>
+
+        </div>
+
+
+        <!-- USERNAME -->
+        <div class="form-group">
+
+          <label for="username">
+            Username
+          </label>
+
+          <div class="input-wrapper">
+
+            <img
+              class="input-icon"
+              src="/assets/icons/user.svg"
+              alt=""
+            >
+
+            <input
+              id="username"
+              type="text"
+              placeholder="Enter your username"
+              autocomplete="username"
+            >
+
+          </div>
+
+        </div>
+
+
+        <!-- PASSWORD -->
+        <div class="form-group">
+
+          <label for="password">
+            Password
+          </label>
+
+          <div class="input-wrapper">
+
+            <img
+              class="input-icon"
+              src="/assets/icons/lock.svg"
+              alt=""
+            >
+
+            <input
+              id="password"
+              [type]="showPassword ? 'text' : 'password'"
+              placeholder="Enter your password"
+              autocomplete="new-password"
+            >
+
+            <button
+              type="button"
+              class="password-toggle"
+              (click)="togglePassword()"
+              aria-label="Show or hide password"
+            >
+
+              <img
+  [src]="showPassword ? 'assets/icons/eyeclose.svg' : 'assets/icons/eye.svg'"
+  alt=""
+>
+
+            </button>
+
+          </div>
+
+        </div>
+
+
+        <!-- CONFIRM PASSWORD -->
+        <div class="form-group confirm-password-group">
+
+          <label for="confirmPassword">
+            Confirm Password
+          </label>
+
+          <div class="input-wrapper">
+
+            <img
+              class="input-icon"
+              src="/assets/icons/lock.svg"
+              alt=""
+            >
+
+            <input
+              id="confirmPassword"
+              [type]="showConfirmPassword ? 'text' : 'password'"
+              placeholder="Confirm your password"
+              autocomplete="new-password"
+            >
+
+            <button
+              type="button"
+              class="password-toggle"
+              (click)="toggleConfirmPassword()"
+              aria-label="Show or hide confirm password"
+            >
+
+              <img
+                [src]="showConfirmPassword ? 'assets/icons/eyeclose.svg' : 'assets/icons/eye.svg'"
+                alt=""
+              >
+
+            </button>
+
+          </div>
+
+        </div>
+
+
+        <!-- TERMS -->
+        <label class="terms">
+
+          <input
+            type="checkbox"
+          >
+
+          <span class="terms-checkbox"></span>
+
+          <span class="terms-text">
+            I agree to the
+            <a href="#" (click)="$event.preventDefault()">
+              Terms of Service
+            </a>
+            and
+            <a href="#" (click)="$event.preventDefault()">
+              Privacy Policy
+            </a>.
+          </span>
+
+        </label>
+
+
+        <!-- SIGN UP -->
+        <button
+          type="submit"
+          class="signup-button"
+        >
+          Sign Up
+        </button>
+
+
+        <!-- LOGIN LINK -->
+        <div class="login-link">
+
+          Already have an account?
+
+          <a routerLink="/login">
+            Log In
+          </a>
+
+        </div>
+
+      </form>
+
+    </div>
+
+  </section>
+
+
+  <!-- RIGHT SIDE -->
+  <section class="signup-right">
+
+    <img
+      class="hero-image"
+      src="/assets/images/login-hero.png"
+      alt="EcoRoute AI smarter routes cleaner communities"
+    >
+
+  </section>
+
+</div>

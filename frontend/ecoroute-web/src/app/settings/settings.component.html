@@ -1,0 +1,163 @@
+<div class="settings-page">
+
+  <!-- Settings Header -->
+  <div class="settings-header">
+
+    <h1>Settings</h1>
+
+    <p>
+      Manage your account, preferences, and system settings.
+    </p>
+
+  </div>
+
+
+  <!-- Settings Body -->
+  <div class="settings-body">
+
+    <!-- Settings Sidebar -->
+    <aside class="settings-sidebar">
+
+      <!-- Account -->
+      <a
+        routerLink="account"
+        routerLinkActive="active"
+        [routerLinkActiveOptions]="{ exact: true }"
+        class="settings-tab"
+      >
+        <img
+          src="assets/icons/user.svg"
+          alt=""
+          class="tab-icon"
+        />
+
+        <span class="tab-content">
+
+          <span class="tab-title">
+            Account
+          </span>
+
+          <span class="tab-description">
+            Profile Information
+          </span>
+
+        </span>
+      </a>
+
+
+      <!-- Security -->
+      <a
+        routerLink="security"
+        routerLinkActive="active"
+        class="settings-tab"
+      >
+        <img
+          src="assets/icons/lock.svg"
+          alt=""
+          class="tab-icon"
+        />
+
+        <span class="tab-content">
+
+          <span class="tab-title">
+            Security
+          </span>
+
+          <span class="tab-description">
+            Password and access
+          </span>
+
+        </span>
+      </a>
+
+
+      <!-- Notifications -->
+      <a
+        routerLink="notifications"
+        routerLinkActive="active"
+        class="settings-tab"
+      >
+        <img
+          src="assets/icons/notifications.svg"
+          alt=""
+          class="tab-icon"
+        />
+
+        <span class="tab-content">
+
+          <span class="tab-title">
+            Notifications
+          </span>
+
+          <span class="tab-description">
+            Alert preferences
+          </span>
+
+        </span>
+      </a>
+
+
+      <!-- System -->
+      <a
+        routerLink="system"
+        routerLinkActive="active"
+        class="settings-tab"
+      >
+        <img
+          src="assets/icons/system.svg"
+          alt=""
+          class="tab-icon"
+        />
+
+        <span class="tab-content">
+
+          <span class="tab-title">
+            System
+          </span>
+
+          <span class="tab-description">
+            Appearance and defaults
+          </span>
+
+        </span>
+      </a>
+
+
+      <!-- Data Preferences -->
+      <a
+        routerLink="data-preferences"
+        routerLinkActive="active"
+        class="settings-tab"
+      >
+        <img
+          src="assets/icons/database.svg"
+          alt=""
+          class="tab-icon"
+        />
+
+        <span class="tab-content">
+
+          <span class="tab-title">
+            Data Preferences
+          </span>
+
+          <span class="tab-description">
+            Default filters and data
+          </span>
+
+        </span>
+      </a>
+
+    </aside>
+
+
+    <!-- Selected Settings Page -->
+    <main class="settings-content">
+
+      <router-outlet></router-outlet>
+
+    </main>
+
+  </div>
+
+</div>

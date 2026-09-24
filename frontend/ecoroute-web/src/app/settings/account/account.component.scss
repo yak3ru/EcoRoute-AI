@@ -1,0 +1,837 @@
+/* =========================================
+   ACCOUNT PAGE
+========================================= */
+
+.account-page {
+  display: flex;
+  flex-direction: column;
+
+  gap: 14px;
+
+  width: 100%;
+}
+
+
+/* =========================================
+   GENERAL SETTINGS CARD
+========================================= */
+
+.settings-card {
+  width: 100%;
+
+  padding: 20px 28px;
+
+  box-sizing: border-box;
+
+  background: #ffffff;
+
+  border: 1px solid #dedede;
+
+  border-radius: 10px;
+
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+
+/* =========================================
+   CARD HEADER
+========================================= */
+
+.card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+
+  gap: 20px;
+}
+
+
+.card-header h2 {
+  margin: 0;
+
+  font-size: 24px;
+  font-weight: 700;
+
+  line-height: 29px;
+
+  color: #111111;
+}
+
+
+.card-header p {
+  margin: 2px 0 0;
+
+  font-size: 14px;
+
+  line-height: 20px;
+
+  color: #777777;
+}
+
+
+/* =========================================
+   EDIT PROFILE
+========================================= */
+
+.edit-profile-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 7px;
+
+  padding: 8px 12px;
+
+  border: 1px solid #d5ead7;
+
+  border-radius: 6px;
+
+  background: #e9fbea;
+
+  color: #299b32;
+
+  font-family: inherit;
+
+  font-size: 14px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease;
+}
+
+
+.edit-profile-button:hover {
+  background: #dcf7df;
+
+  border-color: #bfe5c2;
+}
+
+
+.button-icon {
+  font-size: 15px;
+}
+
+
+/* =========================================
+   ACCOUNT DETAILS
+========================================= */
+
+.account-details {
+  display: flex;
+  align-items: center;
+
+  margin-top: 12px;
+}
+
+
+/* =========================================
+   PROFILE SECTION
+========================================= */
+
+.profile-section {
+  position: relative;
+
+  width: 154px;
+  min-width: 154px;
+
+  height: 120px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-right: 1px solid #eeeeee;
+}
+
+
+.profile-picture {
+  width: 114px;
+  height: 114px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 50%;
+
+  background: #e2fbe5;
+
+  color: #299b32;
+
+  font-size: 36px;
+  font-weight: 600;
+}
+
+
+.change-photo-button {
+  position: absolute;
+
+  right: 10px;
+  bottom: 1px;
+
+  width: 50px;
+  height: 50px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border: none;
+  border-radius: 50%;
+
+  background: #4d5358;
+
+  color: #ffffff;
+
+  font-size: 20px;
+
+  cursor: pointer;
+
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+
+/* =========================================
+   INFORMATION GRID
+========================================= */
+
+.information-grid {
+  flex: 1;
+
+  display: grid;
+
+  grid-template-columns: 1fr 1fr;
+
+  gap: 7px 10px;
+
+  margin-left: 18px;
+}
+
+
+.information-item {
+  min-height: 50px;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+
+  padding: 7px 18px;
+
+  box-sizing: border-box;
+
+  background: #fafafa;
+
+  border-radius: 5px;
+}
+
+
+.information-label {
+  font-size: 13px;
+
+  line-height: 16px;
+
+  color: #777777;
+}
+
+
+.information-value {
+  margin-top: 2px;
+
+  font-size: 14px;
+  font-weight: 500;
+
+  line-height: 18px;
+
+  color: #111111;
+}
+
+
+/* =========================================
+   ROLE BADGE
+========================================= */
+
+.role-badge {
+  width: fit-content;
+
+  margin-top: 3px;
+
+  padding: 2px 7px;
+
+  border-radius: 5px;
+
+  background: #e2f9e4;
+
+  border: 1px solid #c9ebcc;
+
+  color: #299b32;
+
+  font-size: 12px;
+  font-weight: 600;
+
+  line-height: 16px;
+}
+
+
+/* =========================================
+   SECURITY CARD
+========================================= */
+
+.security-card {
+  padding-top: 20px;
+  padding-bottom: 20px;
+}
+
+
+/* =========================================
+   CHANGE PASSWORD BUTTON
+========================================= */
+
+.change-password-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 7px;
+
+  padding: 8px 12px;
+
+  border: 1px solid #d5ead7;
+
+  border-radius: 6px;
+
+  background: #e9fbea;
+
+  color: #299b32;
+
+  font-size: 14px;
+  font-weight: 600;
+
+  text-decoration: none;
+
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.change-password-icon {
+  width: 16px;
+  height: 16px;
+
+  object-fit: contain;
+
+  filter: invert(48%)
+          sepia(72%)
+          saturate(490%)
+          hue-rotate(77deg)
+          brightness(87%)
+          contrast(91%);
+}
+
+
+.change-password-button:hover {
+  background: #dcf7df;
+
+  border-color: #bfe5c2;
+}
+
+
+/* =========================================
+   PASSWORD ROW
+========================================= */
+
+.password-row {
+  display: flex;
+  align-items: center;
+
+  margin-top: 12px;
+
+  padding: 0 25px;
+}
+
+
+.password-icon {
+  width: 50px;
+  height: 50px;
+
+  min-width: 50px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 50%;
+
+  background: #e0f8e3;
+}
+
+.password-icon img {
+  width: 28px;
+  height: 28px;
+
+  object-fit: contain;
+
+  filter: invert(48%)
+          sepia(72%)
+          saturate(490%)
+          hue-rotate(77deg)
+          brightness(87%)
+          contrast(91%);
+}
+
+
+.password-information {
+  display: flex;
+  flex-direction: column;
+
+  margin-left: 26px;
+}
+
+
+.password-title {
+  font-size: 16px;
+  font-weight: 600;
+
+  color: #111111;
+}
+
+
+.password-description {
+  margin-top: 1px;
+
+  font-size: 14px;
+
+  color: #777777;
+}
+
+
+.password-status {
+  display: flex;
+  flex-direction: column;
+
+  margin-left: auto;
+
+  min-width: 255px;
+}
+
+
+.password-hidden {
+  font-size: 14px;
+
+  letter-spacing: 2px;
+
+  color: #111111;
+}
+
+
+.password-date {
+  margin-top: 2px;
+
+  font-size: 13px;
+
+  color: #777777;
+}
+
+/* =========================================
+   DELETE ACCOUNT BAR
+========================================= */
+
+.delete-account-bar {
+  width: 100%;
+
+  height: 42px;
+
+  border: 1px solid #f0d6da;
+  border-radius: 10px;
+
+  background: #fff1f3;
+
+  color: #ef3b3b;
+
+  font-family: inherit;
+
+  font-size: 15px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease;
+}
+
+
+.delete-account-bar:hover {
+  background: #ffe6e9;
+
+  border-color: #e8bcc2;
+}
+
+/* =========================================
+   DELETE PASSWORD
+========================================= */
+
+.delete-password-field {
+  margin-top: 24px;
+}
+
+
+.delete-password-field label {
+  display: block;
+
+  margin-bottom: 7px;
+
+  color: #333333;
+
+  font-size: 14px;
+  font-weight: 600;
+}
+
+
+.password-input-wrapper {
+  position: relative;
+
+  width: 100%;
+}
+
+
+.password-input-wrapper input {
+  width: 100%;
+  height: 42px;
+
+  padding: 0 45px 0 12px;
+
+  box-sizing: border-box;
+
+  border: 1px solid #d7d7d7;
+  border-radius: 6px;
+
+  outline: none;
+
+  background: #ffffff;
+
+  color: #111111;
+
+  font-family: inherit;
+
+  font-size: 14px;
+
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+
+.password-input-wrapper input:focus {
+  border-color: #299b32;
+
+  box-shadow: 0 0 0 2px rgba(41, 155, 50, 0.1);
+}
+
+
+.password-input-wrapper input::placeholder {
+  color: #999999;
+}
+
+
+/* =========================================
+   PASSWORD VISIBILITY
+========================================= */
+
+.password-toggle {
+  position: absolute;
+
+  right: 12px;
+  top: 50%;
+
+  transform: translateY(-50%);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 32px;
+  height: 32px;
+
+  padding: 0;
+
+  border: none;
+  background: transparent;
+
+  cursor: pointer;
+}
+
+.password-toggle img {
+  width: 18px;
+  height: 18px;
+
+  object-fit: contain;
+
+  opacity: 0.65;
+
+  transition: opacity 0.2s ease;
+}
+
+.password-toggle:hover img {
+  opacity: 1;
+}
+
+
+/* =========================================
+   DISABLED DELETE BUTTON
+========================================= */
+
+.confirm-delete-button:disabled {
+  background: #e4a0a4;
+
+  cursor: not-allowed;
+
+  opacity: 0.7;
+}
+
+
+/* =========================================
+   MODAL OVERLAY
+========================================= */
+
+.modal-overlay {
+  position: fixed;
+
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+
+  z-index: 1000;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: rgba(0, 0, 0, 0.45);
+
+  padding: 20px;
+
+  box-sizing: border-box;
+}
+
+
+/* =========================================
+   DELETE MODAL
+========================================= */
+
+.delete-modal {
+  width: 100%;
+  max-width: 480px;
+
+  padding: 24px;
+
+  box-sizing: border-box;
+
+  background: #ffffff;
+
+  border-radius: 12px;
+
+  box-shadow: 0 10px 35px rgba(0, 0, 0, 0.18);
+
+  animation: modalOpen 0.18s ease-out;
+}
+
+/* =========================================
+   BUTTON ICONS
+========================================= */
+
+.button-icon {
+  width: 16px;
+  height: 16px;
+
+  object-fit: contain;
+}
+
+
+/* =========================================
+   CAMERA ICON
+========================================= */
+
+.change-photo-button img {
+  width: 21px;
+  height: 21px;
+
+  object-fit: contain;
+
+  filter: brightness(0) invert(1);
+}
+
+
+/* =========================================
+   PASSWORD ICON
+========================================= */
+
+.password-icon img {
+  width: 20px;
+  height: 20px;
+
+  object-fit: contain;
+
+  opacity: 0.65;
+}
+
+
+/* =========================================
+   DELETE ICON
+========================================= */
+
+.delete-icon img {
+  width: 20px;
+  height: 20px;
+
+  object-fit: contain;
+}
+
+
+/* =========================================
+   MODAL HEADER
+========================================= */
+
+.modal-header {
+  display: flex;
+  align-items: flex-start;
+
+  gap: 14px;
+}
+
+
+.delete-icon {
+  width: 46px;
+  height: 46px;
+
+  min-width: 46px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 50%;
+
+  background: #ffe4e7;
+
+  color: #dc252d;
+
+  font-size: 20px;
+}
+
+
+.modal-title {
+  flex: 1;
+}
+
+
+.modal-title h2 {
+  margin: 0;
+
+  color: #111111;
+
+  font-size: 21px;
+  font-weight: 700;
+
+  line-height: 27px;
+}
+
+
+.modal-title p {
+  margin: 6px 0 0;
+
+  color: #777777;
+
+  font-size: 14px;
+
+  line-height: 21px;
+}
+
+
+/* =========================================
+   MODAL ACTIONS
+========================================= */
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+
+  gap: 10px;
+
+  margin-top: 26px;
+}
+
+
+/* Cancel */
+
+.cancel-button {
+  padding: 9px 16px;
+
+  border: 1px solid #dddddd;
+  border-radius: 6px;
+
+  background: #ffffff;
+
+  color: #444444;
+
+  font-family: inherit;
+
+  font-size: 14px;
+  font-weight: 500;
+
+  cursor: pointer;
+}
+
+
+.cancel-button:hover {
+  background: #f6f6f6;
+}
+
+
+/* Confirm Delete */
+
+.confirm-delete-button {
+  padding: 9px 16px;
+
+  border: none;
+  border-radius: 6px;
+
+  background: #dc252d;
+
+  color: #ffffff;
+
+  font-family: inherit;
+
+  font-size: 14px;
+  font-weight: 600;
+
+  cursor: pointer;
+}
+
+
+.confirm-delete-button:hover {
+  background: #c91f27;
+}
+
+
+/* =========================================
+   MODAL ANIMATION
+========================================= */
+
+@keyframes modalOpen {
+
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+
+}
+

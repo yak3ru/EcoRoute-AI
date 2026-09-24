@@ -1,0 +1,520 @@
+<main class="route-page">
+
+  <!-- PAGE HEADER -->
+  <section class="page-header">
+
+    <div class="header-text">
+      <h1>Route Planning</h1>
+      <p>
+        Generate and optimize garbage collection routes based on predicted
+        waste and routing constraints
+      </p>
+    </div>
+
+    <div class="header-actions">
+
+      <button
+        class="date-button"
+        type="button">
+
+        <img
+            src="assets/icons/calendar.svg"
+            alt="Calendar">
+
+        <span>September 16, 2026</span>
+
+        </button>
+
+      <button
+        class="area-button"
+        type="button">
+
+        <span>All areas</span>
+
+        <img
+            src="assets/icons/drop-down.svg"
+            alt="Select area">
+
+        </button>
+
+      <button
+        class="constraint-button"
+        type="button"
+        (click)="viewConstraints()">
+
+        <img
+            src="assets/icons/tune.svg"
+            alt="Constraints">
+
+        <span>View Constraints</span>
+
+        </button>
+
+      <button
+        class="optimize-button"
+        type="button"
+        [disabled]="isOptimizing"
+        (click)="optimizeRoutes()">
+
+        <span *ngIf="!isOptimizing">
+          Optimize Route
+        </span>
+
+        <span *ngIf="isOptimizing">
+          Optimizing...
+        </span>
+
+      </button>
+
+    </div>
+
+  </section>
+
+
+  <!-- SUMMARY CARDS -->
+  <section class="summary-grid">
+
+  <div class="summary-card">
+
+    <div class="summary-icon">
+      <img
+        src="assets/icons/active-routes.svg"
+        alt="Active routes">
+    </div>
+
+    <div class="summary-content">
+      <span class="summary-label">ACTIVE ROUTES</span>
+      <strong>8</strong>
+      <small>in Talamban</small>
+    </div>
+
+  </div>
+
+
+  <div class="summary-card">
+
+    <div class="summary-icon">
+      <img
+        src="assets/icons/truck-green.svg"
+        alt="Vehicles deployed">
+    </div>
+
+    <div class="summary-content">
+      <span class="summary-label">VEHICLES DEPLOYED</span>
+      <strong>4</strong>
+      <small>4 trucks</small>
+    </div>
+
+  </div>
+
+
+  <div class="summary-card">
+
+    <div class="summary-icon">
+      <img
+        src="assets/icons/road-green.svg"
+        alt="Total distance">
+    </div>
+
+    <div class="summary-content">
+      <span class="summary-label">TOTAL DISTANCE</span>
+      <strong>47.2 km</strong>
+      <small>optimized route length</small>
+    </div>
+
+  </div>
+
+
+  <div class="summary-card">
+
+    <div class="summary-icon">
+      <img
+        src="assets/icons/road-green.svg"
+        alt="Estimated completion">
+    </div>
+
+    <div class="summary-content">
+      <span class="summary-label">ESTIMATED COMPLETION</span>
+      <strong>4h 30m</strong>
+      <small>by 2:30 PM</small>
+    </div>
+
+  </div>
+
+</section>
+
+
+  <!-- MAP + ROUTE PANEL -->
+  <section
+  class="map-section"
+  [class.panel-closed]="!isRoutePanelOpen">
+
+  <div class="map-card">
+
+    <div
+      id="routeMap"
+      class="route-map">
+    </div>
+
+    <!-- MAP LEGEND -->
+    <div class="map-legend">
+
+      <h4>Route Legend</h4>
+
+      <div class="legend-item">
+        <span class="legend-line green"></span>
+        <span>Route #01 - Silverhills → Maryville</span>
+      </div>
+
+      <div class="legend-item">
+        <span class="legend-line blue"></span>
+        <span>Route #02 - Joseville → Sunny Hills</span>
+      </div>
+
+      <div class="legend-item">
+        <span class="legend-line orange"></span>
+        <span>Route #03 - Garnetville</span>
+      </div>
+
+      <div class="legend-item">
+        <span class="legend-line red"></span>
+        <span>Route #04 - Sunny Hills → Maryville</span>
+      </div>
+
+      <div class="legend-item">
+        <span class="legend-circle"></span>
+        <span>Collection Stop</span>
+      </div>
+
+      <div class="legend-item">
+        <span class="legend-square truck"></span>
+        <span>Collection Vehicle (On Route)</span>
+      </div>
+
+      <div class="legend-item">
+        <span class="legend-square building"></span>
+        <span>Barangay / Subdivision</span>
+      </div>
+
+      <div class="legend-item">
+        <span class="legend-pin">●</span>
+        <span>Key Landmark</span>
+      </div>
+
+    </div>
+
+    <div class="map-north">
+      N
+      <span>▲</span>
+    </div>
+
+  </div>
+
+
+  <!-- ROUTE DETAILS PANEL -->
+  <aside
+    class="route-panel"
+    *ngIf="isRoutePanelOpen">
+
+    <div class="route-panel-header">
+
+      <div>
+        <h2>
+          Route {{ selectedRoute.id }}
+        </h2>
+
+        <p>
+          {{ selectedRoute.area }}
+        </p>
+      </div>
+
+      <div class="panel-header-right">
+
+        <span
+          class="status-badge"
+          [class.pending]="selectedRoute.status === 'Pending'">
+
+          {{ selectedRoute.status }}
+
+        </span>
+
+        <!-- CLOSE PANEL -->
+        <button
+          class="close-button"
+          type="button"
+          (click)="closeRoutePanel()"
+          aria-label="Close route details">
+
+          ×
+
+        </button>
+
+      </div>
+
+    </div>
+
+
+    <div class="vehicle-label">
+
+      <img
+        src="assets/icons/truck-gray.svg"
+        alt="Vehicle">
+
+      <span>
+        {{ selectedRoute.vehicle }}
+      </span>
+
+    </div>
+
+
+    <div class="route-stat-grid">
+
+      <div class="route-stat">
+
+        <img
+          class="stat-icon"
+          src="assets/icons/maps-gray.svg"
+          alt="Stops">
+
+        <div>
+          <small>Stops</small>
+          <strong>{{ selectedRoute.stops }}</strong>
+        </div>
+
+      </div>
+
+
+      <div class="route-stat">
+
+        <img
+          class="stat-icon"
+          src="assets/icons/predicted-waste.svg"
+          alt="Predicted waste">
+
+        <div>
+          <small>Predicted Waste</small>
+          <strong>{{ selectedRoute.predictedWaste }}</strong>
+        </div>
+
+      </div>
+
+
+      <div class="route-stat">
+
+        <img
+          class="stat-icon"
+          src="assets/icons/routes-gray.svg"
+          alt="Distance">
+
+        <div>
+          <small>Distance</small>
+          <strong>{{ selectedRoute.distance }}</strong>
+        </div>
+
+      </div>
+
+
+      <div class="route-stat">
+
+        <img
+          class="stat-icon"
+          src="assets/icons/hourglass.svg"
+          alt="Estimated time">
+
+        <div>
+          <small>Estimated Time</small>
+          <strong>{{ selectedRoute.estimatedTime }}</strong>
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <div class="sequence-section">
+
+      <h3>Collection Sequence</h3>
+
+      <div
+        class="sequence-item"
+        *ngFor="let stop of selectedRoute.sequence; let i = index">
+
+        <span
+          class="sequence-number"
+          [style.background-color]="selectedRoute.color">
+
+          {{ i + 1 }}
+
+        </span>
+
+        <span class="sequence-text">
+          {{ stop }}
+        </span>
+
+      </div>
+
+      <div class="more-stops">
+
+        <span>•••</span>
+
+        7 more stops
+
+      </div>
+
+    </div>
+
+
+    <div class="route-panel-actions">
+
+      <button
+        type="button"
+        class="light-button"
+        (click)="viewRoute(selectedRoute)">
+
+        <img
+          src="assets/icons/eye.svg"
+          alt="View">
+
+        View Full Route
+
+      </button>
+
+      <button
+        type="button"
+        class="light-button"
+        (click)="reroute()">
+
+        Reroute
+
+      </button>
+
+      <button
+        type="button"
+        class="apply-button"
+        (click)="applyChanges()">
+
+        Apply Changes
+
+      </button>
+
+    </div>
+
+  </aside>
+
+</section>
+
+
+  <!-- ROUTE DETAILS -->
+  <section class="details-card">
+
+    <div class="details-header">
+
+      <h2>Route Details</h2>
+
+      <div class="search-box">
+
+        <span>⌕</span>
+
+        <input
+          type="text"
+          placeholder="Search route or area...">
+
+      </div>
+
+    </div>
+
+
+    <div class="table-wrapper">
+
+      <table>
+
+        <thead>
+
+          <tr>
+            <th>Route ID</th>
+            <th>Collection Areas</th>
+            <th>Vehicle</th>
+            <th>Waste Load</th>
+            <th>Stops</th>
+            <th>Distance</th>
+            <th>Status</th>
+            <th>ETA</th>
+            <th>Actions</th>
+          </tr>
+
+        </thead>
+
+        <tbody>
+
+          <tr
+            *ngFor="let route of routes"
+            [class.selected-row]="route.id === selectedRouteId">
+
+            <td>
+              <strong>{{ route.id }}</strong>
+            </td>
+
+            <td>
+              {{ route.area }}
+            </td>
+
+            <td>
+              {{ route.vehicle }}
+            </td>
+
+            <td>
+              {{ route.wasteLoad }}
+            </td>
+
+            <td>
+              {{ route.stops }}
+            </td>
+
+            <td>
+              {{ route.distance }}
+            </td>
+
+            <td>
+
+              <span
+                class="table-status"
+                [class.pending]="route.status === 'Pending'">
+
+                {{ route.status }}
+
+              </span>
+
+            </td>
+
+            <td>
+              {{ route.eta }}
+            </td>
+
+            <td>
+
+              <button
+                class="view-button"
+                type="button"
+                (click)="viewRoute(route)">
+
+                <img
+                    src="assets/icons/eye.svg"
+                    alt="View">
+
+                <span>View</span>
+
+                </button>
+
+            </td>
+
+          </tr>
+
+        </tbody>
+
+      </table>
+
+    </div>
+
+  </section>
+
+</main>

@@ -1,0 +1,82 @@
+# ==============================
+# EcoRoute AI - .gitignore
+# ==============================
+
+# ---------- Angular / Node ----------
+node_modules/
+dist/
+.angular/
+.cache/
+*.log
+
+# Angular environment files
+.env
+.env.*
+!.env.example
+
+# ---------- ASP.NET Core ----------
+bin/
+obj/
+
+# ASP.NET local development
+appsettings.Development.json
+
+# ---------- Python / Machine Learning ----------
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Python build files
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+
+# ---------- Machine Learning generated files ----------
+# Uncomment these if your ML model generates large files
+# *.pkl
+# *.joblib
+# *.h5
+# *.pt
+# *.pth
+
+# ---------- Visual Studio ----------
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# ---------- VS Code ----------
+.vscode/
+
+# ---------- Operating System ----------
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+Desktop.ini
+
+# ---------- Secrets / Credentials ----------
+.env
+.env.*
+!.env.example
+
+# ---------- Temporary files ----------
+*.tmp
+*.temp
+*.swp
+*.bak
