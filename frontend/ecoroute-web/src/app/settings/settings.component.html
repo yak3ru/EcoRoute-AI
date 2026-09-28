@@ -1,24 +1,21 @@
 <div class="settings-page">
 
-  <!-- Settings Header -->
+  <!-- SETTINGS HEADER -->
   <div class="settings-header">
-
     <h1>Settings</h1>
 
     <p>
       Manage your account, preferences, and system settings.
     </p>
-
   </div>
 
-
-  <!-- Settings Body -->
+  <!-- SETTINGS BODY -->
   <div class="settings-body">
 
-    <!-- Settings Sidebar -->
+    <!-- SETTINGS SIDEBAR -->
     <aside class="settings-sidebar">
 
-      <!-- Account -->
+      <!-- ACCOUNT -->
       <a
         routerLink="account"
         routerLinkActive="active"
@@ -32,7 +29,6 @@
         />
 
         <span class="tab-content">
-
           <span class="tab-title">
             Account
           </span>
@@ -40,12 +36,10 @@
           <span class="tab-description">
             Profile Information
           </span>
-
         </span>
       </a>
 
-
-      <!-- Security -->
+      <!-- SECURITY -->
       <a
         routerLink="security"
         routerLinkActive="active"
@@ -58,7 +52,6 @@
         />
 
         <span class="tab-content">
-
           <span class="tab-title">
             Security
           </span>
@@ -66,12 +59,10 @@
           <span class="tab-description">
             Password and access
           </span>
-
         </span>
       </a>
 
-
-      <!-- Notifications -->
+      <!-- NOTIFICATIONS -->
       <a
         routerLink="notifications"
         routerLinkActive="active"
@@ -84,7 +75,6 @@
         />
 
         <span class="tab-content">
-
           <span class="tab-title">
             Notifications
           </span>
@@ -92,12 +82,10 @@
           <span class="tab-description">
             Alert preferences
           </span>
-
         </span>
       </a>
 
-
-      <!-- System -->
+      <!-- SYSTEM -->
       <a
         routerLink="system"
         routerLinkActive="active"
@@ -110,7 +98,6 @@
         />
 
         <span class="tab-content">
-
           <span class="tab-title">
             System
           </span>
@@ -118,12 +105,10 @@
           <span class="tab-description">
             Appearance and defaults
           </span>
-
         </span>
       </a>
 
-
-      <!-- Data Preferences -->
+      <!-- DATA PREFERENCES -->
       <a
         routerLink="data-preferences"
         routerLinkActive="active"
@@ -136,7 +121,6 @@
         />
 
         <span class="tab-content">
-
           <span class="tab-title">
             Data Preferences
           </span>
@@ -144,18 +128,14 @@
           <span class="tab-description">
             Default filters and data
           </span>
-
         </span>
       </a>
 
     </aside>
 
-
-    <!-- Selected Settings Page -->
+    <!-- SETTINGS CONTENT -->
     <main class="settings-content">
-
       <router-outlet></router-outlet>
-
     </main>
 
   </div>

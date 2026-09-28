@@ -1,40 +1,28 @@
 <div class="signup-page">
-
   <!-- LEFT SIDE -->
   <section class="signup-left">
-
     <div class="signup-container">
-
-
-
-
       <!-- HEADER -->
       <div class="signup-header">
-
         <h2>Create an account</h2>
 
         <p>
           Join EcoRoute AI and be a part of a cleaner, greener Cebu.
         </p>
-
       </div>
-
 
       <!-- FORM -->
       <form
         class="signup-form"
         (submit)="signup($event)"
       >
-
         <!-- FULL NAME -->
         <div class="form-group">
-
           <label for="fullName">
             Full Name
           </label>
 
           <div class="input-wrapper">
-
             <img
               class="input-icon"
               src="/assets/icons/user.svg"
@@ -46,22 +34,19 @@
               type="text"
               placeholder="Enter your full name"
               autocomplete="name"
+              [(ngModel)]="fullName"
+              name="fullName"
             >
-
           </div>
-
         </div>
-
 
         <!-- EMAIL -->
         <div class="form-group">
-
           <label for="email">
             Email Address
           </label>
 
           <div class="input-wrapper">
-
             <img
               class="input-icon"
               src="/assets/icons/email.svg"
@@ -73,22 +58,19 @@
               type="email"
               placeholder="Enter your email address"
               autocomplete="email"
+              [(ngModel)]="email"
+              name="email"
             >
-
           </div>
-
         </div>
-
 
         <!-- USERNAME -->
         <div class="form-group">
-
           <label for="username">
             Username
           </label>
 
           <div class="input-wrapper">
-
             <img
               class="input-icon"
               src="/assets/icons/user.svg"
@@ -100,22 +82,19 @@
               type="text"
               placeholder="Enter your username"
               autocomplete="username"
+              [(ngModel)]="username"
+              name="username"
             >
-
           </div>
-
         </div>
-
 
         <!-- PASSWORD -->
         <div class="form-group">
-
           <label for="password">
             Password
           </label>
 
           <div class="input-wrapper">
-
             <img
               class="input-icon"
               src="/assets/icons/lock.svg"
@@ -127,6 +106,8 @@
               [type]="showPassword ? 'text' : 'password'"
               placeholder="Enter your password"
               autocomplete="new-password"
+              [(ngModel)]="password"
+              name="password"
             >
 
             <button
@@ -135,28 +116,21 @@
               (click)="togglePassword()"
               aria-label="Show or hide password"
             >
-
               <img
-  [src]="showPassword ? 'assets/icons/eyeclose.svg' : 'assets/icons/eye.svg'"
-  alt=""
->
-
+                [src]="showPassword ? 'assets/icons/eyeclose.svg' : 'assets/icons/eye.svg'"
+                alt=""
+              >
             </button>
-
           </div>
-
         </div>
-
 
         <!-- CONFIRM PASSWORD -->
         <div class="form-group confirm-password-group">
-
           <label for="confirmPassword">
             Confirm Password
           </label>
 
           <div class="input-wrapper">
-
             <img
               class="input-icon"
               src="/assets/icons/lock.svg"
@@ -168,6 +142,8 @@
               [type]="showConfirmPassword ? 'text' : 'password'"
               placeholder="Confirm your password"
               autocomplete="new-password"
+              [(ngModel)]="confirmPassword"
+              name="confirmPassword"
             >
 
             <button
@@ -176,24 +152,20 @@
               (click)="toggleConfirmPassword()"
               aria-label="Show or hide confirm password"
             >
-
               <img
                 [src]="showConfirmPassword ? 'assets/icons/eyeclose.svg' : 'assets/icons/eye.svg'"
                 alt=""
               >
-
             </button>
-
           </div>
-
         </div>
-
 
         <!-- TERMS -->
         <label class="terms">
-
           <input
             type="checkbox"
+            [(ngModel)]="agreeToTerms"
+            name="agreeToTerms"
           >
 
           <span class="terms-checkbox"></span>
@@ -208,46 +180,49 @@
               Privacy Policy
             </a>.
           </span>
-
         </label>
 
+        <div
+          class="signup-error"
+          *ngIf="errorMessage"
+        >
+          {{ errorMessage }}
+        </div>
+
+        <div
+          class="signup-success"
+          *ngIf="successMessage"
+        >
+          {{ successMessage }}
+        </div>
 
         <!-- SIGN UP -->
         <button
           type="submit"
           class="signup-button"
+          [disabled]="isLoading"
         >
-          Sign Up
+          {{ isLoading ? 'Creating Account...' : 'Sign Up' }}
         </button>
-
 
         <!-- LOGIN LINK -->
         <div class="login-link">
-
           Already have an account?
 
           <a routerLink="/login">
             Log In
           </a>
-
         </div>
-
       </form>
-
     </div>
-
   </section>
-
 
   <!-- RIGHT SIDE -->
   <section class="signup-right">
-
     <img
       class="hero-image"
       src="/assets/images/login-hero.png"
       alt="EcoRoute AI smarter routes cleaner communities"
     >
-
   </section>
-
 </div>

@@ -10,7 +10,6 @@ import { FormsModule } from '@angular/forms';
   styleUrl: './waste-data.component.scss'
 })
 export class WasteDataComponent {
-
   wasteAreas = [
     {
       name: 'Maryville',
@@ -131,23 +130,21 @@ export class WasteDataComponent {
   }
 
   get filteredCollections() {
+    const search = this.searchTerm
+      .toLowerCase()
+      .trim();
 
-  const search = this.searchTerm
-    .toLowerCase()
-    .trim();
+    return this.recentCollections.filter(collection => {
+      const areaMatch =
+        collection.area
+          .toLowerCase()
+          .includes(search);
 
-  return this.recentCollections.filter(collection => {
+      const typeMatch =
+        this.wasteTypeFilter === 'All' ||
+        collection.type === this.wasteTypeFilter;
 
-    const areaMatch =
-      collection.area
-        .toLowerCase()
-        .includes(search);
-
-    const typeMatch =
-      this.wasteTypeFilter === 'All' ||
-      collection.type === this.wasteTypeFilter;
-
-    return areaMatch && typeMatch;
-  });
-}
+      return areaMatch && typeMatch;
+    });
+  }
 }

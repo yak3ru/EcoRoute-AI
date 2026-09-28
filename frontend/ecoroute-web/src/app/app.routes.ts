@@ -2,6 +2,8 @@ import { Routes } from '@angular/router';
 
 import { LoginComponent } from './auth/login/login.component';
 import { SignupComponent } from './auth/signup/signup.component';
+import { ForgotPasswordComponent } from './auth/forgot-password/forgot-password.component';
+import { ResetPasswordComponent } from './auth/reset-password/reset-password.component';
 
 import { LayoutComponent } from './shared/layout/layout.component';
 
@@ -16,8 +18,9 @@ import { NotificationsComponent } from './settings/notifications/notifications.c
 import { SystemComponent } from './settings/system/system.component';
 import { DataPreferencesComponent } from './settings/data-preferences/data-preferences.component';
 
-export const routes: Routes = [
+import { authGuard } from './core/guards/auth.guard';
 
+export const routes: Routes = [
   {
     path: 'login',
     component: LoginComponent
@@ -29,13 +32,23 @@ export const routes: Routes = [
   },
 
   {
+    path: 'forgot-password',
+    component: ForgotPasswordComponent
+  },
+
+  {
+    path: 'reset-password',
+    component: ResetPasswordComponent
+  },
+
+  {
     path: '',
     component: LayoutComponent,
+    canActivate: [authGuard],
     children: [
-
       {
         path: '',
-        redirectTo: 'dashboard',
+        redirectTo: 'login',
         pathMatch: 'full'
       },
 
@@ -55,44 +68,41 @@ export const routes: Routes = [
       },
 
       {
-  path: 'settings',
-  component: SettingsComponent,
-  children: [
+        path: 'settings',
+        component: SettingsComponent,
+        children: [
+          {
+            path: '',
+            redirectTo: 'account',
+            pathMatch: 'full'
+          },
 
-    {
-      path: '',
-      redirectTo: 'account',
-      pathMatch: 'full'
-    },
+          {
+            path: 'account',
+            component: AccountComponent
+          },
 
-    {
-      path: 'account',
-      component: AccountComponent
-    },
+          {
+            path: 'security',
+            component: SecurityComponent
+          },
 
-    {
-      path: 'security',
-      component: SecurityComponent
-    },
+          {
+            path: 'notifications',
+            component: NotificationsComponent
+          },
 
-    {
-      path: 'notifications',
-      component: NotificationsComponent
-    },
+          {
+            path: 'system',
+            component: SystemComponent
+          },
 
-    {
-      path: 'system',
-      component: SystemComponent
-    },
-
-    {
-      path: 'data-preferences',
-      component: DataPreferencesComponent
-    }
-
-  ]
-}
-
+          {
+            path: 'data-preferences',
+            component: DataPreferencesComponent
+          }
+        ]
+      }
     ]
   },
 
@@ -100,5 +110,4 @@ export const routes: Routes = [
     path: '**',
     redirectTo: 'login'
   }
-
 ];

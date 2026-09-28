@@ -1,6 +1,9 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
+import { UserService } from '../../core/services/user.service';
+import { AuthService } from '../../core/services/auth.service';
 
 @Component({
   selector: 'app-security',
@@ -14,46 +17,38 @@ import { FormsModule } from '@angular/forms';
 })
 export class SecurityComponent {
 
-  // Password fields
   currentPassword = '';
   newPassword = '';
   confirmPassword = '';
 
-  // Password visibility
   showCurrentPassword = false;
   showNewPassword = false;
   showConfirmPassword = false;
 
-  // 2FA
   twoFactorEnabled = false;
 
-  // Password update
   passwordError = '';
   passwordSuccess = '';
+  isUpdatingPassword = false;
 
-  // Active sessions
   sessions = [
     {
-      device: 'MacBook Air (This device)',
-      browser: 'Chrome 129.0.0.0 macOS',
-      location: 'Cebu, Philippines',
-      date: 'Sep 16, 2026',
-      time: '10:24 AM',
+      device: 'Current Session',
+      browser: 'Current browser',
+      location: 'Current device',
+      date: '',
+      time: '',
       status: 'Active',
       current: true,
       icon: 'laptop.svg'
-    },
-    {
-      device: 'Windows PC',
-      browser: 'Chrome 128.0.0.0 Windows 11',
-      location: 'Cebu, Philippines',
-      date: 'Sep 16, 2026',
-      time: '03:15 PM',
-      status: 'Inactive',
-      current: false,
-      icon: 'system.svg'
     }
   ];
+
+  constructor(
+    private userService: UserService,
+    private authService: AuthService,
+    private router: Router
+  ) {}
 
   toggleCurrentPassword(): void {
     this.showCurrentPassword = !this.showCurrentPassword;
@@ -82,7 +77,32 @@ export class SecurityComponent {
     }
 
     if (this.newPassword.length < 8) {
-      this.passwordError = 'Your new password must be at least 8 characters.';
+      this.passwordError =
+        'Your new password must be at least 8 characters.';
+      return;
+    }
+
+    if (!/[A-Z]/.test(this.newPassword)) {
+      this.passwordError =
+        'Your new password must include at least one uppercase letter.';
+      return;
+    }
+
+    if (!/[a-z]/.test(this.newPassword)) {
+      this.passwordError =
+        'Your new password must include at least one lowercase letter.';
+      return;
+    }
+
+    if (!/[0-9]/.test(this.newPassword)) {
+      this.passwordError =
+        'Your new password must include at least one number.';
+      return;
+    }
+
+    if (!/[!@#$%^&*(),.?":{}|<>\_\\-`\~+=;]/.test(this.newPassword)) {
+      this.passwordError =
+        'Your new password must include at least one special character.';
       return;
     }
 
@@ -91,9 +111,40 @@ export class SecurityComponent {
       return;
     }
 
-    // Backend password update will be connected here later.
-    this.passwordSuccess = 'Your password has been updated successfully.';
+    if (this.currentPassword === this.newPassword) {
+      this.passwordError =
+        'Your new password must be different from your current password.';
+      return;
+    }
 
+    this.isUpdatingPassword = true;
+
+    this.userService.changePassword({
+      currentPassword: this.currentPassword,
+      newPassword: this.newPassword,
+      confirmNewPassword: this.confirmPassword
+    }).subscribe({
+      next: (response) => {
+        this.isUpdatingPassword = false;
+
+        this.passwordSuccess =
+          response?.message ??
+          'Your password has been updated successfully.';
+
+        this.clearPasswordFields();
+      },
+
+      error: (error) => {
+        this.isUpdatingPassword = false;
+
+        this.passwordError =
+          error.error?.message ??
+          'Unable to update your password.';
+      }
+    });
+  }
+
+  private clearPasswordFields(): void {
     this.currentPassword = '';
     this.newPassword = '';
     this.confirmPassword = '';
@@ -108,6 +159,11 @@ export class SecurityComponent {
   }
 
   logoutSession(index: number): void {
+    if (this.sessions[index].current) {
+      return;
+    }
+
     this.sessions[index].status = 'Inactive';
   }
+
 }

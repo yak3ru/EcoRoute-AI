@@ -30,18 +30,17 @@ interface Route {
   styleUrl: './route-planning.component.scss'
 })
 export class RoutePlanningComponent implements AfterViewInit, OnDestroy {
-
   selectedRouteId = '#01';
   isOptimizing = false;
   isRoutePanelOpen = true;
 
   closeRoutePanel(): void {
-  this.isRoutePanelOpen = false;
+    this.isRoutePanelOpen = false;
 
-  setTimeout(() => {
-    this.map?.invalidateSize();
-  }, 200);
-}
+    setTimeout(() => {
+      this.map?.invalidateSize();
+    }, 200);
+  }
 
   private map!: L.Map;
 
@@ -141,25 +140,24 @@ export class RoutePlanningComponent implements AfterViewInit, OnDestroy {
   }
 
   selectRoute(route: Route): void {
-  this.selectedRouteId = route.id;
-  this.isRoutePanelOpen = true;
+    this.selectedRouteId = route.id;
+    this.isRoutePanelOpen = true;
 
-  setTimeout(() => {
-    this.focusRoute(route);
-    this.map?.invalidateSize();
-  }, 200);
-}
+    setTimeout(() => {
+      this.focusRoute(route);
+      this.map?.invalidateSize();
+    }, 200);
+  }
 
   viewRoute(route: Route): void {
-  this.selectedRouteId = route.id;
-  this.isRoutePanelOpen = true;
+    this.selectedRouteId = route.id;
+    this.isRoutePanelOpen = true;
 
-  setTimeout(() => {
-    this.focusRoute(route);
-
-    this.map?.invalidateSize();
-  }, 200);
-}
+    setTimeout(() => {
+      this.focusRoute(route);
+      this.map?.invalidateSize();
+    }, 200);
+  }
 
   viewConstraints(): void {
     alert(
@@ -193,6 +191,8 @@ export class RoutePlanningComponent implements AfterViewInit, OnDestroy {
     alert(`Changes applied to Route ${this.selectedRoute.id}.`);
   }
 
+  // MAP
+
   private initializeMap(): void {
     this.map = L.map('routeMap', {
       zoomControl: false
@@ -218,9 +218,7 @@ export class RoutePlanningComponent implements AfterViewInit, OnDestroy {
   }
 
   private drawRoutes(): void {
-
     const routeCoordinates: Record<string, [number, number][]> = {
-
       '#01': [
         [10.3820, 123.9070],
         [10.3745, 123.9110],
@@ -255,7 +253,6 @@ export class RoutePlanningComponent implements AfterViewInit, OnDestroy {
     };
 
     this.routes.forEach(route => {
-
       const coordinates = routeCoordinates[route.id];
 
       if (!coordinates) {
@@ -269,7 +266,6 @@ export class RoutePlanningComponent implements AfterViewInit, OnDestroy {
       }).addTo(this.map);
 
       coordinates.forEach((coordinate, index) => {
-
         const marker = L.marker(coordinate, {
           icon: L.divIcon({
             className: 'route-number-marker',
@@ -305,18 +301,15 @@ export class RoutePlanningComponent implements AfterViewInit, OnDestroy {
           )
           .addTo(this.map);
       });
-
     });
   }
 
   private focusRoute(route: Route): void {
-
     if (!this.map) {
       return;
     }
 
     const routeCoordinates: Record<string, [number, number][]> = {
-
       '#01': [
         [10.3820, 123.9070],
         [10.3745, 123.9110],

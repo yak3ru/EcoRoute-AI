@@ -1,169 +1,237 @@
 <div class="account-page">
 
-  <!-- =========================================
-       ACCOUNT INFORMATION
-  ========================================== -->
+  <!-- ACCOUNT INFORMATION -->
+<section class="settings-card account-information">
 
-  <section class="settings-card account-information">
+  <div class="card-header">
 
-    <!-- Card Header -->
-    <div class="card-header">
+    <div>
+      <h2>Account Information</h2>
+      <p>View and update your account details.</p>
+    </div>
 
-      <div>
-        <h2>Account Information</h2>
+    <!-- NORMAL MODE -->
+    <button
+      *ngIf="!isEditing"
+      type="button"
+      class="edit-profile-button"
+      (click)="startEditing()"
+    >
+      <img
+        src="assets/icons/pencil.svg"
+        alt=""
+        class="button-icon"
+      />
 
-        <p>
-          View and update your account details.
-        </p>
+      <span>Edit profile</span>
+    </button>
+
+    <!-- EDIT MODE -->
+    <div
+      *ngIf="isEditing"
+      class="edit-profile-actions"
+    >
+
+      <button
+        type="button"
+        class="cancel-edit-button"
+        (click)="cancelEditing()"
+        [disabled]="isSaving"
+      >
+        Cancel
+      </button>
+
+      <button
+        type="button"
+        class="save-profile-button"
+        (click)="saveProfile()"
+        [disabled]="isSaving"
+      >
+        {{ isSaving ? 'Saving...' : 'Save Changes' }}
+      </button>
+
+    </div>
+
+  </div>
+
+
+  <div class="account-details">
+
+    <!-- PROFILE -->
+    <div class="profile-section">
+
+      <div class="profile-picture">
+        RS
       </div>
 
       <button
         type="button"
-        class="edit-profile-button"
+        class="change-photo-button"
+        aria-label="Change profile photo"
       >
         <img
-        src="assets/icons/pencil.svg"
-        alt=""
-        class="button-icon"
+          src="assets/icons/camera.svg"
+          alt=""
         />
-        <span>Edit profile</span>
       </button>
 
     </div>
 
 
-    <!-- Account Details -->
-    <div class="account-details">
+    <!-- ACCOUNT FIELDS -->
+    <div class="information-grid">
 
-      <!-- Profile Picture -->
-      <div class="profile-section">
+      <!-- FULL NAME -->
+      <div class="information-item">
 
-        <div class="profile-picture">
-          RS
-        </div>
+        <span class="information-label">
+          Full Name
+        </span>
 
-        <button
-        type="button"
-        class="change-photo-button"
-        aria-label="Change profile photo"
+        <!-- VIEW MODE -->
+        <span
+          *ngIf="!isEditing"
+          class="information-value"
         >
-        <img
-            src="assets/icons/camera.svg"
-            alt=""
+          {{ user?.fullName || 'Loading...' }}
+        </span>
+
+        <!-- EDIT MODE -->
+        <input
+          *ngIf="isEditing"
+          type="text"
+          class="information-input"
+          [(ngModel)]="editFullName"
+          autocomplete="name"
         />
-</button>
 
       </div>
 
 
-      <!-- Information Grid -->
-      <div class="information-grid">
+      <!-- EMAIL -->
+      <div class="information-item">
 
-        <!-- Full Name -->
-        <div class="information-item">
+        <span class="information-label">
+          Email Address
+        </span>
 
-          <span class="information-label">
-            Full Name
-          </span>
+        <!-- VIEW MODE -->
+        <span
+          *ngIf="!isEditing"
+          class="information-value"
+        >
+          {{ user?.email || 'Loading...' }}
+        </span>
 
-          <span class="information-value">
-            Roshley Sumalpong
-          </span>
+        <!-- EDIT MODE -->
+        <input
+          *ngIf="isEditing"
+          type="email"
+          class="information-input"
+          [(ngModel)]="editEmail"
+          autocomplete="email"
+        />
 
-        </div>
-
-
-        <!-- Email -->
-        <div class="information-item">
-
-          <span class="information-label">
-            Email Address
-          </span>
-
-          <span class="information-value">
-            roshley.sumalpong&#64;ucebu.edu.ph
-          </span>
-
-        </div>
+      </div>
 
 
-        <!-- Username -->
-        <div class="information-item">
+      <!-- USERNAME -->
+      <div class="information-item">
 
-          <span class="information-label">
-            Username
-          </span>
+        <span class="information-label">
+          Username
+        </span>
 
-          <span class="information-value">
-            roshi
-          </span>
+        <!-- VIEW MODE -->
+        <span
+          *ngIf="!isEditing"
+          class="information-value"
+        >
+          {{ user?.username || 'Loading...' }}
+        </span>
 
-        </div>
+        <!-- EDIT MODE -->
+        <input
+          *ngIf="isEditing"
+          type="text"
+          class="information-input"
+          [(ngModel)]="editUsername"
+          autocomplete="username"
+        />
+
+      </div>
 
 
-        <!-- Role -->
-        <div class="information-item">
+      <!-- ROLE -->
+      <div class="information-item">
 
-          <span class="information-label">
-            Role
-          </span>
+        <span class="information-label">
+          Role
+        </span>
 
-          <span class="role-badge">
-            Administrator
-          </span>
-
-        </div>
+        <span class="role-badge">
+          {{ user?.role || 'Loading...' }}
+        </span>
 
       </div>
 
     </div>
 
-  </section>
+  </div>
 
 
-  <!-- =========================================
-       SECURITY
-  ========================================== -->
+  <!-- EDIT ERROR -->
+  <div
+    class="account-message error"
+    *ngIf="isEditing && errorMessage"
+  >
+    {{ errorMessage }}
+  </div>
 
+
+  <!-- EDIT SUCCESS -->
+  <div
+    class="account-message success"
+    *ngIf="!isEditing && successMessage"
+  >
+    {{ successMessage }}
+  </div>
+
+</section>
+
+  <!-- SECURITY -->
   <section class="settings-card security-card">
 
-    <!-- Card Header -->
     <div class="card-header">
-
       <div>
         <h2>Security</h2>
-
-        <p>
-          Manage your password and account security.
-        </p>
+        <p>Manage your password and account security.</p>
       </div>
 
-      <!-- Navigate to Security Tab -->
       <a
         routerLink="../security"
         class="change-password-button"
-        >
+      >
         <img
-            src="assets/icons/lock.svg"
-            alt=""
-            class="change-password-icon"
+          src="assets/icons/lock.svg"
+          alt=""
+          class="change-password-icon"
         />
 
         <span>Change Password</span>
-        </a>
+      </a>
     </div>
 
-
-    <!-- Password Information -->
     <div class="password-row">
 
       <div class="password-icon">
-        <img src="assets/icons/lock.svg" alt="" />
-        </div>
+        <img
+          src="assets/icons/lock.svg"
+          alt=""
+        />
+      </div>
 
-     
       <div class="password-information">
-
         <span class="password-title">
           Password
         </span>
@@ -171,11 +239,9 @@
         <span class="password-description">
           Keep your account secured with a strong password.
         </span>
-
       </div>
 
       <div class="password-status">
-
         <span class="password-hidden">
           ••••••••••••
         </span>
@@ -183,126 +249,120 @@
         <span class="password-date">
           Last changed: August 12, 2026
         </span>
-
       </div>
 
     </div>
 
   </section>
 
-<!-- =========================================
-     DELETE ACCOUNT
-========================================= -->
+  <!-- DELETE ACCOUNT -->
+  <button
+    type="button"
+    class="delete-account-bar"
+    (click)="openDeleteModal()"
+  >
+    Delete Account
+  </button>
 
-<button
-  type="button"
-  class="delete-account-bar"
-  (click)="openDeleteModal()"
->
-  Delete Account
-</button>
-
-
-<!-- =========================================
-     DELETE ACCOUNT MODAL
-========================================= -->
-
-<div
-  class="modal-overlay"
-  *ngIf="showDeleteModal"
-  (click)="closeDeleteModal()"
->
-
+  <!-- DELETE ACCOUNT MODAL -->
   <div
-    class="delete-modal"
-    (click)="$event.stopPropagation()"
+    class="modal-overlay"
+    *ngIf="showDeleteModal"
+    (click)="closeDeleteModal()"
   >
 
-    <!-- Modal Header -->
-    <div class="modal-header">
+    <div
+      class="delete-modal"
+      (click)="$event.stopPropagation()"
+    >
 
-      <div class="delete-icon">
-        <img
+      <div class="modal-header">
+
+        <div class="delete-icon">
+          <img
             src="assets/icons/trash.svg"
             alt=""
-        />
+          />
         </div>
-      <div class="modal-title">
 
-        <h2>
-          Delete Account
-        </h2>
+        <div class="modal-title">
+          <h2>
+            Delete Account
+          </h2>
 
-        <p>
-          Permanently delete your account and all associated data.
-          This action cannot be undone.
-        </p>
+          <p>
+            Permanently delete your account and all associated data.
+            This action cannot be undone.
+          </p>
+        </div>
 
       </div>
 
-    </div>
+      <div class="delete-password-field">
 
+        <label for="deletePassword">
+          Password
+        </label>
 
-    <!-- Password -->
-    <div class="delete-password-field">
+        <div class="password-input-wrapper">
 
-      <label for="deletePassword">
-        Password
-      </label>
+          <input
+            id="deletePassword"
+            name="deletePassword"
+            [type]="showPassword ? 'text' : 'password'"
+            [(ngModel)]="deletePassword"
+            placeholder="Enter your current password"
+            autocomplete="current-password"
+          />
 
-      <div class="password-input-wrapper">
+          <button
+            type="button"
+            class="password-toggle"
+            (click)="togglePasswordVisibility()"
+            [attr.aria-label]="showPassword ? 'Hide password' : 'Show password'"
+          >
+            <img
+              [src]="showPassword
+                ? 'assets/icons/eyeclose.svg'
+                : 'assets/icons/eye.svg'"
+              [alt]="showPassword ? 'Hide password' : 'Show password'"
+            />
+          </button>
 
-        <input
-          id="deletePassword"
-          [type]="showPassword ? 'text' : 'password'"
-          [(ngModel)]="deletePassword"
-          placeholder="Enter your current password"
-          autocomplete="current-password"
-        />
+        </div>
+
+        <div
+          class="account-message error"
+          *ngIf="deleteError"
+        >
+          {{ deleteError }}
+        </div>
+
+      </div>
+
+      <div class="modal-actions">
 
         <button
-        type="button"
-        class="password-toggle"
-        (click)="togglePasswordVisibility()"
-        [attr.aria-label]="showPassword ? 'Hide password' : 'Show password'"
+          type="button"
+          class="cancel-button"
+          (click)="closeDeleteModal()"
         >
-        <img
-            [src]="showPassword
-            ? 'assets/icons/eyeclose.svg'
-            : 'assets/icons/eye.svg'"
-            [alt]="showPassword ? 'Hide password' : 'Show password'"
-        />
+          Cancel
+        </button>
+
+        <button
+          type="button"
+          class="confirm-delete-button"
+          [disabled]="!deletePassword.trim()"
+          (click)="confirmDeleteAccount()"
+        >
+          Delete Account
         </button>
 
       </div>
 
     </div>
 
-
-    <!-- Modal Actions -->
-    <div class="modal-actions">
-
-      <button
-        type="button"
-        class="cancel-button"
-        (click)="closeDeleteModal()"
-      >
-        Cancel
-      </button>
-
-      <button
-        type="button"
-        class="confirm-delete-button"
-        [disabled]="!deletePassword.trim()"
-        (click)="confirmDeleteAccount()"
-      >
-        Delete Account
-      </button>
-
-    </div>
-
   </div>
-
-</div>
 
 </div>

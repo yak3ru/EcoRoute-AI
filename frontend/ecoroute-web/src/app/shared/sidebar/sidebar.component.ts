@@ -1,10 +1,10 @@
 import { Component } from '@angular/core';
-
 import {
   Router,
   RouterLink,
   RouterLinkActive
 } from '@angular/router';
+import { AuthService } from '../../core/services/auth.service';
 
 @Component({
   selector: 'app-sidebar',
@@ -15,20 +15,22 @@ import {
   templateUrl: './sidebar.component.html',
   styleUrl: './sidebar.component.scss'
 })
-
 export class SidebarComponent {
 
   constructor(
-    private router: Router
+    private router: Router,
+    private authService: AuthService
   ) {}
 
   logout(): void {
-
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-
-    this.router.navigate(['/login']);
-
+    this.authService.logout().subscribe({
+      next: () => {
+        this.router.navigate(['/login']);
+      },
+      error: () => {
+        this.authService.clearSession();
+        this.router.navigate(['/login']);
+      }
+    });
   }
-
 }

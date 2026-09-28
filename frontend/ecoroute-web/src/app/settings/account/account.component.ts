@@ -1,7 +1,9 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
+import { UserService, UserProfile } from '../../core/services/user.service';
+import { AuthService } from '../../core/services/auth.service';
 
 @Component({
   selector: 'app-account',
@@ -14,19 +16,146 @@ import { RouterLink } from '@angular/router';
   templateUrl: './account.component.html',
   styleUrl: './account.component.scss'
 })
+export class AccountComponent implements OnInit {
 
-export class AccountComponent {
+  user: UserProfile | null = null;
+
+  isLoading = true;
+  isSaving = false;
+
+  errorMessage = '';
+  successMessage = '';
+  deleteError = '';
+
+  isEditing = false;
+
+  editFullName = '';
+  editEmail = '';
+  editUsername = '';
 
   showDeleteModal = false;
-
   deletePassword = '';
-
   showPassword = false;
+
+  constructor(
+    private userService: UserService,
+    private authService: AuthService,
+    private router: Router
+  ) {}
+
+  ngOnInit(): void {
+    this.loadUser();
+  }
+
+  loadUser(): void {
+    this.isLoading = true;
+    this.errorMessage = '';
+
+    this.userService.getCurrentUser().subscribe({
+      next: (user) => {
+        this.user = user;
+
+        this.editFullName = user.fullName;
+        this.editEmail = user.email;
+        this.editUsername = user.username;
+
+        this.isLoading = false;
+      },
+
+      error: (error) => {
+        this.isLoading = false;
+
+        if (error.status === 401) {
+          this.authService.clearSession();
+          this.router.navigate(['/login']);
+          return;
+        }
+
+        this.errorMessage =
+          error.error?.message ??
+          'Unable to load your account information.';
+      }
+    });
+  }
+
+  startEditing(): void {
+    if (!this.user) {
+      return;
+    }
+
+    this.editFullName = this.user.fullName;
+    this.editEmail = this.user.email;
+    this.editUsername = this.user.username;
+
+    this.successMessage = '';
+    this.errorMessage = '';
+    this.isEditing = true;
+  }
+
+  cancelEditing(): void {
+    if (this.user) {
+      this.editFullName = this.user.fullName;
+      this.editEmail = this.user.email;
+      this.editUsername = this.user.username;
+    }
+
+    this.errorMessage = '';
+    this.isEditing = false;
+  }
+
+  saveProfile(): void {
+    this.errorMessage = '';
+    this.successMessage = '';
+
+    if (!this.editFullName.trim()) {
+      this.errorMessage = 'Full name is required.';
+      return;
+    }
+
+    if (!this.editEmail.trim()) {
+      this.errorMessage = 'Email address is required.';
+      return;
+    }
+
+    if (!this.editUsername.trim()) {
+      this.errorMessage = 'Username is required.';
+      return;
+    }
+
+    this.isSaving = true;
+
+    this.userService.updateAccount({
+      fullName: this.editFullName.trim(),
+      email: this.editEmail.trim(),
+      username: this.editUsername.trim()
+    }).subscribe({
+      next: (response) => {
+        this.isSaving = false;
+
+        this.successMessage =
+          response?.message ??
+          'Your account information has been updated successfully.';
+
+        this.isEditing = false;
+
+        this.loadUser();
+      },
+
+      error: (error) => {
+        this.isSaving = false;
+
+        this.errorMessage =
+          error.error?.message ??
+          'Unable to update your account information.';
+      }
+    });
+  }
 
   openDeleteModal(): void {
     this.showDeleteModal = true;
     this.deletePassword = '';
     this.showPassword = false;
+    this.errorMessage = '';
   }
 
   closeDeleteModal(): void {
@@ -40,14 +169,26 @@ export class AccountComponent {
   }
 
   confirmDeleteAccount(): void {
-
     if (!this.deletePassword.trim()) {
+      this.errorMessage = 'Please enter your password.';
       return;
     }
 
-    // Backend account deletion will be connected here later.
-    console.log('Account deletion requested');
+    this.deleteError = '';
 
+    this.userService.deleteAccount(this.deletePassword.trim()).subscribe({
+      next: () => {
+        this.authService.clearSession();
+        this.closeDeleteModal();
+        this.router.navigate(['/login']);
+      },
+
+      error: (error) => {
+        this.deleteError =
+          error.error?.message ??
+          'Unable to delete your account.';
+      }
+    });
   }
 
 }
