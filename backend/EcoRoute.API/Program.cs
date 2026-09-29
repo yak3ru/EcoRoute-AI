@@ -21,8 +21,22 @@ builder.Services.AddDbContext<EcoRouteDbContext>(options =>
 
 // SERVICES
 
+// SERVICES
+
+builder.Services.AddHttpClient();
 builder.Services.AddScoped<JwtService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
+
+builder.Services.AddHttpClient("PythonML", client =>
+{
+    client.BaseAddress = new Uri(
+        builder.Configuration["PythonApi:BaseUrl"]!
+    );
+
+    client.Timeout = TimeSpan.FromSeconds(120);
+});
+
+builder.Services.AddScoped<MlService>();
 
 // AUTHENTICATION
 

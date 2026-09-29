@@ -80,3 +80,23 @@ Desktop.ini
 *.temp
 *.swp
 *.bak
+
+# Python
+ml/.venv/
+ml/__pycache__/
+ml/**/__pycache__/
+ml/.pytest_cache/
+
+# Python environment
+ml/.venv/
+
+# Python cache
+ml/__pycache__/
+ml/**/__pycache__/
+ml/.pytest_cache/
+
+# ML environment variables
+ml/.env
+
+# Trained models
+ml/models/*.joblib
