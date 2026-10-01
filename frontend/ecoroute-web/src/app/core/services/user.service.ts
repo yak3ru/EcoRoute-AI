@@ -25,6 +25,21 @@ export interface ChangePasswordRequest {
   confirmNewPassword: string;
 }
 
+export type SessionStatus = 'Active' | 'LoggedOut' | 'Expired';
+
+export interface UserSessionInfo {
+  sessionId: number;
+  device: string | null;
+  browser: string | null;
+  ipAddress: string | null;
+  createdAt: string;
+  lastActiveAt: string;
+  endedAt: string | null;
+  status: SessionStatus;
+  logoutReason: string | null;
+  isCurrent: boolean;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -66,4 +81,26 @@ export class UserService {
         }
     });
     }
+
+  // SESSIONS
+
+  getSessions(): Observable<UserSessionInfo[]> {
+    return this.http.get<UserSessionInfo[]>(
+      `${this.api.getBaseUrl()}/Users/sessions`
+    );
+  }
+
+  logoutSession(sessionId: number): Observable<any> {
+    return this.http.post(
+      `${this.api.getBaseUrl()}/Users/sessions/${sessionId}/logout`,
+      {}
+    );
+  }
+
+  logoutOtherSessions(): Observable<{ message: string; count: number }> {
+    return this.http.post<{ message: string; count: number }>(
+      `${this.api.getBaseUrl()}/Users/sessions/logout-others`,
+      {}
+    );
+  }
 }

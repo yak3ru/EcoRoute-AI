@@ -40,6 +40,8 @@ public class JwtService
 
         var claims = new List<Claim>
         {
+            // UNIQUE ID SO EVERY TOKEN IS DIFFERENT
+            new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
             new(JwtRegisteredClaimNames.Sub, user.UserId.ToString()),
             new(ClaimTypes.NameIdentifier, user.UserId.ToString()),
             new(ClaimTypes.Name, user.Username),

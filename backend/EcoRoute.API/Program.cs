@@ -116,10 +116,25 @@ builder.Services.AddAuthentication(
                     return;
                 }
 
-                if (session.ExpiresAt <= DateTime.UtcNow)
+                var now = DateTime.UtcNow;
+
+                if (session.ExpiresAt <= now)
                 {
                     context.Fail("Session has expired.");
                     return;
+                }
+
+                // UPDATE LAST ACTIVE (MAX ONCE PER MINUTE)
+
+                if (session.LastActiveAt == null ||
+                    session.LastActiveAt < now.AddMinutes(-1))
+                {
+                    await dbContext.UserSessions
+                        .Where(s => s.SessionId == session.SessionId)
+                        .ExecuteUpdateAsync(update => update
+                            .SetProperty(
+                                s => s.LastActiveAt,
+                                (DateTime?)now));
                 }
             }
         };

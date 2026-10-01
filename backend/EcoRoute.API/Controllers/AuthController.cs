@@ -188,15 +188,26 @@ public class AuthController : ControllerBase
 
         var expiration = _jwtService.GetExpiration(token);
 
+        // GET DEVICE INFO
+
+        var userAgent = Request.Headers.UserAgent.ToString();
+        var clientHints = Request.Headers["Sec-CH-UA"].ToString();
+
         // CREATE SESSION
+
+        var now = DateTime.UtcNow;
 
         var session = new UserSession
         {
             UserId = user.UserId,
             Token = token,
-            CreatedAt = DateTime.UtcNow,
+            CreatedAt = now,
+            LastActiveAt = now,
             ExpiresAt = expiration,
-            IsActive = true
+            IsActive = true,
+            Device = UserAgentParser.GetDevice(userAgent),
+            Browser = UserAgentParser.GetBrowser(userAgent, clientHints),
+            IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString()
         };
 
         _context.UserSessions.Add(session);
@@ -255,6 +266,8 @@ public class AuthController : ControllerBase
         }
 
         session.IsActive = false;
+        session.LoggedOutAt = DateTime.UtcNow;
+        session.LogoutReason = SessionLogoutReasons.SignedOut;
         await _context.SaveChangesAsync();
 
         return Ok(new
@@ -521,9 +534,13 @@ public class AuthController : ControllerBase
                 s.IsActive)
             .ToListAsync();
 
+        var loggedOutAt = DateTime.UtcNow;
+
         foreach (var session in activeSessions)
         {
             session.IsActive = false;
+            session.LoggedOutAt = loggedOutAt;
+            session.LogoutReason = SessionLogoutReasons.PasswordReset;
         }
 
         // SAVE

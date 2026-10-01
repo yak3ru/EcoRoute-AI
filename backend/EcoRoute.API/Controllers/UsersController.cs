@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using EcoRoute.API.Data;
+using EcoRoute.API.Models;
 using EcoRoute.API.Models.Account;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -414,5 +415,243 @@ public class UsersController : ControllerBase
         {
             message = "Your account has been deleted successfully."
         });
+    }
+
+    // LOGIN HISTORY LIMITS
+
+    private const int SessionHistoryDays = 30;
+    private const int SessionHistoryLimit = 20;
+
+    // GET SESSIONS
+
+    [HttpGet("sessions")]
+    public async Task<IActionResult> GetSessions()
+    {
+        var userIdClaim = User.FindFirstValue(
+            ClaimTypes.NameIdentifier);
+
+        if (string.IsNullOrWhiteSpace(userIdClaim))
+        {
+            return Unauthorized(new
+            {
+                message = "User identity could not be determined."
+            });
+        }
+
+        if (!int.TryParse(userIdClaim, out var userId))
+        {
+            return Unauthorized(new
+            {
+                message = "Invalid user identity."
+            });
+        }
+
+        var currentToken = GetCurrentToken();
+        var now = DateTime.UtcNow;
+        var historyStart = now.AddDays(-SessionHistoryDays);
+
+        // ACTIVE SESSIONS + LAST 30 DAYS
+
+        var sessions = await _context.UserSessions
+            .AsNoTracking()
+            .Where(s =>
+                s.UserId == userId &&
+                ((s.IsActive && s.ExpiresAt > now) ||
+                 s.CreatedAt >= historyStart))
+            .ToListAsync();
+
+        // MAP TO RESPONSE (NO TOKEN)
+
+        var items = sessions
+            .Select(s =>
+            {
+                var isActive = s.IsActive && s.ExpiresAt > now;
+
+                // STILL ACTIVE BUT PAST EXPIRY = EXPIRED
+
+                var status = isActive
+                    ? "Active"
+                    : s.IsActive ? "Expired" : "LoggedOut";
+
+                DateTime? endedAt = status switch
+                {
+                    "Expired" => s.ExpiresAt,
+                    "LoggedOut" => s.LoggedOutAt,
+                    _ => null
+                };
+
+                return new
+                {
+                    sessionId = s.SessionId,
+                    device = s.Device,
+                    browser = s.Browser,
+                    ipAddress = s.IpAddress,
+                    createdAt = AsUtc(s.CreatedAt),
+                    lastActiveAt = AsUtc(s.LastActiveAt ?? s.CreatedAt),
+                    endedAt = endedAt.HasValue ? AsUtc(endedAt.Value) : (DateTime?)null,
+                    status,
+                    logoutReason = s.LogoutReason,
+                    isCurrent = s.Token == currentToken
+                };
+            })
+            .ToList();
+
+        // CURRENT DEVICE FIRST
+
+        var active = items
+            .Where(s => s.status == "Active")
+            .OrderByDescending(s => s.isCurrent)
+            .ThenByDescending(s => s.lastActiveAt);
+
+        // NEWEST FIRST
+
+        var history = items
+            .Where(s => s.status != "Active")
+            .OrderByDescending(s => s.endedAt ?? s.createdAt)
+            .Take(SessionHistoryLimit);
+
+        return Ok(active.Concat(history).ToList());
+    }
+
+    // LOG OUT ONE SESSION
+
+    [HttpPost("sessions/{sessionId:int}/logout")]
+    public async Task<IActionResult> LogoutSession(int sessionId)
+    {
+        var userIdClaim = User.FindFirstValue(
+            ClaimTypes.NameIdentifier);
+
+        if (string.IsNullOrWhiteSpace(userIdClaim))
+        {
+            return Unauthorized(new
+            {
+                message = "User identity could not be determined."
+            });
+        }
+
+        if (!int.TryParse(userIdClaim, out var userId))
+        {
+            return Unauthorized(new
+            {
+                message = "Invalid user identity."
+            });
+        }
+
+        // MUST BELONG TO THIS USER
+
+        var session = await _context.UserSessions
+            .FirstOrDefaultAsync(s =>
+                s.SessionId == sessionId &&
+                s.UserId == userId &&
+                s.IsActive);
+
+        if (session == null)
+        {
+            return NotFound(new
+            {
+                message = "Active session not found."
+            });
+        }
+
+        // BLOCK CURRENT SESSION
+
+        if (session.Token == GetCurrentToken())
+        {
+            return BadRequest(new
+            {
+                message = "You cannot log out your current session here. Use the Log Out button instead."
+            });
+        }
+
+        session.IsActive = false;
+        session.LoggedOutAt = DateTime.UtcNow;
+        session.LogoutReason = SessionLogoutReasons.LoggedOutRemotely;
+        await _context.SaveChangesAsync();
+
+        return Ok(new
+        {
+            message = "Session logged out successfully."
+        });
+    }
+
+    // LOG OUT OTHER SESSIONS
+
+    [HttpPost("sessions/logout-others")]
+    public async Task<IActionResult> LogoutOtherSessions()
+    {
+        var userIdClaim = User.FindFirstValue(
+            ClaimTypes.NameIdentifier);
+
+        if (string.IsNullOrWhiteSpace(userIdClaim))
+        {
+            return Unauthorized(new
+            {
+                message = "User identity could not be determined."
+            });
+        }
+
+        if (!int.TryParse(userIdClaim, out var userId))
+        {
+            return Unauthorized(new
+            {
+                message = "Invalid user identity."
+            });
+        }
+
+        // EVERY ACTIVE SESSION EXCEPT THIS ONE
+
+        var currentToken = GetCurrentToken();
+
+        var otherSessions = await _context.UserSessions
+            .Where(s =>
+                s.UserId == userId &&
+                s.IsActive &&
+                s.Token != currentToken)
+            .ToListAsync();
+
+        var loggedOutAt = DateTime.UtcNow;
+
+        foreach (var session in otherSessions)
+        {
+            session.IsActive = false;
+            session.LoggedOutAt = loggedOutAt;
+            session.LogoutReason = SessionLogoutReasons.LoggedOutRemotely;
+        }
+
+        await _context.SaveChangesAsync();
+
+        return Ok(new
+        {
+            message = otherSessions.Count == 1
+                ? "1 other session was logged out."
+                : $"{otherSessions.Count} other sessions were logged out.",
+            count = otherSessions.Count
+        });
+    }
+
+    // MARK DB DATES AS UTC
+
+    private static DateTime AsUtc(DateTime value)
+    {
+        return DateTime.SpecifyKind(value, DateTimeKind.Utc);
+    }
+
+    // GET CURRENT TOKEN
+
+    private string GetCurrentToken()
+    {
+        const string bearerPrefix = "Bearer ";
+
+        var authorizationHeader =
+            Request.Headers.Authorization.ToString();
+
+        if (!authorizationHeader.StartsWith(
+                bearerPrefix,
+                StringComparison.OrdinalIgnoreCase))
+        {
+            return string.Empty;
+        }
+
+        return authorizationHeader[bearerPrefix.Length..].Trim();
     }
 }

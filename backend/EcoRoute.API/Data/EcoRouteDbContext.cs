@@ -319,6 +319,30 @@ public class EcoRouteDbContext : DbContext
             entity.Property(s => s.IsActive)
                 .HasColumnName("IsActive");
 
+            // DEVICE AND ACTIVITY COLUMNS
+
+            entity.Property(s => s.Device)
+                .HasColumnName("Device")
+                .HasMaxLength(100);
+
+            entity.Property(s => s.Browser)
+                .HasColumnName("Browser")
+                .HasMaxLength(100);
+
+            entity.Property(s => s.IpAddress)
+                .HasColumnName("IpAddress")
+                .HasMaxLength(45);
+
+            entity.Property(s => s.LastActiveAt)
+                .HasColumnName("LastActiveAt");
+
+            entity.Property(s => s.LoggedOutAt)
+                .HasColumnName("LoggedOutAt");
+
+            entity.Property(s => s.LogoutReason)
+                .HasColumnName("LogoutReason")
+                .HasMaxLength(30);
+
             // LINK SESSION TO USER
 
             entity.HasOne(s => s.User)

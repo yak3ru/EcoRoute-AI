@@ -9,5 +9,17 @@ public class UserSession
     public DateTime ExpiresAt { get; set; }
     public bool IsActive { get; set; }
 
+    // DEVICE INFO
+
+    public string? Device { get; set; }
+    public string? Browser { get; set; }
+    public string? IpAddress { get; set; }
+
+    // ACTIVITY
+
+    public DateTime? LastActiveAt { get; set; }
+    public DateTime? LoggedOutAt { get; set; }
+    public string? LogoutReason { get; set; }
+
     public User? User { get; set; }
 }

@@ -32,7 +32,7 @@
   </section>
 
   <!-- CHANGE PASSWORD -->
-  <section class="security-card password-card">
+  <section class="security-card password-card" id="change-password">
 
     <div class="card-heading">
       <h2>Change Password</h2>
@@ -342,13 +342,63 @@
   <!-- ACTIVE SESSIONS -->
   <section class="security-card sessions-card">
 
-    <div class="card-heading">
-      <h2>Active Sessions</h2>
+    <div class="sessions-heading">
 
-      <p>
-        These are the devices currently logged into your account.
-      </p>
+      <div class="card-heading">
+        <h2>Where You're Logged In</h2>
+
+        <p>
+          Devices logged into your account, and where you've logged in recently.
+          If you don't recognize a device, log it out and change your password.
+        </p>
+      </div>
+
+      <button
+        type="button"
+        class="logout-others-button"
+        *ngIf="otherActiveSessionCount > 0"
+        (click)="openLogoutOthersDialog()"
+        [disabled]="isSessionActionBusy"
+      >
+        {{ isLoggingOutOthers ? 'Logging out...' : 'Log Out of All Other Devices' }}
+      </button>
+
     </div>
+
+    <!-- MESSAGES -->
+
+    <div
+      class="password-message error sessions-message"
+      *ngIf="sessionsError"
+    >
+      {{ sessionsError }}
+      <button
+        type="button"
+        class="retry-sessions-button"
+        (click)="loadSessions()"
+        [disabled]="isLoadingSessions"
+      >
+        Try again
+      </button>
+    </div>
+
+    <div
+      class="password-message error sessions-message"
+      *ngIf="sessionActionError"
+    >
+      {{ sessionActionError }}
+    </div>
+
+    <div
+      class="password-message success sessions-message"
+      *ngIf="sessionsSuccess"
+    >
+      {{ sessionsSuccess }}
+    </div>
+
+    <!-- ACTIVE DEVICES -->
+
+    <h3 class="sessions-subheading">Active Now</h3>
 
     <div class="sessions-table">
 
@@ -361,8 +411,23 @@
       </div>
 
       <div
+        class="sessions-placeholder"
+        *ngIf="isLoadingSessions && !hasLoadedSessions"
+      >
+        Loading your sessions...
+      </div>
+
+      <div
+        class="sessions-placeholder"
+        *ngIf="hasLoadedSessions && activeSessions.length === 0"
+      >
+        No active sessions found.
+      </div>
+
+      <div
         class="session-row"
-        *ngFor="let session of sessions; let i = index"
+        [class.current-session]="session.current"
+        *ngFor="let session of activeSessions"
       >
 
         <div class="session-device">
@@ -375,7 +440,10 @@
           </div>
 
           <div class="device-information">
-            <strong>{{ session.device }}</strong>
+            <strong>
+              {{ session.device }}
+              <span class="this-device-label" *ngIf="session.current">· This device</span>
+            </strong>
             <span>{{ session.browser }}</span>
           </div>
 
@@ -391,11 +459,14 @@
         </div>
 
         <div class="session-status">
-          <span
-            class="status-badge"
-            [class.active]="session.status === 'Active'"
-          >
+          <span class="status-badge active">
             {{ session.status }}
+          </span>
+          <span
+            class="last-active"
+            [class.now]="session.lastActive === 'Active now'"
+          >
+            {{ session.lastActive }}
           </span>
         </div>
 
@@ -412,9 +483,190 @@
             *ngIf="!session.current"
             type="button"
             class="logout-session-button"
-            (click)="logoutSession(i)"
+            (click)="openLogoutDialog(session)"
+            [disabled]="isSessionActionBusy"
           >
-            Log Out
+            {{ loggingOutSessionId === session.sessionId ? 'Logging out...' : 'Log Out' }}
+          </button>
+
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- LOGIN HISTORY -->
+
+    <ng-container *ngIf="hasLoadedSessions">
+
+      <h3 class="sessions-subheading history-subheading">
+        Login History
+        <span>Last 30 days</span>
+      </h3>
+
+      <div class="sessions-table history-table">
+
+        <div class="sessions-header">
+          <span>Device</span>
+          <span>Location</span>
+          <span>Login Time</span>
+          <span>Status</span>
+          <span>How It Ended</span>
+        </div>
+
+        <div
+          class="sessions-placeholder"
+          *ngIf="historySessions.length === 0"
+        >
+          No past sessions in the last 30 days.
+        </div>
+
+        <div
+          class="session-row history-row"
+          *ngFor="let session of visibleHistorySessions"
+        >
+
+          <div class="session-device">
+
+            <div class="device-icon">
+              <img
+                [src]="'assets/icons/' + session.icon"
+                alt=""
+              />
+            </div>
+
+            <div class="device-information">
+              <strong>{{ session.device }}</strong>
+              <span>{{ session.browser }}</span>
+            </div>
+
+          </div>
+
+          <div class="session-location">
+            {{ session.location }}
+          </div>
+
+          <div class="session-time">
+            <strong>{{ session.date }}</strong>
+            <span>{{ session.time }}</span>
+          </div>
+
+          <div class="session-status">
+            <span
+              class="status-badge"
+              [ngClass]="session.statusClass"
+            >
+              {{ session.status }}
+            </span>
+          </div>
+
+          <div class="session-ended">
+            {{ session.endedDetail }}
+          </div>
+
+        </div>
+
+      </div>
+
+      <button
+        type="button"
+        class="history-toggle-button"
+        *ngIf="historySessions.length > historyPreviewCount"
+        (click)="toggleHistory()"
+      >
+        {{ showAllHistory ? 'Show less' : 'Show all ' + historySessions.length + ' past sessions' }}
+      </button>
+
+    </ng-container>
+
+    <!-- LOG OUT CONFIRMATION -->
+
+    <div
+      class="session-dialog-backdrop"
+      *ngIf="pendingLogout"
+      (click)="closeLogoutDialog()"
+    >
+
+      <div
+        class="session-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="session-dialog-title"
+        (click)="$event.stopPropagation()"
+      >
+
+        <ng-container *ngIf="pendingLogout.type === 'one'">
+
+          <h3 id="session-dialog-title">Log out of this device?</h3>
+
+          <div class="dialog-device">
+            <div class="device-icon">
+              <img
+                [src]="'assets/icons/' + pendingLogout.session.icon"
+                alt=""
+              />
+            </div>
+
+            <div class="device-information">
+              <strong>{{ pendingLogout.session.device }} · {{ pendingLogout.session.browser }}</strong>
+              <span>
+                {{ pendingLogout.session.location }} ·
+                Logged in {{ pendingLogout.session.date }}, {{ pendingLogout.session.time }}
+              </span>
+            </div>
+          </div>
+
+          <p>
+            This device will be logged out right away. The next time it's used,
+            it will need your password to log back in.
+          </p>
+
+        </ng-container>
+
+        <ng-container *ngIf="pendingLogout.type === 'others'">
+
+          <h3 id="session-dialog-title">Log out of all other devices?</h3>
+
+          <p>
+            {{ otherActiveSessionCount === 1 ? '1 other device' : otherActiveSessionCount + ' other devices' }}
+            will be logged out right away. You'll stay logged in on this device.
+          </p>
+
+        </ng-container>
+
+        <p class="dialog-warning">
+          <strong>Don't recognize it?</strong>
+          Someone else may know your password. Log out and change your password
+          so they can't log back in.
+        </p>
+
+        <div class="dialog-actions">
+
+          <button
+            type="button"
+            class="dialog-cancel-button"
+            (click)="closeLogoutDialog()"
+            [disabled]="isSessionActionBusy"
+          >
+            Cancel
+          </button>
+
+          <button
+            type="button"
+            class="dialog-secure-button"
+            (click)="confirmLogout(true)"
+            [disabled]="isSessionActionBusy"
+          >
+            Log Out &amp; Change Password
+          </button>
+
+          <button
+            type="button"
+            class="dialog-logout-button"
+            (click)="confirmLogout()"
+            [disabled]="isSessionActionBusy"
+          >
+            {{ isSessionActionBusy ? 'Logging out...' : 'Log Out' }}
           </button>
 
         </div>
