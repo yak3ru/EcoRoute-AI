@@ -423,6 +423,25 @@ export class RoutePlanningComponent
     );
   }
 
+  private refreshAreaLocations(): void {
+    this.subscriptions.add(
+      this.http.get<AreaApiResponse[]>(this.areasApiUrl).subscribe({
+        next: areas => {
+          this.areaLocations.clear();
+          areas.forEach(area => {
+            this.areaLocations.set(area.areaId, {
+              areaId: area.areaId,
+              areaName: area.areaName,
+              latitude: Number(area.latitude),
+              longitude: Number(area.longitude)
+            });
+          });
+        },
+        error: error => console.error('Failed to refresh area coordinates:', error)
+      })
+    );
+  }
+
   private loadRoutes(): void {
     this.isLoadingRoutes = true;
 
@@ -718,6 +737,7 @@ export class RoutePlanningComponent
           ? 'Place updated. Rebuild the distance matrix if its coordinates changed before optimizing routes.'
           : 'Place added. Rebuild the distance matrix before optimizing routes.';
         this.loadManagedAreas();
+        this.refreshAreaLocations();
       },
       error: error => {
         this.isSavingInfo = false;
@@ -781,6 +801,7 @@ export class RoutePlanningComponent
             ? 'Place deactivated. Optimize routes after confirming the active area data.'
             : 'Place reactivated. Rebuild the distance matrix before optimizing routes.';
           this.loadManagedAreas();
+          this.refreshAreaLocations();
         },
         error: error => {
           this.infoError = error?.error?.message || 'Could not update this place.';
