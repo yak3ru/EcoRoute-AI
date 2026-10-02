@@ -34,15 +34,16 @@
 
       <button
         class="area-button"
-        type="button">
+        type="button"
+        (click)="openModifyInfo()">
 
         <span>
-          All areas
+          Modify Info
         </span>
 
         <img
-          src="assets/icons/drop-down.svg"
-          alt="Select area">
+          src="assets/icons/tune.svg"
+          alt="Manage places and trucks">
 
       </button>
 
@@ -784,5 +785,151 @@
     </div>
 
   </section>
+
+  <!-- MODIFY INFO WINDOW -->
+  <div
+    class="modal-backdrop"
+    *ngIf="isModifyInfoOpen"
+    (click)="closeModifyInfo()">
+
+    <section
+      class="modify-info-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="modifyInfoTitle"
+      (click)="$event.stopPropagation()">
+
+      <header class="modify-info-header">
+        <div>
+          <h2 id="modifyInfoTitle">Modify Info</h2>
+          <p>Manage collection places and trucks used by EcoRoute AI.</p>
+        </div>
+        <button class="modal-close" type="button" (click)="closeModifyInfo()" aria-label="Close">×</button>
+      </header>
+
+      <div class="modify-info-tabs">
+        <button type="button" [class.active]="infoTab === 'places'" (click)="setInfoTab('places')">
+          <img src="assets/icons/maps-gray.svg" alt="">
+          Places <span>{{ managedAreas.length }}</span>
+        </button>
+        <button type="button" [class.active]="infoTab === 'trucks'" (click)="setInfoTab('trucks')">
+          <img src="assets/icons/truck-gray.svg" alt="">
+          Trucks <span>{{ managedVehicles.length }}</span>
+        </button>
+      </div>
+
+      <div class="modify-info-alert error" *ngIf="infoError">{{ infoError }}</div>
+      <div class="modify-info-alert success" *ngIf="infoSuccess">{{ infoSuccess }}</div>
+
+      <ng-container *ngIf="!isInfoFormOpen">
+        <div class="modify-info-toolbar" *ngIf="infoTab === 'places'">
+          <div class="modify-info-search">
+            <span>⌕</span>
+            <input type="text" placeholder="Search places..." [(ngModel)]="areaSearchTerm">
+          </div>
+          <button type="button" class="modify-add-button" (click)="startAddPlace()">+ Add Place</button>
+        </div>
+
+        <div class="modify-info-toolbar" *ngIf="infoTab === 'trucks'">
+          <div class="modify-info-search">
+            <span>⌕</span>
+            <input type="text" placeholder="Search trucks..." [(ngModel)]="vehicleSearchTerm">
+          </div>
+          <button type="button" class="modify-add-button" (click)="startAddTruck()">+ Add Truck</button>
+        </div>
+
+        <div class="modify-info-list" *ngIf="infoTab === 'places'">
+          <div class="modify-info-list-header place-row">
+            <span>PLACE</span><span>COORDINATES</span><span>STATUS</span><span>ACTIONS</span>
+          </div>
+          <div class="modify-info-list-row place-row" *ngFor="let area of filteredManagedAreas">
+            <div class="modify-item-name">
+              <strong>{{ area.areaName }}</strong>
+              <small>{{ area.collectionFrequency || 'Frequency not set' }} · {{ area.activityLevel || 'Activity not set' }}</small>
+            </div>
+            <span class="modify-coordinates">{{ area.latitude ?? '—' }}, {{ area.longitude ?? '—' }}</span>
+            <span class="modify-status" [class.inactive]="!area.isActive">{{ area.isActive ? 'Active' : 'Inactive' }}</span>
+            <div class="modify-row-actions">
+              <button type="button" (click)="startEditPlace(area)">Edit</button>
+              <button type="button" [class.reactivate]="!area.isActive" (click)="togglePlaceActive(area)">{{ area.isActive ? 'Deactivate' : 'Reactivate' }}</button>
+            </div>
+          </div>
+          <div class="modify-info-empty" *ngIf="filteredManagedAreas.length === 0">No places found.</div>
+        </div>
+
+        <div class="modify-info-list" *ngIf="infoTab === 'trucks'">
+          <div class="modify-info-list-header truck-row">
+            <span>TRUCK</span><span>CAPACITY</span><span>STATUS</span><span>ACTIONS</span>
+          </div>
+          <div class="modify-info-list-row truck-row" *ngFor="let vehicle of filteredManagedVehicles">
+            <div class="modify-item-name">
+              <strong>{{ vehicle.vehicleName }}</strong>
+              <small>Truck ID: {{ vehicle.vehicleId }}</small>
+            </div>
+            <span>{{ vehicle.capacityKg | number:'1.0-2' }} kg</span>
+            <span class="modify-status" [class.inactive]="!vehicle.isActive">{{ vehicle.isActive ? vehicle.status : 'Inactive' }}</span>
+            <div class="modify-row-actions">
+              <button type="button" (click)="startEditTruck(vehicle)">Edit</button>
+              <button type="button" [class.reactivate]="!vehicle.isActive" (click)="toggleTruckActive(vehicle)">{{ vehicle.isActive ? 'Deactivate' : 'Reactivate' }}</button>
+            </div>
+          </div>
+          <div class="modify-info-empty" *ngIf="filteredManagedVehicles.length === 0">No trucks found.</div>
+        </div>
+      </ng-container>
+
+      <form class="modify-info-form" *ngIf="isInfoFormOpen && infoTab === 'places'" (ngSubmit)="savePlace()">
+        <div class="modify-form-title">
+          <h3>{{ infoFormMode === 'edit' ? 'Edit Place' : 'Add Place' }}</h3>
+          <p>Enter the collection area details and map coordinates.</p>
+        </div>
+        <label>Place Name<input name="areaName" [(ngModel)]="areaForm.areaName" required maxlength="150" placeholder="e.g. Talamban"></label>
+        <div class="modify-form-grid">
+          <label>Population Density<input name="populationDensity" type="number" min="0" [(ngModel)]="areaForm.populationDensity" placeholder="e.g. 3500"></label>
+          <label>Activity Level
+            <select name="activityLevel" [(ngModel)]="areaForm.activityLevel">
+              <option>Low</option><option>Medium</option><option>High</option>
+            </select>
+          </label>
+          <label>Collection Frequency
+            <select name="collectionFrequency" [(ngModel)]="areaForm.collectionFrequency">
+              <option>Daily</option><option>Every other day</option><option>Weekly</option><option>Biweekly</option><option>Custom</option>
+            </select>
+          </label>
+          <label>Latitude<input name="latitude" type="number" min="-90" max="90" step="any" [(ngModel)]="areaForm.latitude" required placeholder="e.g. 10.3520"></label>
+          <label>Longitude<input name="longitude" type="number" min="-180" max="180" step="any" [(ngModel)]="areaForm.longitude" required placeholder="e.g. 123.9110"></label>
+        </div>
+        <p class="modify-form-note">New or reactivated places may require rebuilding the distance matrix before route optimization.</p>
+        <div class="modify-form-actions">
+          <button type="button" class="modify-cancel-button" (click)="closeInfoForm()">Cancel</button>
+          <button type="submit" class="modify-add-button" [disabled]="isSavingInfo">{{ isSavingInfo ? 'Saving...' : (infoFormMode === 'edit' ? 'Save Changes' : 'Add Place') }}</button>
+        </div>
+      </form>
+
+      <form class="modify-info-form" *ngIf="isInfoFormOpen && infoTab === 'trucks'" (ngSubmit)="saveTruck()">
+        <div class="modify-form-title">
+          <h3>{{ infoFormMode === 'edit' ? 'Edit Truck' : 'Add Truck' }}</h3>
+          <p>Set the truck name, carrying capacity, and availability.</p>
+        </div>
+        <label>Truck Name<input name="vehicleName" [(ngModel)]="vehicleForm.vehicleName" required maxlength="100" placeholder="e.g. Truck 04"></label>
+        <div class="modify-form-grid">
+          <label>Capacity (kg)<input name="capacityKg" type="number" min="1" step="any" [(ngModel)]="vehicleForm.capacityKg" required placeholder="e.g. 2500"></label>
+          <label>Availability
+            <select name="vehicleStatus" [(ngModel)]="vehicleForm.status">
+              <option>Available</option><option>In Use</option><option>Maintenance</option><option>Unavailable</option>
+            </select>
+          </label>
+        </div>
+        <div class="modify-form-actions">
+          <button type="button" class="modify-cancel-button" (click)="closeInfoForm()">Cancel</button>
+          <button type="submit" class="modify-add-button" [disabled]="isSavingInfo">{{ isSavingInfo ? 'Saving...' : (infoFormMode === 'edit' ? 'Save Changes' : 'Add Truck') }}</button>
+        </div>
+      </form>
+
+      <footer class="modify-info-footer" *ngIf="!isInfoFormOpen">
+        <span>Inactive items are kept for historical records.</span>
+        <button type="button" class="modify-cancel-button" (click)="closeModifyInfo()">Done</button>
+      </footer>
+    </section>
+  </div>
 
 </main>
