@@ -25,6 +25,48 @@ DB_PASSWORD = os.getenv("DB_PASSWORD")
 
 
 # ============================================================
+# LOAD SRP DISPOSAL DESTINATION
+# ============================================================
+
+connection = pymysql.connect(
+    host=DB_HOST,
+    port=DB_PORT,
+    user=DB_USER,
+    password=DB_PASSWORD,
+    database=DB_NAME,
+    cursorclass=pymysql.cursors.DictCursor
+)
+
+try:
+    with connection.cursor() as cursor:
+        cursor.execute("""
+            SELECT
+                FacilityId,
+                FacilityName,
+                Latitude,
+                Longitude
+            FROM disposal_facilities
+            WHERE IsActive = 1
+            ORDER BY FacilityId
+            LIMIT 1
+        """)
+
+        facility = cursor.fetchone()
+
+finally:
+    connection.close()
+
+if not facility:
+    raise RuntimeError(
+        "No active disposal facility was found."
+    )
+
+print(
+    f"Disposal destination: {facility['FacilityName']}"
+)
+
+
+# ============================================================
 # LOAD AREAS FROM MYSQL
 # ============================================================
 
@@ -98,7 +140,7 @@ url = (
     "http://router.project-osrm.org/"
     "table/v1/driving/"
     f"{encoded_coordinates}"
-    "?annotations=distance"
+    "?annotations=distance,duration"
 )
 
 
@@ -134,6 +176,7 @@ if data.get("code") != "Ok":
 
 
 distances = data.get("distances")
+durations = data.get("durations")
 
 if not distances:
 
@@ -148,6 +191,12 @@ if len(distances) != len(areas):
         "OSRM matrix size does not match area count."
     )
 
+if not durations or len(durations) != len(areas):
+    raise RuntimeError(
+        "OSRM did not return a valid duration matrix."
+    )
+
+
 
 # ============================================================
 # PREPARE MATRIX
@@ -158,24 +207,28 @@ matrix_rows = []
 for origin_index, origin_area in enumerate(areas):
 
     row = distances[origin_index]
+    duration_row = durations[origin_index]
 
-    if len(row) != len(areas):
-
+    if len(row) != len(areas) or len(duration_row) != len(areas):
         raise RuntimeError(
-            f"Invalid matrix row for "
-            f"AreaId {origin_area['AreaId']}."
+            f"Invalid matrix row for AreaId {origin_area['AreaId']}."
         )
 
     for destination_index, distance_meters in enumerate(row):
 
-        destination_area = areas[
-            destination_index
-        ]
+        destination_area = areas[destination_index]
+        duration_seconds = duration_row[destination_index]
 
         if distance_meters is None:
-
             raise RuntimeError(
                 f"No road route found between "
+                f"{origin_area['AreaName']} and "
+                f"{destination_area['AreaName']}."
+            )
+
+        if duration_seconds is None:
+            raise RuntimeError(
+                f"No travel time found between "
                 f"{origin_area['AreaName']} and "
                 f"{destination_area['AreaName']}."
             )
@@ -185,14 +238,112 @@ for origin_index, origin_area in enumerate(areas):
             2
         )
 
+        travel_time_minutes = round(
+            float(duration_seconds) / 60,
+            2
+        )
+
         matrix_rows.append(
             (
                 origin_area["AreaId"],
                 destination_area["AreaId"],
-                distance_km
+                distance_km,
+                travel_time_minutes
             )
         )
 
+if len(matrix_rows) != len(areas) ** 2:
+    raise RuntimeError(
+        f"Expected {len(areas) ** 2} matrix entries, "
+        f"but prepared {len(matrix_rows)}."
+    )
+
+print(f"Prepared {len(matrix_rows)} area-to-area records.")
+
+
+# ============================================================
+# CALCULATE AREA TO SRP DISTANCES AND TRAVEL TIMES
+# ============================================================
+
+srp_coordinates = ";".join(
+    [
+        *[
+            f"{float(area['Longitude'])},{float(area['Latitude'])}"
+            for area in areas
+        ],
+        (
+            f"{float(facility['Longitude'])},"
+            f"{float(facility['Latitude'])}"
+        )
+    ]
+)
+
+encoded_srp_coordinates = quote(
+    srp_coordinates,
+    safe=";,."
+)
+
+srp_url = (
+    "http://router.project-osrm.org/"
+    "table/v1/driving/"
+    f"{encoded_srp_coordinates}"
+    "?annotations=distance,duration"
+)
+
+print("Requesting area to SRP road distances and travel times...")
+
+srp_request = Request(
+    srp_url,
+    headers={
+        "User-Agent": "EcoRouteAI/1.0",
+        "Accept": "application/json"
+    }
+)
+
+with urlopen(srp_request, timeout=60) as response:
+    srp_data = json.loads(
+        response.read().decode("utf-8")
+    )
+
+if srp_data.get("code") != "Ok":
+    raise RuntimeError(
+        "OSRM SRP request failed:\n"
+        + json.dumps(srp_data, indent=2)
+    )
+
+srp_distances = srp_data.get("distances")
+srp_durations = srp_data.get("durations")
+
+if not srp_distances or not srp_durations:
+    raise RuntimeError(
+        "OSRM did not return SRP distances and travel times."
+    )
+
+facility_index = len(areas)
+srp_rows = []
+
+for area_index, area in enumerate(areas):
+    distance_meters = srp_distances[area_index][facility_index]
+    duration_seconds = srp_durations[area_index][facility_index]
+
+    if distance_meters is None or duration_seconds is None:
+        raise RuntimeError(
+            f"No road route found from {area['AreaName']} to SRP."
+        )
+
+    distance_km = round(float(distance_meters) / 1000, 2)
+    travel_time_minutes = round(float(duration_seconds) / 60, 2)
+
+    srp_rows.append(
+        (
+            area["AreaId"],
+            facility["FacilityId"],
+            distance_km,
+            travel_time_minutes
+        )
+    )
+
+print(f"Calculated {len(srp_rows)} area to SRP routes.")
 
 # ============================================================
 # REPLACE OLD DISTANCE MATRIX
@@ -225,17 +376,13 @@ try:
         cursor.executemany(
             """
             INSERT INTO distance_matrix
-            (
-                OriginAreaId,
-                DestinationAreaId,
-                DistanceKm
-            )
-            VALUES
-            (
-                %s,
-                %s,
-                %s
-            )
+(
+    OriginAreaId,
+    DestinationAreaId,
+    DistanceKm,
+    TravelTimeMinutes
+)
+VALUES (%s, %s, %s, %s)
             """,
             matrix_rows
         )
@@ -244,6 +391,45 @@ try:
 
 finally:
     connection.close()
+
+
+# ============================================================
+# SAVE AREA TO SRP DISTANCES
+# ============================================================
+
+connection = pymysql.connect(
+    host=DB_HOST,
+    port=DB_PORT,
+    user=DB_USER,
+    password=DB_PASSWORD,
+    database=DB_NAME
+)
+
+try:
+    with connection.cursor() as cursor:
+        cursor.executemany(
+            """
+            INSERT INTO area_disposal_distances
+            (
+                AreaId,
+                FacilityId,
+                DistanceKm,
+                TravelTimeMinutes
+            )
+            VALUES (%s, %s, %s, %s)
+            ON DUPLICATE KEY UPDATE
+                DistanceKm = VALUES(DistanceKm),
+                TravelTimeMinutes = VALUES(TravelTimeMinutes)
+            """,
+            srp_rows
+        )
+
+    connection.commit()
+
+finally:
+    connection.close()
+
+print(f"Saved {len(srp_rows)} area to SRP distances.")
 
 
 # ============================================================

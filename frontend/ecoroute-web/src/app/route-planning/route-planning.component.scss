@@ -259,7 +259,7 @@
 .map-card {
   position: relative;
   width: 100%;
-  height: clamp(350px, 23vh, 320px);
+  height: clamp(400px, 23vh, 320px);
   min-width: 0;
   overflow: hidden;
   background: #fff;
@@ -419,7 +419,7 @@
 // ROUTE PANEL
 
 .route-panel {
-  height: clamp(350px, 23vh, 360px);
+  height: clamp(400px, 23vh, 360px);
   padding: 12px 13px 10px;
   background: #fff;
   border-radius: 13px;
@@ -629,6 +629,37 @@
   font-size: 7px;
 }
 
+.sequence-section {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  padding-top: 6px;
+}
+
+.sequence-section h3 {
+  flex-shrink: 0;
+  margin: 0 0 4px;
+}
+
+.sequence-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 5px;
+}
+
+.sequence-scroll::-webkit-scrollbar {
+  width: 5px;
+}
+
+.sequence-scroll::-webkit-scrollbar-thumb {
+  background: #c5c5c5;
+  border-radius: 10px;
+}
+
 // ROUTE PANEL BUTTONS
 
 .route-panel-actions {
@@ -675,7 +706,7 @@
 // ROUTE DETAILS
 
 .details-card {
-  height: clamp(270px, 17vh, 225px);
+  height: clamp(260px, 17vh, 225px);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -729,6 +760,57 @@
 
 .search-box input::placeholder {
   color: #858b91;
+}
+
+
+.details-header-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.view-all-routes-button {
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 12px;
+  border: 1px solid #199b2f;
+  border-radius: 6px;
+  background: #199b2f;
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.view-all-routes-button:hover {
+  background: #087f29;
+}
+
+.view-all-routes-button img {
+  width: 13px;
+  height: 13px;
+  object-fit: contain;
+  filter: brightness(0) invert(1);
+}
+
+@media (max-width: 700px) {
+  .details-header-actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .details-header-actions .search-box {
+    flex: 1;
+    min-width: 150px;
+  }
 }
 
 // TABLE
@@ -991,12 +1073,14 @@ td strong {
     height: 300px;
   }
 
-  .details-header {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 9px;
-    padding-bottom: 9px;
-  }
+.details-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+  flex-wrap: nowrap;
+}
 
   .search-box {
     width: 100%;

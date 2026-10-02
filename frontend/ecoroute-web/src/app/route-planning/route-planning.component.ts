@@ -55,6 +55,7 @@ interface MlRoutesResponse {
   mode: string;
   routes: MlRoute[];
   unassigned: unknown[];
+  alternative_route_found?: boolean;
 }
 
 interface AreaLocation {
@@ -125,11 +126,18 @@ export class RoutePlanningComponent
 
   private map!: L.Map;
 
+  private baseTileLayer?: L.TileLayer;
+
   private routeLayerGroup!: L.LayerGroup;
 
   private areaLocations = new Map<number, AreaLocation>();
 
+  private mapBoundsInitialized = false;
+
+  private unassignedAreas: unknown[] = [];
+
   selectedRouteId = '';
+  private mapViewRouteId: string | null = null;
 
   isOptimizing = false;
   isLoadingRoutes = true;
@@ -231,7 +239,7 @@ export class RoutePlanningComponent
   }
 
   get hasUnassignedAreas(): boolean {
-    return false;
+    return this.unassignedAreas.length > 0;
   }
 
   closeRoutePanel(): void {
@@ -253,7 +261,36 @@ export class RoutePlanningComponent
   }
 
   viewRoute(route: Route): void {
+    this.mapViewRouteId = route.id;
     this.selectRoute(route);
+    this.refreshMap();
+  }
+
+
+  showAllRoutes(): void {
+    this.mapViewRouteId = null;
+    this.refreshMap();
+
+    if (!this.map || !this.routes.length) {
+      return;
+    }
+
+    const allCoordinates: [number, number][] = [];
+
+    this.routes.forEach(route => {
+      allCoordinates.push(...route.coordinates);
+    });
+
+    if (allCoordinates.length > 0) {
+      this.map.fitBounds(
+        L.latLngBounds(allCoordinates),
+        {
+          padding: [40, 40],
+          maxZoom: 13,
+          animate: true
+        }
+      );
+    }
   }
 
   // ============================================================
@@ -315,6 +352,8 @@ export class RoutePlanningComponent
             this.routeMode =
               response.mode || 'P90 Safety Planning';
 
+            this.unassignedAreas = response.unassigned ?? [];
+
             this.routes =
               response.routes.map(
                 (route, index) =>
@@ -328,6 +367,7 @@ export class RoutePlanningComponent
 
               this.isLoadingRoutes = false;
 
+              this.mapBoundsInitialized = false;
               this.loadRoadGeometry();
           },
 
@@ -338,8 +378,9 @@ export class RoutePlanningComponent
             );
 
             this.isLoadingRoutes = false;
-
+            this.unassignedAreas = [];
             this.routes = [];
+            this.addBaseTiles();
           }
         })
     );
@@ -474,6 +515,8 @@ export class RoutePlanningComponent
 
     this.isOptimizing = true;
 
+    this.roadGeometry.clear();
+
     this.subscriptions.add(
       this.http
         .get<MlRoutesResponse>(
@@ -483,6 +526,8 @@ export class RoutePlanningComponent
           next: response => {
             this.routeMode =
               response.mode || 'P90 Safety Planning';
+
+            this.unassignedAreas = response.unassigned ?? [];
 
             this.routes =
               response.routes.map(
@@ -533,37 +578,80 @@ export class RoutePlanningComponent
       return;
     }
 
-    /*
-     * EcoRoute AI does not currently support live traffic
-     * rerouting. This recalculates the planned route using
-     * the current static distance matrix and P90 predictions.
-     */
+    const vehicleId =
+      this.selectedRoute.vehicleId;
 
     this.isOptimizing = true;
+
+    this.roadGeometry.clear();
 
     this.subscriptions.add(
       this.http
         .get<MlRoutesResponse>(
-          `${this.mlApiUrl}/routes/p90`
+          `${this.mlApiUrl}/routes/p90/reroute/${vehicleId}`
         )
         .subscribe({
           next: response => {
+
+            this.routeMode =
+              response.mode || 'P90 Reroute';
+
+            this.unassignedAreas = response.unassigned ?? [];
+
             this.routes =
               response.routes.map(
                 (route, index) =>
-                  this.mapMlRoute(route, index)
+                  this.mapMlRoute(
+                    route,
+                    index
+                  )
               );
+
+            if (this.routes.length > 0) {
+
+              const selectedStillExists =
+                this.routes.some(
+                  route =>
+                    route.vehicleId === vehicleId
+                );
+
+              if (selectedStillExists) {
+
+                const rerouted =
+                  this.routes.find(
+                    route =>
+                      route.vehicleId === vehicleId
+                  );
+
+                if (rerouted) {
+                  this.selectedRouteId =
+                    rerouted.id;
+                }
+
+              } else {
+
+                this.selectedRouteId =
+                  this.routes[0].id;
+              }
+            }
 
             this.isOptimizing = false;
 
             this.loadRoadGeometry();
 
-            alert(
-              'The route plan was recalculated using the current P90 predictions and routing constraints.'
-            );
+            if (response.alternative_route_found === false) {
+              alert(
+                'No alternative route was found for this truck. The current route is still displayed.'
+              );
+            } else {
+              alert(
+                'Reroute result loaded using the current P90 predictions, static road distances, and routing constraints.'
+              );
+            }
           },
 
           error: error => {
+
             console.error(
               'Route recalculation failed:',
               error
@@ -572,7 +660,7 @@ export class RoutePlanningComponent
             this.isOptimizing = false;
 
             alert(
-              'Route recalculation failed.'
+              'Route recalculation failed. Please make sure the ML service and backend are running.'
             );
           }
         })
@@ -604,15 +692,6 @@ export class RoutePlanningComponent
       13
     );
 
-    L.tileLayer(
-      'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-      {
-        maxZoom: 19,
-        attribution:
-          '&copy; OpenStreetMap contributors'
-      }
-    ).addTo(this.map);
-
     L.control.zoom({
       position: 'bottomright'
     }).addTo(this.map);
@@ -620,9 +699,20 @@ export class RoutePlanningComponent
     this.routeLayerGroup =
       L.layerGroup().addTo(this.map);
 
+    // Let the map container finish layout before Leaflet measures it.
     setTimeout(() => {
-      this.refreshMap();
-    }, 300);
+      if (!this.map) {
+        return;
+      }
+
+      this.map.invalidateSize({ pan: false });
+
+      if (this.routes.length) {
+        this.refreshMap();
+      } else if (!this.isLoadingRoutes) {
+        this.addBaseTiles();
+      }
+    }, 150);
   }
 
   private refreshMap(): void {
@@ -638,7 +728,13 @@ export class RoutePlanningComponent
 
     const allCoordinates: [number, number][] = [];
 
-    this.routes.forEach(route => {
+      const visibleRoutes = this.mapViewRouteId
+        ? this.routes.filter(
+            route => route.id === this.mapViewRouteId
+          )
+        : this.routes;
+
+      visibleRoutes.forEach(route => {
 
       if (route.coordinates.length < 1) {
         return;
@@ -715,21 +811,113 @@ export class RoutePlanningComponent
       );
     });
 
-    if (allCoordinates.length > 0) {
-      this.map.fitBounds(
-        L.latLngBounds(
-          allCoordinates
-        ),
+
+    // SRP disposal destination marker
+    const srpCoordinates: [number, number] = [
+      10.2691059,
+      123.8669431
+    ];
+
+    allCoordinates.push(srpCoordinates);
+
+    const srpMarker = L.marker(
+      srpCoordinates,
+      {
+        icon: L.divIcon({
+          className: 'route-number-marker',
+          html: `
+            <div style="
+              background: #dc2626;
+              width: 28px;
+              height: 28px;
+              border-radius: 50%;
+              color: white;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-size: 11px;
+              font-weight: 700;
+              border: 2px solid white;
+              box-shadow: 0 1px 5px rgba(0,0,0,.3);
+            ">
+              D
+            </div>
+          `,
+          iconSize: [28, 28],
+          iconAnchor: [14, 14]
+        })
+      }
+    );
+
+      srpMarker.bindTooltip(
+        'SRP Disposal Destination',
         {
-          padding: [30, 30]
+          direction: 'top'
         }
       );
+
+      this.routeLayerGroup.addLayer(srpMarker);
+
+      if (allCoordinates.length > 0) {
+        const bounds = L.latLngBounds(allCoordinates);
+
+        // Fit the initial view before requesting tiles, avoiding a burst of
+        // tile requests at the default zoom that would immediately be canceled.
+        if (!this.mapBoundsInitialized) {
+          this.map.fitBounds(bounds, {
+            padding: [30, 30],
+            animate: false
+          });
+
+          this.mapBoundsInitialized = true;
+        }
+      }
+
+      this.addBaseTiles();
+  }
+
+
+
+private addBaseTiles(): void {
+  if (!this.map || this.baseTileLayer) {
+    return;
+  }
+
+  const tileLayer = L.tileLayer(
+    'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    {
+      maxZoom: 19,
+      updateWhenIdle: true,
+      updateWhenZooming: false,
+      keepBuffer: 3,
+      attribution: '&copy; OpenStreetMap contributors'
+    }
+  );
+
+  this.baseTileLayer = tileLayer;
+
+  // Retry tile loading errors up to two times.
+  tileLayer.on('tileerror', (event: L.TileErrorEvent) => {
+    const tile = event.tile as HTMLImageElement;
+    const retryCount = Number(
+      tile.dataset['retryCount'] ?? '0'
+    );
+
+    if (retryCount >= 2) {
+      return;
     }
 
-    setTimeout(() => {
-      this.map.invalidateSize();
-    }, 100);
-  }
+    tile.dataset['retryCount'] = String(retryCount + 1);
+
+    window.setTimeout(() => {
+      if (this.map && this.map.hasLayer(tileLayer)) {
+        tileLayer.redraw();
+      }
+    }, 1000 * (retryCount + 1));
+  });
+
+  tileLayer.addTo(this.map);
+}
 
   private createRouteNumberIcon(
     color: string,
@@ -842,105 +1030,63 @@ export class RoutePlanningComponent
 
   private loadRoadGeometry(): void {
     if (!this.routes.length) {
+      this.addBaseTiles();
       this.refreshMap();
       return;
     }
 
-    let completed = 0;
+    const srpCoordinates: [number, number] = [
+      10.2691059,
+      123.8669431
+    ];
+
+    // Show markers and fallback lines immediately while road geometry loads.
+    this.refreshMap();
 
     this.routes.forEach(route => {
-
       if (route.coordinates.length < 2) {
-        completed++;
-
-        if (completed === this.routes.length) {
-          this.refreshMap();
-        }
-
+        this.roadGeometry.set(route.id, route.coordinates);
         return;
       }
 
-      const coordinates =
-        route.coordinates
-          .map(
-            ([latitude, longitude]) =>
-              `${longitude},${latitude}`
-          )
-          .join(';');
+      // Include SRP as the final waypoint for every truck route.
+      const routeCoordinates: [number, number][] = [
+        ...route.coordinates,
+        srpCoordinates
+      ];
+
+      const coordinates = routeCoordinates
+        .map(([latitude, longitude]) => `${longitude},${latitude}`)
+        .join(';');
 
       this.subscriptions.add(
         this.http
           .get<RoadRouteResponse>(
-            `${this.mlApiUrl
-              .replace('/ml', '')}/map/route`,
-            {
-              params: {
-                coordinates
-              }
-            }
+            `${this.mlApiUrl.replace('/ml', '')}/map/route`,
+            { params: { coordinates } }
           )
           .subscribe({
             next: response => {
+              const geometry = response?.routes?.[0]?.geometry?.coordinates;
 
-              if (
-                response.code === 'Ok' &&
-                response.routes.length > 0
-              ) {
-
-                const geometry =
-                  response.routes[0]
-                    .geometry
-                    .coordinates;
-
-                const leafletCoordinates:
-                  [number, number][] =
-                  geometry.map(
-                    ([longitude, latitude]) =>
-                      [
-                        latitude,
-                        longitude
-                      ]
-                  );
-
-                this.roadGeometry.set(
-                  route.id,
-                  leafletCoordinates
+              if (response?.code === 'Ok' && geometry?.length) {
+                const leafletCoordinates: [number, number][] = geometry.map(
+                  ([longitude, latitude]) => [latitude, longitude]
                 );
+
+                this.roadGeometry.set(route.id, leafletCoordinates);
+              } else {
+                // Keep a visible fallback line if the routing service returns no path.
+                this.roadGeometry.set(route.id, routeCoordinates);
               }
 
-              completed++;
-
-              if (
-                completed === this.routes.length
-              ) {
-                this.refreshMap();
-              }
+              // Redraw only vector layers; do not refit the map on every response.
+              this.refreshMap();
             },
-
             error: error => {
-
-              console.error(
-                `Road routing failed for ${route.id}:`,
-                error
-              );
-
-              /*
-              * Fall back to the area coordinates
-              * if road routing fails.
-              */
-
-              this.roadGeometry.set(
-                route.id,
-                route.coordinates
-              );
-
-              completed++;
-
-              if (
-                completed === this.routes.length
-              ) {
-                this.refreshMap();
-              }
+              console.error(`Road routing failed for ${route.id}:`, error);
+              this.roadGeometry.set(route.id, routeCoordinates);
+              this.refreshMap();
             }
           })
       );

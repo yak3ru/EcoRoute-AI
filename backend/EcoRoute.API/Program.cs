@@ -21,8 +21,6 @@ builder.Services.AddDbContext<EcoRouteDbContext>(options =>
 
 // SERVICES
 
-// SERVICES
-
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<JwtService>();
 builder.Services.AddScoped<IEmailService, EmailService>();

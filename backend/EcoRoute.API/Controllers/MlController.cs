@@ -84,4 +84,32 @@ public class MlController : ControllerBase
             );
         }
     }
+
+    [HttpGet("routes/p90/reroute/{vehicleId:int}")]
+    public async Task<IActionResult> GetP90Reroute(
+        int vehicleId
+    )
+    {
+        try
+        {
+            var result =
+                await _mlService.GetP90RerouteAsync(
+                    vehicleId
+                );
+
+            return Ok(result);
+        }
+        catch (HttpRequestException error)
+        {
+            return StatusCode(
+                503,
+                new
+                {
+                    message =
+                        "Python ML service is unavailable.",
+                    error = error.Message
+                }
+            );
+        }
+    }
 }

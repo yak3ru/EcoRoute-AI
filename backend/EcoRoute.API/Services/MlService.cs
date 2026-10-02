@@ -49,4 +49,26 @@ public class MlService
 
         return JsonSerializer.Deserialize<JsonElement>(json);
     }
+
+    public async Task<JsonElement> GetP90RerouteAsync(
+        int vehicleId
+    )
+    {
+        var client =
+            _httpClientFactory.CreateClient("PythonML");
+
+        var response =
+            await client.GetAsync(
+                $"/routes/p90/reroute/{vehicleId}"
+            );
+
+        response.EnsureSuccessStatusCode();
+
+        var json =
+            await response.Content.ReadAsStringAsync();
+
+        return JsonSerializer.Deserialize<JsonElement>(
+            json
+        );
+    }
 }

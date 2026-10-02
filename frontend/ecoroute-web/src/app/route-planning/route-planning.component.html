@@ -181,7 +181,7 @@
       <div class="summary-icon">
 
         <img
-          src="assets/icons/hourglass.svg"
+          src="assets/icons/clock.svg"
           alt="Collection window">
 
       </div>
@@ -500,6 +500,7 @@
       </div>
 
 
+      
       <!-- COLLECTION SEQUENCE -->
       <div class="sequence-section">
 
@@ -507,27 +508,29 @@
           Collection Sequence
         </h3>
 
+        <!-- SCROLLABLE CONTAINER -->
+        <div class="sequence-scroll">
 
-        <div
-          class="sequence-item"
-          *ngFor="
-            let stop of selectedRoute.sequence;
-            let i = index
-          ">
+          <div
+            class="sequence-item"
+            *ngFor="
+              let stop of selectedRoute.sequence;
+              let i = index
+            ">
 
-          <span
-            class="sequence-number"
-            [style.background-color]="selectedRoute.color">
+            <span
+              class="sequence-number"
+              [style.background-color]="selectedRoute.color">
 
-            {{ i + 1 }}
+              {{ i + 1 }}
 
-          </span>
+            </span>
 
-          <span class="sequence-text">
+            <span class="sequence-text">
+              {{ stop }}
+            </span>
 
-            {{ stop }}
-
-          </span>
+          </div>
 
         </div>
 
@@ -583,21 +586,29 @@
 
     <div class="details-header">
 
-      <h2>
-        Route Details
-      </h2>
+      <h2>Route Details</h2>
 
+        <div class="details-header-actions">
 
-      <div class="search-box">
+        <button
+          type="button"
+          class="view-all-routes-button"
+          (click)="showAllRoutes()">
 
-        <span>
-          ⌕
-        </span>
+          <img
+            src="assets/icons/eye.svg"
+            alt="">
+          View All Routes
+        </button>
 
-        <input
-          type="text"
-          placeholder="Search route or area..."
-          [(ngModel)]="searchTerm">
+        <div class="search-box">
+          <span>⌕</span>
+
+          <input
+            type="text"
+            placeholder="Search route or area..."
+            [(ngModel)]="searchTerm">
+        </div>
 
       </div>
 
