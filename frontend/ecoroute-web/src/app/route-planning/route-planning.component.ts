@@ -714,9 +714,10 @@ export class RoutePlanningComponent
       next: () => {
         this.isSavingInfo = false;
         this.isInfoFormOpen = false;
-        this.infoSuccess = isEdit ? 'Place updated.' : 'Place added.';
+        this.infoSuccess = isEdit
+          ? 'Place updated. Rebuild the distance matrix if its coordinates changed before optimizing routes.'
+          : 'Place added. Rebuild the distance matrix before optimizing routes.';
         this.loadManagedAreas();
-        this.loadAreasAndRoutes();
       },
       error: error => {
         this.isSavingInfo = false;
@@ -776,9 +777,10 @@ export class RoutePlanningComponent
         isActive: !area.isActive
       }).subscribe({
         next: () => {
-          this.infoSuccess = area.isActive ? 'Place deactivated.' : 'Place reactivated.';
+          this.infoSuccess = area.isActive
+            ? 'Place deactivated. Optimize routes after confirming the active area data.'
+            : 'Place reactivated. Rebuild the distance matrix before optimizing routes.';
           this.loadManagedAreas();
-          this.loadAreasAndRoutes();
         },
         error: error => {
           this.infoError = error?.error?.message || 'Could not update this place.';
