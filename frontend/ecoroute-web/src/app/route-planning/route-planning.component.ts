@@ -99,6 +99,30 @@ interface AreaApiResponse {
   longitude: number;
 }
 
+interface ManagedArea {
+  areaId: number;
+  areaName: string;
+  populationDensity: number | null;
+  activityLevel: string | null;
+  collectionFrequency: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  isActive: boolean;
+  createdAt: string;
+}
+
+interface ManagedVehicle {
+  vehicleId: number;
+  vehicleName: string;
+  capacityKg: number;
+  status: string;
+  isActive: boolean;
+  createdAt: string;
+}
+
+type InfoTab = 'places' | 'trucks';
+type InfoFormMode = 'create' | 'edit';
+
 @Component({
   selector: 'app-route-planning',
   standalone: true,
@@ -145,6 +169,36 @@ export class RoutePlanningComponent
 
   searchTerm = '';
 
+  isModifyInfoOpen = false;
+  infoTab: InfoTab = 'places';
+  infoFormMode: InfoFormMode = 'create';
+  isInfoFormOpen = false;
+  isSavingInfo = false;
+  infoError = '';
+  infoSuccess = '';
+  areaSearchTerm = '';
+  vehicleSearchTerm = '';
+
+  managedAreas: ManagedArea[] = [];
+  managedVehicles: ManagedVehicle[] = [];
+
+  areaForm: {
+    areaId: number | null;
+    areaName: string;
+    populationDensity: number | null;
+    activityLevel: string;
+    collectionFrequency: string;
+    latitude: number | null;
+    longitude: number | null;
+  } = this.emptyAreaForm();
+
+  vehicleForm: {
+    vehicleId: number | null;
+    vehicleName: string;
+    capacityKg: number | null;
+    status: string;
+  } = this.emptyVehicleForm();
+
   routeMode = 'P90 Safety Planning';
 
   routes: Route[] = [];
@@ -174,6 +228,41 @@ export class RoutePlanningComponent
     if (this.map) {
       this.map.remove();
     }
+  }
+
+  get filteredManagedAreas(): ManagedArea[] {
+    const search = this.areaSearchTerm.trim().toLowerCase();
+    return this.managedAreas.filter(area =>
+      !search || area.areaName.toLowerCase().includes(search)
+    );
+  }
+
+  get filteredManagedVehicles(): ManagedVehicle[] {
+    const search = this.vehicleSearchTerm.trim().toLowerCase();
+    return this.managedVehicles.filter(vehicle =>
+      !search || vehicle.vehicleName.toLowerCase().includes(search)
+    );
+  }
+
+  private emptyAreaForm() {
+    return {
+      areaId: null,
+      areaName: '',
+      populationDensity: null,
+      activityLevel: 'Medium',
+      collectionFrequency: 'Daily',
+      latitude: null,
+      longitude: null
+    };
+  }
+
+  private emptyVehicleForm() {
+    return {
+      vehicleId: null,
+      vehicleName: '',
+      capacityKg: null,
+      status: 'Available'
+    };
   }
 
   get selectedRoute(): Route | undefined {
@@ -485,6 +574,239 @@ export class RoutePlanningComponent
 
       coordinates
     };
+  }
+
+  // ============================================================
+  // MODIFY INFO: PLACE AND TRUCK MANAGEMENT
+  // ============================================================
+
+  openModifyInfo(): void {
+    this.isModifyInfoOpen = true;
+    this.infoTab = 'places';
+    this.infoError = '';
+    this.infoSuccess = '';
+    this.closeInfoForm();
+    this.loadManagedAreas();
+    this.loadManagedVehicles();
+  }
+
+  closeModifyInfo(): void {
+    this.isModifyInfoOpen = false;
+    this.closeInfoForm();
+    this.infoError = '';
+  }
+
+  setInfoTab(tab: InfoTab): void {
+    this.infoTab = tab;
+    this.infoError = '';
+    this.infoSuccess = '';
+    this.closeInfoForm();
+  }
+
+  private loadManagedAreas(): void {
+    this.subscriptions.add(
+      this.http.get<ManagedArea[]>(`${this.areasApiUrl}/manage`).subscribe({
+        next: areas => this.managedAreas = areas,
+        error: error => {
+          console.error('Failed to load places:', error);
+          this.infoError = 'Could not load places. Check that the backend is running.';
+        }
+      })
+    );
+  }
+
+  private loadManagedVehicles(): void {
+    this.subscriptions.add(
+      this.http.get<ManagedVehicle[]>('http://localhost:5276/api/vehicles/manage').subscribe({
+        next: vehicles => this.managedVehicles = vehicles,
+        error: error => {
+          console.error('Failed to load trucks:', error);
+          this.infoError = 'Could not load trucks. Check that the backend is running.';
+        }
+      })
+    );
+  }
+
+  startAddPlace(): void {
+    this.infoFormMode = 'create';
+    this.areaForm = this.emptyAreaForm();
+    this.infoError = '';
+    this.infoSuccess = '';
+    this.isInfoFormOpen = true;
+  }
+
+  startEditPlace(area: ManagedArea): void {
+    this.infoFormMode = 'edit';
+    this.areaForm = {
+      areaId: area.areaId,
+      areaName: area.areaName,
+      populationDensity: area.populationDensity,
+      activityLevel: area.activityLevel ?? 'Medium',
+      collectionFrequency: area.collectionFrequency ?? 'Daily',
+      latitude: area.latitude,
+      longitude: area.longitude
+    };
+    this.infoError = '';
+    this.infoSuccess = '';
+    this.isInfoFormOpen = true;
+  }
+
+  startAddTruck(): void {
+    this.infoFormMode = 'create';
+    this.vehicleForm = this.emptyVehicleForm();
+    this.infoError = '';
+    this.infoSuccess = '';
+    this.isInfoFormOpen = true;
+  }
+
+  startEditTruck(vehicle: ManagedVehicle): void {
+    this.infoFormMode = 'edit';
+    this.vehicleForm = {
+      vehicleId: vehicle.vehicleId,
+      vehicleName: vehicle.vehicleName,
+      capacityKg: vehicle.capacityKg,
+      status: vehicle.status
+    };
+    this.infoError = '';
+    this.infoSuccess = '';
+    this.isInfoFormOpen = true;
+  }
+
+  closeInfoForm(): void {
+    this.isInfoFormOpen = false;
+    this.areaForm = this.emptyAreaForm();
+    this.vehicleForm = this.emptyVehicleForm();
+  }
+
+  savePlace(): void {
+    if (
+      !this.areaForm.areaName.trim() ||
+      this.areaForm.latitude === null ||
+      this.areaForm.longitude === null ||
+      this.areaForm.latitude < -90 ||
+      this.areaForm.latitude > 90 ||
+      this.areaForm.longitude < -180 ||
+      this.areaForm.longitude > 180
+    ) {
+      this.infoError = 'Enter a place name and valid latitude and longitude.';
+      return;
+    }
+
+    this.isSavingInfo = true;
+    this.infoError = '';
+    const isEdit = this.infoFormMode === 'edit' && this.areaForm.areaId !== null;
+    const url = isEdit
+      ? `${this.areasApiUrl}/${this.areaForm.areaId}`
+      : this.areasApiUrl;
+    const request = {
+      areaName: this.areaForm.areaName.trim(),
+      populationDensity: this.areaForm.populationDensity,
+      activityLevel: this.areaForm.activityLevel,
+      collectionFrequency: this.areaForm.collectionFrequency,
+      latitude: this.areaForm.latitude,
+      longitude: this.areaForm.longitude
+    };
+    const operation = isEdit
+      ? this.http.put<ManagedArea>(url, request)
+      : this.http.post<ManagedArea>(url, request);
+
+    this.subscriptions.add(operation.subscribe({
+      next: () => {
+        this.isSavingInfo = false;
+        this.isInfoFormOpen = false;
+        this.infoSuccess = isEdit ? 'Place updated.' : 'Place added.';
+        this.loadManagedAreas();
+        this.loadAreasAndRoutes();
+      },
+      error: error => {
+        this.isSavingInfo = false;
+        this.infoError = error?.error?.message || 'Could not save the place. Please check the values and try again.';
+      }
+    }));
+  }
+
+  saveTruck(): void {
+    if (
+      !this.vehicleForm.vehicleName.trim() ||
+      this.vehicleForm.capacityKg === null ||
+      this.vehicleForm.capacityKg <= 0
+    ) {
+      this.infoError = 'Enter a truck name and a capacity greater than zero.';
+      return;
+    }
+
+    this.isSavingInfo = true;
+    this.infoError = '';
+    const isEdit = this.infoFormMode === 'edit' && this.vehicleForm.vehicleId !== null;
+    const url = isEdit
+      ? `http://localhost:5276/api/vehicles/${this.vehicleForm.vehicleId}`
+      : 'http://localhost:5276/api/vehicles';
+    const request = {
+      vehicleName: this.vehicleForm.vehicleName.trim(),
+      capacityKg: this.vehicleForm.capacityKg,
+      status: this.vehicleForm.status
+    };
+    const operation = isEdit
+      ? this.http.put<ManagedVehicle>(url, request)
+      : this.http.post<ManagedVehicle>(url, request);
+
+    this.subscriptions.add(operation.subscribe({
+      next: () => {
+        this.isSavingInfo = false;
+        this.isInfoFormOpen = false;
+        this.infoSuccess = isEdit ? 'Truck updated.' : 'Truck added.';
+        this.loadManagedVehicles();
+      },
+      error: error => {
+        this.isSavingInfo = false;
+        this.infoError = error?.error?.message || 'Could not save the truck. Please check the values and try again.';
+      }
+    }));
+  }
+
+  togglePlaceActive(area: ManagedArea): void {
+    const action = area.isActive ? 'deactivate' : 'reactivate';
+    if (!confirm(`Do you want to ${action} "${area.areaName}"?`)) {
+      return;
+    }
+
+    this.infoError = '';
+    this.subscriptions.add(
+      this.http.patch<ManagedArea>(`${this.areasApiUrl}/${area.areaId}/active`, {
+        isActive: !area.isActive
+      }).subscribe({
+        next: () => {
+          this.infoSuccess = area.isActive ? 'Place deactivated.' : 'Place reactivated.';
+          this.loadManagedAreas();
+          this.loadAreasAndRoutes();
+        },
+        error: error => {
+          this.infoError = error?.error?.message || 'Could not update this place.';
+        }
+      })
+    );
+  }
+
+  toggleTruckActive(vehicle: ManagedVehicle): void {
+    const action = vehicle.isActive ? 'deactivate' : 'reactivate';
+    if (!confirm(`Do you want to ${action} "${vehicle.vehicleName}"?`)) {
+      return;
+    }
+
+    this.infoError = '';
+    this.subscriptions.add(
+      this.http.patch<ManagedVehicle>(`http://localhost:5276/api/vehicles/${vehicle.vehicleId}/active`, {
+        isActive: !vehicle.isActive
+      }).subscribe({
+        next: () => {
+          this.infoSuccess = vehicle.isActive ? 'Truck deactivated.' : 'Truck reactivated.';
+          this.loadManagedVehicles();
+        },
+        error: error => {
+          this.infoError = error?.error?.message || 'Could not update this truck.';
+        }
+      })
+    );
   }
 
   // ============================================================
