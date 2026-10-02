@@ -100,9 +100,9 @@ finally:
     connection.close()
 
 
-if len(areas) != 10:
+if not areas:
     raise RuntimeError(
-        f"Expected 10 active areas, but found {len(areas)}."
+        "No active areas were found. Add or reactivate at least one place before rebuilding the distance matrix."
     )
 
 
