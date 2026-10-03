@@ -420,6 +420,28 @@ namespace EcoRoute.API.Migrations
 
                     b.Navigation("Area");
                 });
+
+            modelBuilder.Entity("EcoRoute.API.Models.SavedRoutePlan", b =>
+                {
+                    b.Property<int>("UserId")
+                        .HasColumnType("int")
+                        .HasColumnName("UserId");
+
+                    b.Property<string>("RouteJson")
+                        .IsRequired()
+                        .HasColumnType("longtext")
+                        .HasColumnName("RouteJson")
+                        .HasCharSet("utf8mb4");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("UpdatedAt");
+
+                    b.HasKey("UserId");
+
+                    b.ToTable("saved_route_plans", (string)null);
+                });
+
 #pragma warning restore 612, 618
         }
     }
