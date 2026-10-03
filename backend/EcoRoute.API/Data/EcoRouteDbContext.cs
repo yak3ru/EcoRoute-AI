@@ -20,6 +20,8 @@ public class EcoRouteDbContext : DbContext
     public DbSet<DistanceMatrix> DistanceMatrix => Set<DistanceMatrix>();
     public DbSet<User> Users => Set<User>();
     public DbSet<UserSession> UserSessions => Set<UserSession>();
+    public DbSet<SavedRoutePlan> SavedRoutePlans => Set<SavedRoutePlan>();
+    public DbSet<OperationHistory> OperationHistories => Set<OperationHistory>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -380,5 +382,60 @@ public class EcoRouteDbContext : DbContext
 
             entity.HasIndex(s => s.UserId);
         });
+
+        
+        // SAVED ROUTE PLANS
+
+        modelBuilder.Entity<SavedRoutePlan>(entity =>
+        {
+            entity.ToTable("saved_route_plans");
+
+            entity.HasKey(r => r.SavedRoutePlanId);
+
+            entity.Property(r => r.SavedRoutePlanId)
+                .HasColumnName("SavedRoutePlanId")
+                .ValueGeneratedOnAdd();
+
+            entity.Property(r => r.UserId)
+                .HasColumnName("UserId")
+                .IsRequired();
+
+            entity.HasOne<User>()
+                .WithMany()
+                .HasForeignKey(r => r.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(r => r.UserId)
+                .IsUnique();
+
+            entity.Property(r => r.RouteData)
+                .HasColumnName("RouteData")
+                .HasColumnType("longtext")
+                .IsRequired();
+
+            entity.Property(r => r.UpdatedAt)
+                .HasColumnName("UpdatedAt")
+                .IsRequired();
+        });
+
+        // OPERATIONS HISTORY
+
+        modelBuilder.Entity<OperationHistory>(entity =>
+{
+    entity.ToTable("operation_history");
+
+    entity.HasKey(e => e.OperationHistoryId);
+
+    entity.Property(e => e.RouteData)
+        .HasColumnType("longtext")
+        .IsRequired();
+
+    entity.HasIndex(e => new { e.UserId, e.OperationDate });
+
+    entity.HasOne<User>()
+        .WithMany()
+        .HasForeignKey(e => e.UserId)
+        .OnDelete(DeleteBehavior.Cascade);
+});
     }
 }

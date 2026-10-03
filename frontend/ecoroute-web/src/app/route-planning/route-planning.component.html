@@ -18,56 +18,137 @@
 
     <div class="header-actions">
 
+      
+<div class="date-picker-container">
+  <button
+    class="date-button"
+    type="button"
+    (click)="toggleCalendar()">
+
+    <img
+      src="assets/icons/calendar.svg"
+      alt="Calendar">
+
+    <span>
+      {{ selectedDate | date:'MMMM d, y' }}
+    </span>
+  </button>
+
+  <div
+    class="calendar-popup"
+    *ngIf="isCalendarOpen">
+
+    <div class="calendar-header">
       <button
-        class="date-button"
-        type="button">
-
-        <img
-          src="assets/icons/calendar.svg"
-          alt="Calendar">
-
-        <span>
-          September 16, 2026
-        </span>
-
-      </button>
-
-      <button
-        class="area-button"
         type="button"
-        (click)="openModifyInfo()"
-      >
-        <span>Modify Info</span>
-
-        <img
-          src="assets/icons/tune.svg"
-          alt="Modify information"
-        >
+        (click)="previousCalendarMonth()">
+        ‹
       </button>
+
+      <strong>
+        {{ calendarMonth | date:'MMMM y' }}
+      </strong>
 
       <button
-        class="constraint-button"
         type="button"
-        (click)="viewConstraints()">
-
-        <img
-          src="assets/icons/tune.svg"
-          alt="Constraints">
-
-        <span>
-          View Constraints
-        </span>
-
+        (click)="nextCalendarMonth()">
+        ›
       </button>
+    </div>
+
+    <div class="calendar-grid">
+      <span class="calendar-weekday">Su</span>
+      <span class="calendar-weekday">Mo</span>
+      <span class="calendar-weekday">Tu</span>
+      <span class="calendar-weekday">We</span>
+      <span class="calendar-weekday">Th</span>
+      <span class="calendar-weekday">Fr</span>
+      <span class="calendar-weekday">Sa</span>
+
+      <button
+        *ngFor="let day of calendarDays"
+        type="button"
+        class="calendar-day"
+        [class.other-month]="!day.isCurrentMonth"
+        [class.available]="day.isAvailable"
+        [class.today]="day.isToday"
+        [class.selected]="
+          toLocalDateString(day.date) ===
+          toLocalDateString(selectedDate)
+        "
+        [disabled]="!day.isAvailable && !day.isToday"
+        (click)="selectOperationDate(day.date)">
+
+        {{ day.dateNumber }}
+      </button>
+    </div>
+
+    <div class="calendar-footer">
+      <span class="today-indicator">Today</span>
+      <span class="available-indicator">Operation available</span>
+    </div>
+  </div>
+</div>
+
+      <button
+      class="area-button"
+      type="button"
+      (click)="openModifyInfo()">
+      <img
+        src="assets/icons/tune.svg"
+        alt="Route constraints">
+      <span>Modify Info</span>
+
+    </button>
+
+  <!-- OPERATION BUTTONS -->
+  <button
+    class="operation-button start"
+    type="button"
+    *ngIf="operationStatus === 'NotStarted' && !isHistoricalView"
+    [disabled]="isStartingOperation || isLoadingRoutes"
+    (click)="startOperation()">
+    <span *ngIf="!isStartingOperation">Start Operation</span>
+    <span *ngIf="isStartingOperation">Starting...</span>
+  </button>
+
+  <button
+    class="operation-button cancel"
+    type="button"
+    *ngIf="operationStatus === 'Active' && !isHistoricalView"
+    (click)="cancelOperation()">
+    Cancel Operation
+  </button>
+
+  <button
+    class="operation-button resume"
+    type="button"
+    *ngIf="operationStatus === 'Paused' && !isHistoricalView"
+    (click)="resumeOperation()">
+    Resume Operation
+  </button>
+
+  <button
+    class="operation-button finished"
+    type="button"
+    *ngIf="operationStatus === 'Completed' || isHistoricalView"
+    disabled>
+    Operation Finished
+</button>
 
       <button
         class="optimize-button"
         type="button"
-        [disabled]="isOptimizing || isLoadingRoutes"
+        [disabled]="
+          operationStatus !== 'Active' ||
+          isHistoricalView ||
+          isOptimizing ||
+          isLoadingRoutes
+        "
         (click)="optimizeRoutes()">
 
         <span *ngIf="!isOptimizing">
-          Optimize Route
+          Optimize Routes
         </span>
 
         <span *ngIf="isOptimizing">
@@ -219,7 +300,8 @@
   <!-- MAP + ROUTE PANEL -->
   <section
     class="map-section"
-    [class.panel-closed]="!isRoutePanelOpen">
+    [class.panel-closed]="!isRoutePanelOpen"
+    [class.animate-layout]="animateMapLayout">
 
     <!-- MAP -->
     <div class="map-card">
@@ -541,6 +623,7 @@
 
         <button
           type="button"
+          [disabled]="operationStatus !== 'Active' || isHistoricalView"
           class="light-button"
           (click)="viewRoute(selectedRoute)">
 
@@ -552,20 +635,23 @@
 
         </button>
 
-
         <button
           type="button"
           class="light-button"
-          [disabled]="isOptimizing"
+          [disabled]="
+            operationStatus !== 'Active' ||
+            isHistoricalView ||
+            isOptimizing
+          "
           (click)="reroute()">
 
           Reroute
 
         </button>
 
-
         <button
           type="button"
+          [disabled]="operationStatus !== 'Active' || isHistoricalView"
           class="apply-button"
           (click)="applyChanges()">
 
@@ -785,170 +871,121 @@
   </section>
 
 
-<!-- MODIFY INFO MODAL -->
+<!-- ROUTE CONSTRAINTS MODAL -->
 <div
   class="modal-backdrop"
   *ngIf="isModifyInfoOpen"
-  (click)="closeModifyInfo()"
->
+  (click)="closeModifyInfo()">
+
   <section
-    class="modify-info-modal"
+    class="modify-info-modal constraints-modal"
     role="dialog"
     aria-modal="true"
     aria-labelledby="modifyInfoTitle"
-    (click)="$event.stopPropagation()"
-  >
-    <!-- HEADER -->
+    (click)="$event.stopPropagation()">
+
     <header class="modify-info-header">
       <div>
-        <h2 id="modifyInfoTitle">Modify Info</h2>
-        <p>Manage collection places and trucks.</p>
+        <h2 id="modifyInfoTitle">Route Constraints</h2>
+        <p>Review the constraints applied to the selected truck.</p>
       </div>
 
       <button
         type="button"
         class="modal-close"
         (click)="closeModifyInfo()"
-        aria-label="Close"
-      >
+        aria-label="Close">
         &times;
       </button>
     </header>
 
-    <!-- TABS -->
-    <div class="modify-info-tabs">
-      <button
-        type="button"
-        [class.active]="infoTab === 'places'"
-        (click)="infoTab = 'places'"
-      >
-        Places
-      </button>
-
-      <button
-        type="button"
-        [class.active]="infoTab === 'trucks'"
-        (click)="infoTab = 'trucks'"
-      >
-        Trucks
-      </button>
-    </div>
-
-    <!-- PLACES CONTENT -->
-    
-<div
-  class="modify-info-content"
-  *ngIf="infoTab === 'places'">
-
-  <div class="modify-info-toolbar">
-    <div>
-      <h3>Collection Places</h3>
-      <p>Include or exclude places from route planning.</p>
-    </div>
-
-    <button
-      type="button"
-      class="add-info-button">
-      + Add Place
-    </button>
-  </div>
-
-  <input
-    class="places-search-input"
-    type="text"
-    placeholder="Search places..."
-    [(ngModel)]="placesSearchTerm">
-
-  <div
-    class="places-loading"
-    *ngIf="isLoadingPlaces">
-    Loading places...
-  </div>
-
-  <div
-    class="places-list"
-    *ngIf="!isLoadingPlaces">
-
-    <div
-      class="place-row"
-      *ngFor="let area of filteredManagementAreas">
-
-      <div class="place-information">
-        <strong>{{ area.areaName }}</strong>
-
-        <span
-          class="place-status"
-          [class.included]="area.isActive"
-          [class.excluded]="!area.isActive">
-
-          {{ area.isActive ? 'Included in routes' : 'Excluded from routes' }}
-
-        </span>
+    <div class="modify-info-content" *ngIf="selectedRoute as route">
+      <div class="constraint-detail">
+        <span>Selected Vehicle</span>
+        <strong>{{ route.vehicle }}</strong>
       </div>
 
-      <button
-        type="button"
-        class="place-toggle-button"
-        [class.exclude-button]="area.isActive"
-        [class.include-button]="!area.isActive"
-        [disabled]="areaToggleBusyId !== null"
-        (click)="toggleAreaActive(area)">
-
-        <span *ngIf="areaToggleBusyId !== area.areaId">
-          {{ area.isActive ? 'Exclude' : 'Include' }}
-        </span>
-
-        <span *ngIf="areaToggleBusyId === area.areaId">
-          Saving...
-        </span>
-
-      </button>
-
-    </div>
-
-    <p
-      class="places-empty"
-      *ngIf="filteredManagementAreas.length === 0">
-
-      {{ placesSearchTerm ? 'No matching places found.' : 'No places found in the database.' }}
-
-    </p>
-
-  </div>
-
-</div>
-
-    <!-- TRUCKS CONTENT -->
-    <div *ngIf="infoTab === 'trucks'" class="modify-info-content">
-      <div class="modify-info-toolbar">
-        <input
-          type="text"
-          placeholder="Search trucks..."
-        >
-
-        <button type="button" class="modify-add-button">
-          + Add Truck
-        </button>
+      <div class="constraint-detail">
+        <span>Vehicle Capacity</span>
+        <strong>{{ route.capacityKg | number:'1.0-2' }} kg</strong>
       </div>
 
-      <div class="modify-info-placeholder">
-        <p>Truck management will appear here.</p>
+      <div class="constraint-detail">
+        <span>Current Waste Load</span>
+        <strong>{{ route.wasteLoad }}</strong>
+      </div>
+
+      <div class="constraint-detail">
+        <span>Remaining Capacity</span>
+        <strong>{{ route.remainingCapacityKg | number:'1.0-2' }} kg</strong>
+      </div>
+
+      <div class="constraint-detail">
+        <span>Maximum Route Distance</span>
+        <strong>{{ route.maximumDistanceKm | number:'1.0-2' }} km</strong>
+      </div>
+
+      <div class="constraint-detail">
+        <span>Collection Time Window</span>
+        <strong>
+          {{ route.collectionStart }} – {{ route.collectionEnd }}
+        </strong>
+      </div>
+
+      <div class="constraint-detail">
+        <span>Road Accessibility</span>
+        <strong>{{ route.roadAccessibility || 'Not specified' }}</strong>
+      </div>
+
+      <div class="constraint-detail">
+        <span>Area Restrictions</span>
+        <strong>{{ route.areaRestrictions || 'None specified' }}</strong>
       </div>
     </div>
 
-    <!-- FOOTER -->
+    <div class="modify-info-content" *ngIf="!selectedRoute">
+      <p>No route is currently selected.</p>
+    </div>
+
     <footer class="modify-info-footer">
-      <span>Changes will be saved to the database.</span>
+      <span>Constraints for the selected route.</span>
 
       <button
         type="button"
         class="modify-cancel-button"
-        (click)="closeModifyInfo()"
-      >
+        (click)="closeModifyInfo()">
         Close
       </button>
     </footer>
+
   </section>
 </div>
+
+
+  <!-- START OPERATION LOADING WINDOW -->
+  <div
+    class="operation-loading-backdrop"
+    *ngIf="isStartingOperation"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="operationLoadingTitle">
+
+    <div class="operation-loading-modal">
+      <div class="operation-spinner"></div>
+
+      <h2 id="operationLoadingTitle">
+        Starting routing and prediction
+      </h2>
+
+      <p>
+        EcoRoute AI is predicting waste generation and
+        generating optimized collection routes.
+      </p>
+
+      <span class="operation-loading-note">
+        Please wait. This may take a moment.
+      </span>
+    </div>
+  </div>
 
 </main>

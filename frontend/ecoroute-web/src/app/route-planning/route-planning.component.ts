@@ -72,7 +72,7 @@ interface Route {
   wasteLoad: string;
   stops: number;
   distance: string;
-  status: 'Active' | 'Pending';
+  status: 'Active' | 'Pending' | 'Completed';
   eta: string;
   estimatedTime: string;
   predictedWaste: string;
@@ -97,14 +97,6 @@ interface AreaApiResponse {
   areaName: string;
   latitude: number;
   longitude: number;
-}
-
-interface ManagementArea {
-  areaId: number;
-  areaName: string;
-  latitude: number | null;
-  longitude: number | null;
-  isActive: boolean;
 }
 
 @Component({
@@ -146,23 +138,40 @@ export class RoutePlanningComponent
 
   selectedRouteId = '';
   private mapViewRouteId: string | null = null;
-
+  
   isOptimizing = false;
   isLoadingRoutes = true;
-  isRoutePanelOpen = true;
+  isRoutePanelOpen = false;
+  animateMapLayout = false;
+
+  isStartingOperation = false;
+  isHistoricalView = false;
+
+  operationStatus: 'NotStarted' | 'Active' | 'Paused' | 'Completed' =
+    'NotStarted';
 
   searchTerm = '';
 
   isModifyInfoOpen = false;
-  infoTab: 'places' | 'trucks' = 'places';
-  managementAreas: ManagementArea[] = [];
-  placesSearchTerm = '';
-  isLoadingPlaces = false;
-  areaToggleBusyId: number | null = null;
 
   routeMode = 'P90 Safety Planning';
 
   routes: Route[] = [];
+  private currentRouteResponse: MlRoutesResponse | null = null;
+  selectedDate: Date = new Date();
+  isCalendarOpen = false;
+
+  availableOperationDates: string[] = [];
+
+  calendarMonth: Date = new Date();
+
+  calendarDays: {
+    date: Date;
+    dateNumber: number;
+    isCurrentMonth: boolean;
+    isToday: boolean;
+    isAvailable: boolean;
+  }[] = [];
 
   readonly routeColors = [
     '#0a8f3d',
@@ -259,6 +268,7 @@ export class RoutePlanningComponent
 
   closeRoutePanel(): void {
     this.isRoutePanelOpen = false;
+    this.animateMapLayout = true;
 
     setTimeout(() => {
       this.map?.invalidateSize();
@@ -268,6 +278,7 @@ export class RoutePlanningComponent
   selectRoute(route: Route): void {
     this.selectedRouteId = route.id;
     this.isRoutePanelOpen = true;
+    this.animateMapLayout = true;
 
     setTimeout(() => {
       this.focusRoute(route);
@@ -334,7 +345,7 @@ export class RoutePlanningComponent
               );
             });
 
-            this.loadRoutes();
+            this.loadCurrentOperation()
           },
 
           error: error => {
@@ -343,63 +354,95 @@ export class RoutePlanningComponent
               error
             );
 
-            this.loadRoutes();
+            this.loadCurrentOperation()
           }
         })
     );
   }
 
-  private loadRoutes(): void {
-    this.isLoadingRoutes = true;
+  
 
-    this.subscriptions.add(
-      this.http
-        .get<MlRoutesResponse>(
-          `${this.mlApiUrl}/routes/p90`
-        )
-        .subscribe({
-          next: response => {
-            console.log(
-              'EcoRoute AI P90 Routes:',
-              response
-            );
+private loadCurrentOperation(): void {
+  const today = this.toLocalDateString(new Date());
 
-            this.routeMode =
-              response.mode || 'P90 Safety Planning';
+  this.selectedDate = new Date();
+  this.isHistoricalView = false;
 
-            this.unassignedAreas = response.unassigned ?? [];
+  this.subscriptions.add(
+    this.http.get<{ status: string }>(
+      `${this.mlApiUrl}/routes/operation/status/${today}`
+    ).subscribe({
+      next: result => {
+        this.operationStatus =
+          result.status === 'Paused' ? 'Paused' :
+          result.status === 'Completed' ? 'Completed' : 'Active';
 
-            this.routes =
-              response.routes.map(
-                (route, index) =>
-                  this.mapMlRoute(route, index)
-              );
+        this.loadOperationRoutes(today, this.operationStatus);
+      },
+      error: error => {
+        if (error.status === 404) {
+          this.operationStatus = 'NotStarted';
+          this.routes = [];
+          this.currentRouteResponse = null;
+          this.selectedRouteId = '';
+          this.unassignedAreas = [];
+          this.isLoadingRoutes = false;
+          this.roadGeometry.clear();
+          this.addBaseTiles();
+          this.refreshMap();
+          return;
+        }
 
-            if (this.routes.length > 0) {
-              this.selectedRouteId =
-                this.routes[0].id;
-            }
+        console.error('Failed to load operation status:', error);
+        this.isLoadingRoutes = false;
+      }
+    })
+  );
+}
 
-              this.isLoadingRoutes = false;
+private loadOperationRoutes(
+  date: string,
+  status: 'NotStarted' | 'Active' | 'Paused' | 'Completed'
+): void {
+  this.isLoadingRoutes = true;
+  this.roadGeometry.clear();
 
-              this.mapBoundsInitialized = false;
-              this.loadRoadGeometry();
-          },
+  this.subscriptions.add(
+    this.http.get<MlRoutesResponse>(
+      `${this.mlApiUrl}/routes/history/${date}`
+    ).subscribe({
+      next: response => {
+        this.currentRouteResponse = response;
+        this.routeMode = status === 'Completed'
+          ? 'Historical Operation'
+          : response.mode || 'P90 Safety Planning';
 
-          error: error => {
-            console.error(
-              'Failed to load P90 routes:',
-              error
-            );
+        this.unassignedAreas = response.unassigned ?? [];
 
-            this.isLoadingRoutes = false;
-            this.unassignedAreas = [];
-            this.routes = [];
-            this.addBaseTiles();
-          }
-        })
-    );
-  }
+        this.routes = response.routes.map((route, index) => ({
+          ...this.mapMlRoute(route, index),
+          status: status === 'Completed'
+            ? 'Completed' as const
+            : this.mapMlRoute(route, index).status
+        }));
+
+        this.selectedRouteId = this.routes[0]?.id ?? '';
+        this.isLoadingRoutes = false;
+        this.mapBoundsInitialized = false;
+
+        this.loadRoadGeometry();
+      },
+      error: error => {
+        console.error('Failed to load operation routes:', error);
+        this.routes = [];
+        this.selectedRouteId = '';
+        this.isLoadingRoutes = false;
+        this.addBaseTiles();
+        this.refreshMap();
+      }
+    })
+  );
+}
 
   // ============================================================
   // MAP API DATA TO EXISTING UI MODEL
@@ -506,110 +549,278 @@ export class RoutePlanningComponent
   // BUTTONS
   // ============================================================
 
-
-  openModifyInfo(): void {
-    this.isModifyInfoOpen = true;
-    this.infoTab = 'places';
-    this.loadManagementAreas();
-  }
-
-  closeModifyInfo(): void {
-    this.isModifyInfoOpen = false;
-  }
-
-
-private loadManagementAreas(): void {
-  this.isLoadingPlaces = true;
-
-  this.subscriptions.add(
-    this.http
-      .get<ManagementArea[]>(
-        `${this.areasApiUrl}/management`
-      )
-      .subscribe({
-        next: areas => {
-          this.managementAreas = areas;
-          this.isLoadingPlaces = false;
-        },
-        error: error => {
-          console.error('Failed to load places:', error);
-          this.isLoadingPlaces = false;
-        }
-      })
-  );
+openModifyInfo(): void {
+  this.isModifyInfoOpen = true;
 }
 
-get filteredManagementAreas(): ManagementArea[] {
-  const search = this.placesSearchTerm.trim().toLowerCase();
-
-  if (!search) {
-    return this.managementAreas;
-  }
-
-  return this.managementAreas.filter(area =>
-    area.areaName.toLowerCase().includes(search)
-  );
+closeModifyInfo(): void {
+  this.isModifyInfoOpen = false;
 }
 
-toggleAreaActive(area: ManagementArea): void {
-  if (this.areaToggleBusyId !== null) {
+
+startOperation(): void {
+  if (
+    this.isStartingOperation ||
+    this.isHistoricalView ||
+    this.operationStatus === 'Active' ||
+    this.operationStatus === 'Completed'
+  ) {
     return;
   }
 
-  const newStatus = !area.isActive;
-  this.areaToggleBusyId = area.areaId;
+  this.isStartingOperation = true;
+  this.isLoadingRoutes = true;
 
   this.subscriptions.add(
+    this.http.post<MlRoutesResponse>(
+      `${this.mlApiUrl}/routes/operation/start`,
+      {}
+    ).subscribe({
+      next: response => {
+        this.currentRouteResponse = response;
+        this.operationStatus = 'Active';
+        this.isHistoricalView = false;
+        this.routeMode = response.mode || 'P90 Safety Planning';
+        this.unassignedAreas = response.unassigned ?? [];
+
+        this.routes = response.routes.map(
+          (route, index) => this.mapMlRoute(route, index)
+        );
+
+        this.selectedRouteId = this.routes[0]?.id ?? '';
+        this.mapBoundsInitialized = false;
+        this.roadGeometry.clear();
+
+        this.isStartingOperation = false;
+        this.isLoadingRoutes = false;
+        this.loadRoadGeometry();
+        this.loadAvailableOperationDates();
+      },
+      error: error => {
+        console.error('Failed to start operation:', error);
+        this.isStartingOperation = false;
+        this.isLoadingRoutes = false;
+        alert(error.error?.message || 'Could not start the operation.');
+      }
+    })
+  );
+}
+
+cancelOperation(): void {
+  if (this.operationStatus !== 'Active' || this.isHistoricalView) {
+    return;
+  }
+
+  this.subscriptions.add(
+    this.http.post(
+      `${this.mlApiUrl}/routes/operation/cancel`,
+      {}
+    ).subscribe({
+      next: () => {
+        this.operationStatus = 'Paused';
+      },
+      error: error => {
+        console.error('Failed to pause operation:', error);
+        alert(error.error?.message || 'Could not pause the operation.');
+      }
+    })
+  );
+}
+
+resumeOperation(): void {
+  if (this.operationStatus !== 'Paused' || this.isHistoricalView) {
+    return;
+  }
+
+  this.subscriptions.add(
+    this.http.post<MlRoutesResponse>(
+      `${this.mlApiUrl}/routes/operation/resume`,
+      {}
+    ).subscribe({
+      next: response => {
+        this.currentRouteResponse = response;
+        this.operationStatus = 'Active';
+        this.routeMode = response.mode || 'P90 Safety Planning';
+        this.unassignedAreas = response.unassigned ?? [];
+
+        this.routes = response.routes.map(
+          (route, index) => this.mapMlRoute(route, index)
+        );
+
+        this.selectedRouteId = this.routes[0]?.id ?? '';
+        this.mapBoundsInitialized = false;
+        this.roadGeometry.clear();
+        this.loadRoadGeometry();
+      },
+      error: error => {
+        console.error('Failed to resume operation:', error);
+        alert(error.error?.message || 'Could not resume the operation.');
+      }
+    })
+  );
+}
+
+toggleCalendar(): void {
+  this.isCalendarOpen = !this.isCalendarOpen;
+
+  if (this.isCalendarOpen) {
+    this.calendarMonth = new Date(this.selectedDate);
+    this.loadAvailableOperationDates();
+  }
+}
+
+private loadAvailableOperationDates(): void {
+  this.subscriptions.add(
     this.http
-      .put<ManagementArea>(
-        `${this.areasApiUrl}/${area.areaId}/active`,
-        newStatus
-      )
+      .get<string[]>(`${this.mlApiUrl}/routes/history/dates`)
       .subscribe({
-        next: updatedArea => {
-          const index = this.managementAreas.findIndex(
-            item => item.areaId === updatedArea.areaId
-          );
-
-          if (index !== -1) {
-            this.managementAreas[index] = updatedArea;
-          }
-
-          this.areaToggleBusyId = null;
+        next: dates => {
+          this.availableOperationDates = dates;
+          this.generateCalendarDays();
         },
         error: error => {
-          console.error('Failed to update place status:', error);
-          alert('Could not update the place. Please try again.');
-          this.areaToggleBusyId = null;
+          console.error('Failed to load operation dates:', error);
+          alert('Could not load operation history dates.');
         }
       })
   );
 }
 
-  viewConstraints(): void {
-    if (!this.selectedRoute) {
-      return;
-    }
+generateCalendarDays(): void {
+  const year = this.calendarMonth.getFullYear();
+  const month = this.calendarMonth.getMonth();
 
-    const route = this.selectedRoute;
+  const firstDay = new Date(year, month, 1);
+  const startDay = firstDay.getDay();
 
-    alert(
-      'Route constraints:\n\n' +
-      `Vehicle capacity: ${this.formatKg(route.capacityKg)}\n` +
-      `Maximum route distance: ${route.maximumDistanceKm.toFixed(2)} km\n` +
-      `Collection time: ${this.formatTime(route.collectionStart)} to ${this.formatTime(route.collectionEnd)}\n` +
-      `Road accessibility: ${route.roadAccessibility}\n` +
-      `Area restrictions: ${route.areaRestrictions}`
-    );
+  const gridStart = new Date(year, month, 1 - startDay);
+
+  this.calendarDays = [];
+
+  const today = this.toLocalDateString(new Date());
+
+  for (let i = 0; i < 42; i++) {
+    const date = new Date(gridStart);
+    date.setDate(gridStart.getDate() + i);
+
+    const dateString = this.toLocalDateString(date);
+
+    this.calendarDays.push({
+      date,
+      dateNumber: date.getDate(),
+      isCurrentMonth: date.getMonth() === month,
+      isToday: dateString === today,
+      isAvailable: this.availableOperationDates.includes(dateString)
+    });
+  }
+}
+
+previousCalendarMonth(): void {
+  this.calendarMonth = new Date(
+    this.calendarMonth.getFullYear(),
+    this.calendarMonth.getMonth() - 1,
+    1
+  );
+
+  this.generateCalendarDays();
+}
+
+nextCalendarMonth(): void {
+  this.calendarMonth = new Date(
+    this.calendarMonth.getFullYear(),
+    this.calendarMonth.getMonth() + 1,
+    1
+  );
+
+  this.generateCalendarDays();
+}
+
+
+
+selectOperationDate(date: Date): void {
+  const dateString = this.toLocalDateString(date);
+  const todayString = this.toLocalDateString(new Date());
+
+  if (
+    dateString !== todayString &&
+    !this.availableOperationDates.includes(dateString)
+  ) {
+    return;
   }
 
+  this.selectedDate = new Date(date);
+  this.isCalendarOpen = false;
+
+  if (dateString === todayString) {
+  this.isRoutePanelOpen = false;
+  this.animateMapLayout = true;
+
+  this.loadCurrentOperation();
+
+  setTimeout(() => {
+    this.map?.invalidateSize({
+      pan: false,
+      animate: false
+    });
+  }, 350);
+
+  return;
+}
+
+  this.isHistoricalView = true;
+  this.operationStatus = 'Completed';
+  this.loadHistoricalRoutes(dateString);
+}
+
+toLocalDateString(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+
+  return `${year}-${month}-${day}`;
+}
+
+private loadHistoricalRoutes(date: string): void {
+  this.isLoadingRoutes = true;
+  this.roadGeometry.clear();
+
+  this.subscriptions.add(
+    this.http
+      .get<MlRoutesResponse>(
+        `${this.mlApiUrl}/routes/history/${date}`
+      )
+      .subscribe({
+        next: response => {
+          this.currentRouteResponse = response;
+          this.routeMode = 'Historical Operation';
+          this.unassignedAreas = response.unassigned ?? [];
+
+          this.routes = response.routes.map((route, index) => ({
+            ...this.mapMlRoute(route, index),
+            status: 'Completed' as const
+          }));
+
+          this.selectedRouteId = this.routes[0]?.id ?? '';
+          this.isLoadingRoutes = false;
+          this.mapBoundsInitialized = false;
+
+          this.loadRoadGeometry();
+        },
+        error: error => {
+          console.error('Failed to load historical routes:', error);
+          this.isLoadingRoutes = false;
+          alert('Could not load routes for this date.');
+        }
+      })
+  );
+}
+  
   optimizeRoutes(): void {
     if (this.isOptimizing) {
       return;
     }
 
     this.isOptimizing = true;
-
     this.roadGeometry.clear();
 
     this.subscriptions.add(
@@ -619,49 +830,42 @@ toggleAreaActive(area: ManagementArea): void {
         )
         .subscribe({
           next: response => {
-            this.routeMode =
-              response.mode || 'P90 Safety Planning';
-
+            this.currentRouteResponse = response;
+            this.routeMode = response.mode || 'P90 Safety Planning';
             this.unassignedAreas = response.unassigned ?? [];
 
-            this.routes =
-              response.routes.map(
-                (route, index) =>
-                  this.mapMlRoute(route, index)
-              );
+            this.routes = response.routes.map(
+              (route, index) => this.mapMlRoute(route, index)
+            );
 
-            if (this.routes.length > 0) {
-              const selectedStillExists =
-                this.routes.some(
-                  route =>
-                    route.id === this.selectedRouteId
-                );
-
-              if (!selectedStillExists) {
-                this.selectedRouteId =
-                  this.routes[0].id;
-              }
-            }
-
-            this.isOptimizing = false;
+            this.selectedRouteId = this.routes[0]?.id ?? '';
+            this.mapBoundsInitialized = false;
 
             this.loadRoadGeometry();
 
-            alert(
-              'Routes optimized successfully using P90 safety planning.'
-            );
+            this.http
+              .put(
+                `${this.mlApiUrl}/routes/p90/save`,
+                response
+              )
+              .subscribe({
+                next: () => {
+                  this.isOptimizing = false;
+                  console.log('Optimized routes saved successfully.');
+                  alert('Routes optimized and saved successfully.');
+                },
+                error: error => {
+                  this.isOptimizing = false;
+                  console.error('Failed to save optimized routes:', error);
+                  alert('Routes were generated, but saving failed.');
+                }
+              });
           },
-
           error: error => {
-            console.error(
-              'Route optimization failed:',
-              error
-            );
-
             this.isOptimizing = false;
-
+            console.error('Route optimization failed:', error);
             alert(
-              'Route optimization failed. Please make sure the ML service and backend are running.'
+              'Route optimization failed. Please check that the backend and ML service are running.'
             );
           }
         })
@@ -687,6 +891,7 @@ toggleAreaActive(area: ManagementArea): void {
         )
         .subscribe({
           next: response => {
+            this.currentRouteResponse = response;
 
             this.routeMode =
               response.mode || 'P90 Reroute';
@@ -762,18 +967,40 @@ toggleAreaActive(area: ManagementArea): void {
     );
   }
 
+  
   applyChanges(): void {
-    if (!this.selectedRoute) {
+    const route = this.selectedRoute;
+
+    if (!route || !this.currentRouteResponse) {
+      alert('There is no route plan to save. Please optimize routes first.');
       return;
     }
 
-    alert(
-      `Route ${this.selectedRoute.id} changes applied.\n\n` +
-      `Vehicle: ${this.selectedRoute.vehicle}\n` +
-      `Load: ${this.selectedRoute.wasteLoad}\n` +
-      `Distance: ${this.selectedRoute.distance}`
+    this.subscriptions.add(
+      this.http
+        .put(
+          `${this.mlApiUrl}/routes/p90/save`,
+          this.currentRouteResponse
+        )
+        .subscribe({
+          next: () => {
+            alert(
+              `Route ${route.id} changes saved successfully.\n\n` +
+              `Vehicle: ${route.vehicle}\n` +
+              `Load: ${route.wasteLoad}\n` +
+              `Distance: ${route.distance}`
+            );
+          },
+          error: error => {
+            console.error('Failed to save route plan:', error);
+            alert(
+              'Could not save the route plan. Please check the backend and try again.'
+            );
+          }
+        })
     );
   }
+
 
   // ============================================================
   // MAP

@@ -38,13 +38,13 @@ namespace EcoRoute.API.Migrations
 
                     b.Property<string>("AreaName")
                         .IsRequired()
-                        .HasMaxLength(150)
-                        .HasColumnType("varchar(150)")
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)")
                         .HasColumnName("AreaName");
 
                     b.Property<string>("CollectionFrequency")
-                        .HasMaxLength(100)
-                        .HasColumnType("varchar(100)")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
                         .HasColumnName("CollectionFrequency");
 
                     b.Property<DateTime>("CreatedAt")
@@ -56,23 +56,27 @@ namespace EcoRoute.API.Migrations
                         .HasColumnName("IsActive");
 
                     b.Property<decimal?>("Latitude")
-                        .HasPrecision(10, 6)
-                        .HasColumnType("decimal(10,6)")
+                        .HasPrecision(10, 7)
+                        .HasColumnType("decimal(10,7)")
                         .HasColumnName("Latitude");
 
                     b.Property<decimal?>("Longitude")
-                        .HasPrecision(10, 6)
-                        .HasColumnType("decimal(10,6)")
+                        .HasPrecision(10, 7)
+                        .HasColumnType("decimal(10,7)")
                         .HasColumnName("Longitude");
 
                     b.Property<decimal?>("PopulationDensity")
-                        .HasPrecision(12, 2)
-                        .HasColumnType("decimal(12,2)")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("decimal(10,2)")
                         .HasColumnName("PopulationDensity");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int")
+                        .HasColumnName("UserId");
 
                     b.HasKey("AreaId");
 
-                    b.HasIndex("AreaName")
+                    b.HasIndex("UserId", "AreaName")
                         .IsUnique();
 
                     b.ToTable("areas", (string)null);
@@ -110,6 +114,38 @@ namespace EcoRoute.API.Migrations
                     b.ToTable("distance_matrix", (string)null);
                 });
 
+            modelBuilder.Entity("EcoRoute.API.Models.OperationHistory", b =>
+                {
+                    b.Property<int>("OperationHistoryId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("OperationHistoryId"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<DateTime>("OperationDate")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("RouteData")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("OperationHistoryId");
+
+                    b.HasIndex("UserId", "OperationDate");
+
+                    b.ToTable("operation_history", (string)null);
+                });
+
             modelBuilder.Entity("EcoRoute.API.Models.RoutingConstraint", b =>
                 {
                     b.Property<int>("ConstraintId")
@@ -120,8 +156,8 @@ namespace EcoRoute.API.Migrations
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("ConstraintId"));
 
                     b.Property<string>("AreaRestrictions")
-                        .HasMaxLength(255)
-                        .HasColumnType("varchar(255)")
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)")
                         .HasColumnName("AreaRestrictions");
 
                     b.Property<TimeSpan>("CollectionEndTime")
@@ -151,9 +187,46 @@ namespace EcoRoute.API.Migrations
                         .HasColumnType("decimal(10,2)")
                         .HasColumnName("VehicleCapacityKg");
 
+                    b.Property<int>("VehicleId")
+                        .HasColumnType("int")
+                        .HasColumnName("VehicleId");
+
                     b.HasKey("ConstraintId");
 
+                    b.HasIndex("VehicleId")
+                        .IsUnique();
+
                     b.ToTable("routing_constraints", (string)null);
+                });
+
+            modelBuilder.Entity("EcoRoute.API.Models.SavedRoutePlan", b =>
+                {
+                    b.Property<int>("SavedRoutePlanId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("SavedRoutePlanId");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("SavedRoutePlanId"));
+
+                    b.Property<string>("RouteData")
+                        .IsRequired()
+                        .HasColumnType("longtext")
+                        .HasColumnName("RouteData");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("UpdatedAt");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int")
+                        .HasColumnName("UserId");
+
+                    b.HasKey("SavedRoutePlanId");
+
+                    b.HasIndex("UserId")
+                        .IsUnique();
+
+                    b.ToTable("saved_route_plans", (string)null);
                 });
 
             modelBuilder.Entity("EcoRoute.API.Models.User", b =>
@@ -317,9 +390,13 @@ namespace EcoRoute.API.Migrations
 
                     b.Property<string>("Status")
                         .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("varchar(50)")
+                        .HasMaxLength(30)
+                        .HasColumnType("varchar(30)")
                         .HasColumnName("Status");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int")
+                        .HasColumnName("UserId");
 
                     b.Property<string>("VehicleName")
                         .IsRequired()
@@ -329,7 +406,7 @@ namespace EcoRoute.API.Migrations
 
                     b.HasKey("VehicleId");
 
-                    b.HasIndex("VehicleName")
+                    b.HasIndex("UserId", "VehicleName")
                         .IsUnique();
 
                     b.ToTable("vehicles", (string)null);
@@ -380,6 +457,15 @@ namespace EcoRoute.API.Migrations
                     b.ToTable("waste_records", (string)null);
                 });
 
+            modelBuilder.Entity("EcoRoute.API.Models.Area", b =>
+                {
+                    b.HasOne("EcoRoute.API.Models.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("EcoRoute.API.Models.DistanceMatrix", b =>
                 {
                     b.HasOne("EcoRoute.API.Models.Area", "DestinationArea")
@@ -399,6 +485,35 @@ namespace EcoRoute.API.Migrations
                     b.Navigation("OriginArea");
                 });
 
+            modelBuilder.Entity("EcoRoute.API.Models.OperationHistory", b =>
+                {
+                    b.HasOne("EcoRoute.API.Models.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("EcoRoute.API.Models.RoutingConstraint", b =>
+                {
+                    b.HasOne("EcoRoute.API.Models.Vehicle", "Vehicle")
+                        .WithMany()
+                        .HasForeignKey("VehicleId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Vehicle");
+                });
+
+            modelBuilder.Entity("EcoRoute.API.Models.SavedRoutePlan", b =>
+                {
+                    b.HasOne("EcoRoute.API.Models.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("EcoRoute.API.Models.UserSession", b =>
                 {
                     b.HasOne("EcoRoute.API.Models.User", "User")
@@ -408,6 +523,15 @@ namespace EcoRoute.API.Migrations
                         .IsRequired();
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("EcoRoute.API.Models.Vehicle", b =>
+                {
+                    b.HasOne("EcoRoute.API.Models.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("EcoRoute.API.Models.WasteRecord", b =>
