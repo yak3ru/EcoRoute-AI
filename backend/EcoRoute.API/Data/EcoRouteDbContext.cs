@@ -20,6 +20,7 @@ public class EcoRouteDbContext : DbContext
     public DbSet<DistanceMatrix> DistanceMatrix => Set<DistanceMatrix>();
     public DbSet<User> Users => Set<User>();
     public DbSet<UserSession> UserSessions => Set<UserSession>();
+    public DbSet<SavedRoutePlan> SavedRoutePlans => Set<SavedRoutePlan>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -317,6 +318,31 @@ public class EcoRouteDbContext : DbContext
 
             entity.Property(u => u.PasswordResetTokenExpiresAt)
                 .HasColumnName("PasswordResetTokenExpiresAt");
+        });
+
+        // SAVED ROUTE PLANS
+
+        modelBuilder.Entity<SavedRoutePlan>(entity =>
+        {
+            entity.ToTable("saved_route_plans");
+
+            entity.HasKey(routePlan => routePlan.UserId);
+
+            entity.Property(routePlan => routePlan.UserId)
+                .HasColumnName("UserId");
+
+            entity.Property(routePlan => routePlan.RouteJson)
+                .HasColumnName("RouteJson")
+                .HasColumnType("longtext")
+                .IsRequired();
+
+            entity.Property(routePlan => routePlan.UpdatedAt)
+                .HasColumnName("UpdatedAt");
+
+            entity.HasOne<User>()
+                .WithMany()
+                .HasForeignKey(routePlan => routePlan.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         // USER SESSIONS
