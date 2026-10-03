@@ -3,6 +3,7 @@ using EcoRoute.API.Services;
 using EcoRoute.API.Data;
 using System.Data;
 using System.Text.Json;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
