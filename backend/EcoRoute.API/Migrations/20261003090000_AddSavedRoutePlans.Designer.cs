@@ -230,6 +230,15 @@ namespace EcoRoute.API.Migrations
                     b.ToTable("users", (string)null);
                 });
 
+            modelBuilder.Entity("EcoRoute.API.Models.SavedRoutePlan", b =>
+                {
+                    b.HasOne("EcoRoute.API.Models.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("EcoRoute.API.Models.UserSession", b =>
                 {
                     b.Property<int>("SessionId")
