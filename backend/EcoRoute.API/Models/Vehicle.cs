@@ -4,6 +4,8 @@ public class Vehicle
 {
     public int VehicleId { get; set; }
 
+    public int UserId { get; set; }
+
     public string VehicleName { get; set; } = string.Empty;
 
     public decimal CapacityKg { get; set; }

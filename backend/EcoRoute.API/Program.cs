@@ -25,13 +25,31 @@ builder.Services.AddHttpClient();
 builder.Services.AddScoped<JwtService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 
+var mlServiceKey = builder.Configuration["PythonApi:ServiceKey"];
+
+if (string.IsNullOrWhiteSpace(mlServiceKey))
+{
+    throw new InvalidOperationException(
+        "PythonApi:ServiceKey is not configured."
+    );
+}
+
 builder.Services.AddHttpClient("PythonML", client =>
 {
-    client.BaseAddress = new Uri(
-        builder.Configuration["PythonApi:BaseUrl"]!
-    );
+    var baseUrl = builder.Configuration["PythonApi:BaseUrl"];
 
-    client.Timeout = TimeSpan.FromSeconds(120);
+    if (string.IsNullOrWhiteSpace(baseUrl))
+    {
+        throw new InvalidOperationException(
+            "PythonApi:BaseUrl is not configured."
+        );
+    }
+
+    client.BaseAddress = new Uri(baseUrl);
+    client.DefaultRequestHeaders.Add(
+        "X-ML-Service-Key",
+        mlServiceKey
+    );
 });
 
 builder.Services.AddScoped<MlService>();

@@ -4,6 +4,8 @@ public class RoutingConstraint
 {
     public int ConstraintId { get; set; }
 
+    public int VehicleId { get; set; }
+
     public decimal VehicleCapacityKg { get; set; }
 
     public decimal MaximumRouteDistanceKm { get; set; }
@@ -17,4 +19,6 @@ public class RoutingConstraint
     public string? AreaRestrictions { get; set; }
 
     public DateTime CreatedAt { get; set; }
+
+    public Vehicle? Vehicle { get; set; }
 }

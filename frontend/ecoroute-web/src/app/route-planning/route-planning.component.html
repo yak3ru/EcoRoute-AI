@@ -34,16 +34,15 @@
 
       <button
         class="area-button"
-        type="button">
-
-        <span>
-          All areas
-        </span>
+        type="button"
+        (click)="openModifyInfo()"
+      >
+        <span>Modify Info</span>
 
         <img
-          src="assets/icons/drop-down.svg"
-          alt="Select area">
-
+          src="assets/icons/tune.svg"
+          alt="Modify information"
+        >
       </button>
 
       <button
@@ -784,5 +783,172 @@
     </div>
 
   </section>
+
+
+<!-- MODIFY INFO MODAL -->
+<div
+  class="modal-backdrop"
+  *ngIf="isModifyInfoOpen"
+  (click)="closeModifyInfo()"
+>
+  <section
+    class="modify-info-modal"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="modifyInfoTitle"
+    (click)="$event.stopPropagation()"
+  >
+    <!-- HEADER -->
+    <header class="modify-info-header">
+      <div>
+        <h2 id="modifyInfoTitle">Modify Info</h2>
+        <p>Manage collection places and trucks.</p>
+      </div>
+
+      <button
+        type="button"
+        class="modal-close"
+        (click)="closeModifyInfo()"
+        aria-label="Close"
+      >
+        &times;
+      </button>
+    </header>
+
+    <!-- TABS -->
+    <div class="modify-info-tabs">
+      <button
+        type="button"
+        [class.active]="infoTab === 'places'"
+        (click)="infoTab = 'places'"
+      >
+        Places
+      </button>
+
+      <button
+        type="button"
+        [class.active]="infoTab === 'trucks'"
+        (click)="infoTab = 'trucks'"
+      >
+        Trucks
+      </button>
+    </div>
+
+    <!-- PLACES CONTENT -->
+    
+<div
+  class="modify-info-content"
+  *ngIf="infoTab === 'places'">
+
+  <div class="modify-info-toolbar">
+    <div>
+      <h3>Collection Places</h3>
+      <p>Include or exclude places from route planning.</p>
+    </div>
+
+    <button
+      type="button"
+      class="add-info-button">
+      + Add Place
+    </button>
+  </div>
+
+  <input
+    class="places-search-input"
+    type="text"
+    placeholder="Search places..."
+    [(ngModel)]="placesSearchTerm">
+
+  <div
+    class="places-loading"
+    *ngIf="isLoadingPlaces">
+    Loading places...
+  </div>
+
+  <div
+    class="places-list"
+    *ngIf="!isLoadingPlaces">
+
+    <div
+      class="place-row"
+      *ngFor="let area of filteredManagementAreas">
+
+      <div class="place-information">
+        <strong>{{ area.areaName }}</strong>
+
+        <span
+          class="place-status"
+          [class.included]="area.isActive"
+          [class.excluded]="!area.isActive">
+
+          {{ area.isActive ? 'Included in routes' : 'Excluded from routes' }}
+
+        </span>
+      </div>
+
+      <button
+        type="button"
+        class="place-toggle-button"
+        [class.exclude-button]="area.isActive"
+        [class.include-button]="!area.isActive"
+        [disabled]="areaToggleBusyId !== null"
+        (click)="toggleAreaActive(area)">
+
+        <span *ngIf="areaToggleBusyId !== area.areaId">
+          {{ area.isActive ? 'Exclude' : 'Include' }}
+        </span>
+
+        <span *ngIf="areaToggleBusyId === area.areaId">
+          Saving...
+        </span>
+
+      </button>
+
+    </div>
+
+    <p
+      class="places-empty"
+      *ngIf="filteredManagementAreas.length === 0">
+
+      {{ placesSearchTerm ? 'No matching places found.' : 'No places found in the database.' }}
+
+    </p>
+
+  </div>
+
+</div>
+
+    <!-- TRUCKS CONTENT -->
+    <div *ngIf="infoTab === 'trucks'" class="modify-info-content">
+      <div class="modify-info-toolbar">
+        <input
+          type="text"
+          placeholder="Search trucks..."
+        >
+
+        <button type="button" class="modify-add-button">
+          + Add Truck
+        </button>
+      </div>
+
+      <div class="modify-info-placeholder">
+        <p>Truck management will appear here.</p>
+      </div>
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="modify-info-footer">
+      <span>Changes will be saved to the database.</span>
+
+      <button
+        type="button"
+        class="modify-cancel-button"
+        (click)="closeModifyInfo()"
+      >
+        Close
+      </button>
+    </footer>
+  </section>
+</div>
 
 </main>

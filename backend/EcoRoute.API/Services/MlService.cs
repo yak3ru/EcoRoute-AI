@@ -1,6 +1,23 @@
+
+using System.Net;
 using System.Text.Json;
 
 namespace EcoRoute.API.Services;
+
+public sealed class MlServiceException : Exception
+{
+    public HttpStatusCode StatusCode { get; }
+    public string ResponseBody { get; }
+
+    public MlServiceException(
+        HttpStatusCode statusCode,
+        string responseBody)
+        : base($"Python ML service returned {(int)statusCode}.")
+    {
+        StatusCode = statusCode;
+        ResponseBody = responseBody;
+    }
+}
 
 public class MlService
 {
@@ -11,64 +28,43 @@ public class MlService
         _httpClientFactory = httpClientFactory;
     }
 
-    public async Task<JsonElement> GetPredictionsAsync()
+    public Task<JsonElement> GetPredictionsAsync(int userId)
+    {
+        return GetAsync($"/predictions?user_id={userId}");
+    }
+
+    public Task<JsonElement> GetRoutesAsync(int userId)
+    {
+        return GetAsync($"/routes?user_id={userId}");
+    }
+
+    public Task<JsonElement> GetP90RoutesAsync(int userId)
+    {
+        return GetAsync($"/routes/p90?user_id={userId}");
+    }
+
+    public Task<JsonElement> GetP90RerouteAsync(
+        int userId, int vehicleId)
+    {
+        return GetAsync(
+            $"/routes/p90/reroute/{vehicleId}?user_id={userId}");
+    }
+
+    private async Task<JsonElement> GetAsync(string url)
     {
         var client = _httpClientFactory.CreateClient("PythonML");
 
-        var response = await client.GetAsync("/predictions");
+        using var response = await client.GetAsync(url);
 
-        response.EnsureSuccessStatusCode();
+        var responseBody = await response.Content.ReadAsStringAsync();
 
-        var json = await response.Content.ReadAsStringAsync();
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new MlServiceException(
+                response.StatusCode,
+                responseBody);
+        }
 
-        return JsonSerializer.Deserialize<JsonElement>(json);
-    }
-
-    public async Task<JsonElement> GetRoutesAsync()
-    {
-        var client = _httpClientFactory.CreateClient("PythonML");
-
-        var response = await client.GetAsync("/routes");
-
-        response.EnsureSuccessStatusCode();
-
-        var json = await response.Content.ReadAsStringAsync();
-
-        return JsonSerializer.Deserialize<JsonElement>(json);
-    }
-
-    public async Task<JsonElement> GetP90RoutesAsync()
-    {
-        var client = _httpClientFactory.CreateClient("PythonML");
-
-        var response = await client.GetAsync("/routes/p90");
-
-        response.EnsureSuccessStatusCode();
-
-        var json = await response.Content.ReadAsStringAsync();
-
-        return JsonSerializer.Deserialize<JsonElement>(json);
-    }
-
-    public async Task<JsonElement> GetP90RerouteAsync(
-        int vehicleId
-    )
-    {
-        var client =
-            _httpClientFactory.CreateClient("PythonML");
-
-        var response =
-            await client.GetAsync(
-                $"/routes/p90/reroute/{vehicleId}"
-            );
-
-        response.EnsureSuccessStatusCode();
-
-        var json =
-            await response.Content.ReadAsStringAsync();
-
-        return JsonSerializer.Deserialize<JsonElement>(
-            json
-        );
+        return JsonSerializer.Deserialize<JsonElement>(responseBody);
     }
 }

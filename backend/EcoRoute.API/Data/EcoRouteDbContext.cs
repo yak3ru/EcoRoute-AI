@@ -1,3 +1,4 @@
+
 using EcoRoute.API.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -35,17 +36,25 @@ public class EcoRouteDbContext : DbContext
             entity.Property(a => a.AreaId)
                 .HasColumnName("AreaId");
 
+            entity.Property(a => a.UserId)
+                .HasColumnName("UserId");
+
+            entity.HasOne<User>()
+                .WithMany()
+                .HasForeignKey(a => a.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
             entity.Property(a => a.AreaName)
                 .HasColumnName("AreaName")
-                .HasMaxLength(150)
+                .HasMaxLength(100)
                 .IsRequired();
 
-            entity.HasIndex(a => a.AreaName)
+            entity.HasIndex(a => new { a.UserId, a.AreaName })
                 .IsUnique();
 
             entity.Property(a => a.PopulationDensity)
                 .HasColumnName("PopulationDensity")
-                .HasPrecision(12, 2);
+                .HasPrecision(10, 2);
 
             entity.Property(a => a.ActivityLevel)
                 .HasColumnName("ActivityLevel")
@@ -53,15 +62,15 @@ public class EcoRouteDbContext : DbContext
 
             entity.Property(a => a.CollectionFrequency)
                 .HasColumnName("CollectionFrequency")
-                .HasMaxLength(100);
+                .HasMaxLength(50);
 
             entity.Property(a => a.Latitude)
                 .HasColumnName("Latitude")
-                .HasPrecision(10, 6);
+                .HasPrecision(10, 7);
 
             entity.Property(a => a.Longitude)
                 .HasColumnName("Longitude")
-                .HasPrecision(10, 6);
+                .HasPrecision(10, 7);
 
             entity.Property(a => a.IsActive)
                 .HasColumnName("IsActive");
@@ -81,12 +90,20 @@ public class EcoRouteDbContext : DbContext
             entity.Property(v => v.VehicleId)
                 .HasColumnName("VehicleId");
 
+            entity.Property(v => v.UserId)
+                .HasColumnName("UserId");
+
+            entity.HasOne<User>()
+                .WithMany()
+                .HasForeignKey(v => v.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
             entity.Property(v => v.VehicleName)
                 .HasColumnName("VehicleName")
                 .HasMaxLength(100)
                 .IsRequired();
 
-            entity.HasIndex(v => v.VehicleName)
+            entity.HasIndex(v => new { v.UserId, v.VehicleName })
                 .IsUnique();
 
             entity.Property(v => v.CapacityKg)
@@ -95,7 +112,7 @@ public class EcoRouteDbContext : DbContext
 
             entity.Property(v => v.Status)
                 .HasColumnName("Status")
-                .HasMaxLength(50);
+                .HasMaxLength(30);
 
             entity.Property(v => v.IsActive)
                 .HasColumnName("IsActive");
@@ -164,6 +181,17 @@ public class EcoRouteDbContext : DbContext
             entity.Property(r => r.ConstraintId)
                 .HasColumnName("ConstraintId");
 
+            entity.Property(r => r.VehicleId)
+                .HasColumnName("VehicleId");
+
+            entity.HasOne(r => r.Vehicle)
+                .WithMany()
+                .HasForeignKey(r => r.VehicleId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasIndex(r => r.VehicleId)
+                .IsUnique();
+
             entity.Property(r => r.VehicleCapacityKg)
                 .HasColumnName("VehicleCapacityKg")
                 .HasPrecision(10, 2);
@@ -184,7 +212,7 @@ public class EcoRouteDbContext : DbContext
 
             entity.Property(r => r.AreaRestrictions)
                 .HasColumnName("AreaRestrictions")
-                .HasMaxLength(255);
+                .HasMaxLength(500);
 
             entity.Property(r => r.CreatedAt)
                 .HasColumnName("CreatedAt");

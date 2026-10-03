@@ -99,6 +99,14 @@ interface AreaApiResponse {
   longitude: number;
 }
 
+interface ManagementArea {
+  areaId: number;
+  areaName: string;
+  latitude: number | null;
+  longitude: number | null;
+  isActive: boolean;
+}
+
 @Component({
   selector: 'app-route-planning',
   standalone: true,
@@ -144,6 +152,13 @@ export class RoutePlanningComponent
   isRoutePanelOpen = true;
 
   searchTerm = '';
+
+  isModifyInfoOpen = false;
+  infoTab: 'places' | 'trucks' = 'places';
+  managementAreas: ManagementArea[] = [];
+  placesSearchTerm = '';
+  isLoadingPlaces = false;
+  areaToggleBusyId: number | null = null;
 
   routeMode = 'P90 Safety Planning';
 
@@ -490,6 +505,86 @@ export class RoutePlanningComponent
   // ============================================================
   // BUTTONS
   // ============================================================
+
+
+  openModifyInfo(): void {
+    this.isModifyInfoOpen = true;
+    this.infoTab = 'places';
+    this.loadManagementAreas();
+  }
+
+  closeModifyInfo(): void {
+    this.isModifyInfoOpen = false;
+  }
+
+
+private loadManagementAreas(): void {
+  this.isLoadingPlaces = true;
+
+  this.subscriptions.add(
+    this.http
+      .get<ManagementArea[]>(
+        `${this.areasApiUrl}/management`
+      )
+      .subscribe({
+        next: areas => {
+          this.managementAreas = areas;
+          this.isLoadingPlaces = false;
+        },
+        error: error => {
+          console.error('Failed to load places:', error);
+          this.isLoadingPlaces = false;
+        }
+      })
+  );
+}
+
+get filteredManagementAreas(): ManagementArea[] {
+  const search = this.placesSearchTerm.trim().toLowerCase();
+
+  if (!search) {
+    return this.managementAreas;
+  }
+
+  return this.managementAreas.filter(area =>
+    area.areaName.toLowerCase().includes(search)
+  );
+}
+
+toggleAreaActive(area: ManagementArea): void {
+  if (this.areaToggleBusyId !== null) {
+    return;
+  }
+
+  const newStatus = !area.isActive;
+  this.areaToggleBusyId = area.areaId;
+
+  this.subscriptions.add(
+    this.http
+      .put<ManagementArea>(
+        `${this.areasApiUrl}/${area.areaId}/active`,
+        newStatus
+      )
+      .subscribe({
+        next: updatedArea => {
+          const index = this.managementAreas.findIndex(
+            item => item.areaId === updatedArea.areaId
+          );
+
+          if (index !== -1) {
+            this.managementAreas[index] = updatedArea;
+          }
+
+          this.areaToggleBusyId = null;
+        },
+        error: error => {
+          console.error('Failed to update place status:', error);
+          alert('Could not update the place. Please try again.');
+          this.areaToggleBusyId = null;
+        }
+      })
+  );
+}
 
   viewConstraints(): void {
     if (!this.selectedRoute) {

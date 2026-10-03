@@ -4,6 +4,8 @@ public class Area
 {
     public int AreaId { get; set; }
 
+    public int UserId { get; set; }
+
     public string AreaName { get; set; } = string.Empty;
 
     public decimal? PopulationDensity { get; set; }

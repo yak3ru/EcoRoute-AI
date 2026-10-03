@@ -1,9 +1,13 @@
+
 using EcoRoute.API.Data;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace EcoRoute.API.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("api/[controller]")]
 public class WasteController : ControllerBase
@@ -23,9 +27,18 @@ public class WasteController : ControllerBase
         [FromQuery] string? wasteType,
         [FromQuery] string? status)
     {
+        var userIdValue = User.FindFirstValue(
+            ClaimTypes.NameIdentifier);
+
+        if (!int.TryParse(userIdValue, out var userId))
+        {
+            return Unauthorized();
+        }
+
         var query = _context.WasteRecords
             .AsNoTracking()
             .Include(w => w.Area)
+            .Where(w => w.Area != null && w.Area.UserId == userId)
             .AsQueryable();
 
         if (areaId.HasValue)
@@ -64,10 +77,21 @@ public class WasteController : ControllerBase
     [HttpGet("{id:int}")]
     public async Task<IActionResult> GetWasteRecord(int id)
     {
+        var userIdValue = User.FindFirstValue(
+            ClaimTypes.NameIdentifier);
+
+        if (!int.TryParse(userIdValue, out var userId))
+        {
+            return Unauthorized();
+        }
+
         var record = await _context.WasteRecords
             .AsNoTracking()
             .Include(w => w.Area)
-            .Where(w => w.WasteRecordId == id)
+            .Where(w =>
+                w.WasteRecordId == id &&
+                w.Area != null &&
+                w.Area.UserId == userId)
             .Select(w => new
             {
                 w.WasteRecordId,

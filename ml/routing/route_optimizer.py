@@ -7,8 +7,7 @@ from sqlalchemy import text
 from data.load_data import engine
 from prediction.area_predictions import predict_areas
 
-
-def load_vehicles():
+def load_vehicles(user_id: int):
     query = text("""
         SELECT
             VehicleId,
@@ -16,14 +15,18 @@ def load_vehicles():
             CapacityKg,
             Status
         FROM vehicles
-        WHERE IsActive = 1
+        WHERE UserId = :user_id
+          AND IsActive = 1
           AND Status = 'Available'
         ORDER BY VehicleId;
     """)
 
     with engine.connect() as connection:
-        return pd.read_sql(query, connection)
-
+        return pd.read_sql(
+            query,
+            connection,
+            params={"user_id": user_id}
+        )
 def format_time(value):
     if value is None:
         return "N/A"
@@ -55,46 +58,61 @@ def add_minutes_to_time(time_string, minutes):
 
     return arrival.strftime("%H:%M:%S")
 
-def load_constraints():
+
+def load_constraints(user_id: int):
     query = text("""
         SELECT
-            ConstraintId,
-            VehicleCapacityKg,
-            MaximumRouteDistanceKm,
-            CollectionStartTime,
-            CollectionEndTime,
-            RoadAccessibility,
-            AreaRestrictions
-        FROM routing_constraints
-        ORDER BY ConstraintId;
+            rc.ConstraintId,
+            rc.VehicleId,
+            rc.VehicleCapacityKg,
+            rc.MaximumRouteDistanceKm,
+            rc.CollectionStartTime,
+            rc.CollectionEndTime,
+            rc.RoadAccessibility,
+            rc.AreaRestrictions
+        FROM routing_constraints rc
+        INNER JOIN vehicles v
+            ON rc.VehicleId = v.VehicleId
+        WHERE v.UserId = :user_id
+          AND v.IsActive = 1
+        ORDER BY rc.VehicleId;
     """)
 
     with engine.connect() as connection:
-        return pd.read_sql(query, connection)
+        return pd.read_sql(
+            query,
+            connection,
+            params={"user_id": user_id}
+        )
 
 
-
-def load_distance_matrix():
+def load_distance_matrix(user_id: int):
     query = text("""
         SELECT
-            OriginAreaId,
-            DestinationAreaId,
-            DistanceKm,
-            TravelTimeMinutes
-        FROM distance_matrix
+            dm.OriginAreaId,
+            dm.DestinationAreaId,
+            dm.DistanceKm,
+            dm.TravelTimeMinutes
+        FROM distance_matrix dm
+        INNER JOIN areas origin
+            ON dm.OriginAreaId = origin.AreaId
+        INNER JOIN areas destination
+            ON dm.DestinationAreaId = destination.AreaId
+        WHERE origin.UserId = :user_id
+          AND destination.UserId = :user_id
+        ORDER BY dm.OriginAreaId, dm.DestinationAreaId;
     """)
 
     with engine.connect() as connection:
-        result = connection.execute(query)
-        distances = [
+        result = connection.execute(
+            query,
+            {"user_id": user_id}
+        )
+
+        return [
             dict(row._mapping)
             for row in result
         ]
-
-    return distances
-
-
-
 
 def create_distance_lookup(distances):
     return {
@@ -116,7 +134,7 @@ def create_travel_time_lookup(distances):
     }
 
 
-def load_disposal_distances():
+def load_disposal_distances(user_id: int):
     query = text("""
         SELECT
             addist.AreaId,
@@ -125,21 +143,26 @@ def load_disposal_distances():
             addist.TravelTimeMinutes,
             df.FacilityName,
             df.DisposalDeadline
-        FROM area_disposal_distances AS addist
-        INNER JOIN disposal_facilities AS df
-            ON df.FacilityId = addist.FacilityId
-        WHERE df.IsActive = 1
-        ORDER BY addist.AreaId, addist.FacilityId
+        FROM area_disposal_distances addist
+        INNER JOIN areas a
+            ON addist.AreaId = a.AreaId
+        INNER JOIN disposal_facilities df
+            ON addist.FacilityId = df.FacilityId
+        WHERE a.UserId = :user_id
+          AND df.IsActive = 1
+        ORDER BY addist.AreaId, addist.FacilityId;
     """)
 
     with engine.connect() as connection:
-        result = connection.execute(query)
+        result = connection.execute(
+            query,
+            {"user_id": user_id}
+        )
 
         return [
             dict(row._mapping)
             for row in result
         ]
-
 
 def create_disposal_lookup(disposal_distances):
     return {
@@ -262,29 +285,52 @@ def optimize_route_order(
 
     return ordered
 
-def reroute_route(
-    vehicle_id,
-    use_p90=False
-):
-    """
-    Generates an alternative valid collection sequence
-    for one selected vehicle.
 
-    The area assignments remain unchanged.
-    Only the collection order is changed.
+def reroute_route(user_id: int, vehicle_id: int, use_p90=False):
+    """
+    Generates an alternative collection sequence for one vehicle.
+
+    The requested vehicle must belong to the authenticated user.
+    Area assignments remain unchanged; only the stop order changes.
 
     Live traffic and live road closure data are not used.
     """
 
+    # STEP 1: Verify that the vehicle belongs to this user.
+    vehicle_query = text("""
+        SELECT VehicleId
+        FROM vehicles
+        WHERE VehicleId = :vehicle_id
+          AND UserId = :user_id
+          AND IsActive = 1
+          AND Status = 'Available'
+        LIMIT 1;
+    """)
+
+    with engine.connect() as connection:
+        vehicle = connection.execute(
+            vehicle_query,
+            {
+                "vehicle_id": vehicle_id,
+                "user_id": user_id
+            }
+        ).fetchone()
+
+    # Reject vehicles owned by another account or unavailable vehicles.
+    if vehicle is None:
+        raise ValueError(
+            "Vehicle not found or unavailable for this account."
+        )
+
+    # STEP 2: Generate routes only after ownership is verified.
     routes, unassigned = optimize_routes(
+        user_id=user_id,
         use_p90=use_p90
     )
 
-    distances = load_distance_matrix()
+    distances = load_distance_matrix(user_id=user_id)
 
-    distance_lookup = create_distance_lookup(
-        distances
-    )
+    distance_lookup = create_distance_lookup(distances)
 
     selected_route = next(
         (
@@ -297,17 +343,13 @@ def reroute_route(
 
     if selected_route is None:
         raise ValueError(
-            f"Vehicle {vehicle_id} does not have an assigned route."
+            "No assigned route exists for this vehicle."
         )
 
     areas = selected_route["areas"]
 
     if len(areas) < 2:
-        return (
-            routes,
-            unassigned,
-            False
-        )
+        return routes, unassigned, False
 
     current_order = [
         area["area_id"]
@@ -316,16 +358,12 @@ def reroute_route(
 
     alternative_routes = []
 
-    for permutation in itertools.permutations(
-        areas
-    ):
-
+    for permutation in itertools.permutations(areas):
         area_ids = [
             area["area_id"]
             for area in permutation
         ]
 
-        # Do not return the exact same sequence.
         if area_ids == current_order:
             continue
 
@@ -334,77 +372,42 @@ def reroute_route(
             distance_lookup
         )
 
-        # Alternative route must still respect
-        # the vehicle's maximum route distance.
-        if (
-            distance
-            <= selected_route[
-                "maximum_distance_km"
-            ]
-        ):
-
+        if distance <= selected_route["maximum_distance_km"]:
             alternative_routes.append(
-                (
-                    distance,
-                    list(permutation)
-                )
+                (distance, list(permutation))
             )
 
     if not alternative_routes:
-        return (
-            routes,
-            unassigned,
-            False
-        )
+        return routes, unassigned, False
 
-    # Select the shortest valid alternative.
-    alternative_routes.sort(
-        key=lambda item: item[0]
-    )
+    alternative_routes.sort(key=lambda item: item[0])
 
-    new_distance, new_order = (
-        alternative_routes[0]
-    )
+    new_distance, new_order = alternative_routes[0]
 
     selected_route["areas"] = new_order
+    selected_route["distance_km"] = new_distance
 
-    selected_route["distance_km"] = (
-        new_distance
-    )
-
-    selected_route[
-        "remaining_capacity_kg"
-    ] = round(
-        selected_route["capacity_kg"]
-        - selected_route["load_kg"],
+    selected_route["remaining_capacity_kg"] = round(
+        selected_route["capacity_kg"] - selected_route["load_kg"],
         2
     )
 
-    selected_route[
-        "distance_exceeded"
-    ] = (
-        new_distance
-        > selected_route[
-            "maximum_distance_km"
-        ]
+    selected_route["distance_exceeded"] = (
+        new_distance > selected_route["maximum_distance_km"]
     )
 
-    return (
-        routes,
-        unassigned,
-        True
-    )
+    return routes, unassigned, True
 
 
-def optimize_routes(use_p90=False):
+def optimize_routes(user_id: int, use_p90=False):
 
-    predictions = predict_areas()
+    predictions = predict_areas(user_id=user_id)
 
-    vehicles = load_vehicles()
+    vehicles = load_vehicles(user_id=user_id)
 
-    constraints = load_constraints()
+    constraints = load_constraints(user_id=user_id)
 
-    distances = load_distance_matrix()
+    distances = load_distance_matrix(user_id=user_id)
 
     distance_lookup = create_distance_lookup(
         distances
@@ -414,7 +417,7 @@ def optimize_routes(use_p90=False):
         distances
     )
 
-    disposal_distances = load_disposal_distances()
+    disposal_distances = load_disposal_distances(user_id=user_id)
 
     disposal_lookup = create_disposal_lookup(
         disposal_distances
@@ -428,17 +431,19 @@ def optimize_routes(use_p90=False):
 
     routes = []
 
-    for index, vehicle in vehicles.iterrows():
+    for _, vehicle in vehicles.iterrows():
 
-        # Match each vehicle with its constraint record.
-        if index >= len(constraints):
+        vehicle_constraints = constraints[
+            constraints["VehicleId"] == vehicle["VehicleId"]
+        ]
 
+        if len(vehicle_constraints) != 1:
             raise ValueError(
-                "There are not enough routing "
-                "constraint records for the vehicles."
+                f"Vehicle {vehicle['VehicleId']} must have "
+                "exactly one routing constraint."
             )
 
-        constraint = constraints.iloc[index]
+        constraint = vehicle_constraints.iloc[0]
 
         vehicle_capacity = float(
             vehicle["CapacityKg"]
@@ -716,6 +721,7 @@ if __name__ == "__main__":
     print("\nMode: P90 Safety Planning")
 
     routes, unassigned = optimize_routes(
+        user_id=2,
         use_p90=True
     )
 

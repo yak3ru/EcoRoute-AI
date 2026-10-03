@@ -19,7 +19,8 @@ DATABASE_URL = (
 engine = create_engine(DATABASE_URL)
 
 
-def load_waste_data():
+
+def load_waste_data(user_id: int):
     query = text("""
         SELECT
             wr.AreaId,
@@ -37,17 +38,22 @@ def load_waste_data():
         INNER JOIN areas a
             ON wr.AreaId = a.AreaId
         WHERE wr.Status = 'Completed'
+          AND a.UserId = :user_id
         ORDER BY wr.AreaId, wr.CollectionDate;
     """)
 
     with engine.connect() as connection:
-        df = pd.read_sql(query, connection)
+        df = pd.read_sql(
+            query,
+            connection,
+            params={"user_id": user_id}
+        )
 
     return df
 
 
 if __name__ == "__main__":
-    df = load_waste_data()
+    df = load_waste_data(user_id=2)
 
     print("\nLoaded waste records:")
     print(df.head(10))
