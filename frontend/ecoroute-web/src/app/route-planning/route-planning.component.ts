@@ -58,6 +58,13 @@ interface MlRoutesResponse {
   alternative_route_found?: boolean;
 }
 
+interface SavedRoutePlan {
+  status: string;
+  mode: string;
+  routes: Route[];
+  unassigned: unknown[];
+}
+
 interface AreaLocation {
   areaId: number;
   areaName: string;
@@ -354,48 +361,86 @@ export class RoutePlanningComponent
 
     this.subscriptions.add(
       this.http
-        .get<MlRoutesResponse>(
-          `${this.mlApiUrl}/routes/p90`
-        )
+        .get<SavedRoutePlan | null>(`${this.mlApiUrl}/routes/saved`)
         .subscribe({
-          next: response => {
-            console.log(
-              'EcoRoute AI P90 Routes:',
-              response
-            );
-
-            this.routeMode =
-              response.mode || 'P90 Safety Planning';
-
-            this.unassignedAreas = response.unassigned ?? [];
-
-            this.routes =
-              response.routes.map(
-                (route, index) =>
-                  this.mapMlRoute(route, index)
-              );
-
-            if (this.routes.length > 0) {
-              this.selectedRouteId =
-                this.routes[0].id;
+          next: savedPlan => {
+            if (savedPlan && Array.isArray(savedPlan.routes) && savedPlan.routes.length) {
+              this.routeMode = savedPlan.mode || 'P90 Safety Planning';
+              this.unassignedAreas = savedPlan.unassigned ?? [];
+              this.routes = savedPlan.routes;
+              this.selectedRouteId = this.routes[0]?.id ?? '';
+              this.isLoadingRoutes = false;
+              this.mapBoundsInitialized = false;
+              this.roadGeometry.clear();
+              this.loadRoadGeometry();
+              return;
             }
 
-              this.isLoadingRoutes = false;
-
-              this.mapBoundsInitialized = false;
-              this.loadRoadGeometry();
+            // No saved plan exists yet, so generate the initial plan once.
+            this.loadInitialRoutes();
           },
-
           error: error => {
-            console.error(
-              'Failed to load P90 routes:',
-              error
+            console.error('Failed to load saved routes:', error);
+            this.isLoadingRoutes = false;
+            alert('Could not load your saved route plan. Please check the backend and database migration.');
+            this.addBaseTiles();
+          }
+        })
+    );
+  }
+
+  private loadInitialRoutes(): void {
+    this.subscriptions.add(
+      this.http
+        .get<MlRoutesResponse>(`${this.mlApiUrl}/routes/p90`)
+        .subscribe({
+          next: response => {
+            this.routeMode = response.mode || 'P90 Safety Planning';
+            this.unassignedAreas = response.unassigned ?? [];
+            this.routes = response.routes.map((route, index) =>
+              this.mapMlRoute(route, index)
             );
 
+            this.selectedRouteId = this.routes[0]?.id ?? '';
+            this.isLoadingRoutes = false;
+            this.mapBoundsInitialized = false;
+            this.loadRoadGeometry();
+
+            // Keep the first generated plan so future page loads do not re-optimize.
+            this.saveRoutesToDatabase(false);
+          },
+          error: error => {
+            console.error('Failed to generate initial P90 routes:', error);
             this.isLoadingRoutes = false;
             this.unassignedAreas = [];
             this.routes = [];
             this.addBaseTiles();
+            alert('Could not load routes. Please make sure the ML service and backend are running.');
+          }
+        })
+    );
+  }
+
+  private saveRoutesToDatabase(showConfirmation: boolean): void {
+    const plan: SavedRoutePlan = {
+      status: 'success',
+      mode: this.routeMode,
+      routes: this.routes,
+      unassigned: this.unassignedAreas
+    };
+
+    this.subscriptions.add(
+      this.http
+        .put(`${this.mlApiUrl}/routes/saved`, plan)
+        .subscribe({
+          next: () => {
+            if (showConfirmation) {
+              alert('Route changes saved successfully.');
+            }
+          },
+          error: error => {
+            console.error('Failed to save route plan:', error);
+            alert('Could not save the route plan. Please check the backend and database migration.');
           }
         })
     );
@@ -646,10 +691,7 @@ toggleAreaActive(area: ManagementArea): void {
             this.isOptimizing = false;
 
             this.loadRoadGeometry();
-
-            alert(
-              'Routes optimized successfully using P90 safety planning.'
-            );
+            this.saveRoutesToDatabase(true);
           },
 
           error: error => {
@@ -767,12 +809,7 @@ toggleAreaActive(area: ManagementArea): void {
       return;
     }
 
-    alert(
-      `Route ${this.selectedRoute.id} changes applied.\n\n` +
-      `Vehicle: ${this.selectedRoute.vehicle}\n` +
-      `Load: ${this.selectedRoute.wasteLoad}\n` +
-      `Distance: ${this.selectedRoute.distance}`
-    );
+    this.saveRoutesToDatabase(true);
   }
 
   // ============================================================
