@@ -7,6 +7,7 @@ using EcoRoute.API.Data;
 using EcoRoute.API.Models;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json.Nodes;
 
 namespace EcoRoute.API.Controllers;
 
@@ -162,47 +163,86 @@ public class MlController : ControllerBase
         return Ok(dates.Select(date => date.ToString("yyyy-MM-dd")));
     }
 
-    [HttpGet("routes/history/{date}")]
-    public async Task<IActionResult> GetOperationHistory(string date)
+    
+[HttpGet("routes/history/{date}")]
+public async Task<IActionResult> GetOperationHistory(string date)
+{
+    if (!TryGetUserId(out var userId))
+        return Unauthorized();
+
+    if (!DateTime.TryParseExact(
+        date,
+        "yyyy-MM-dd",
+        System.Globalization.CultureInfo.InvariantCulture,
+        System.Globalization.DateTimeStyles.None,
+        out var parsedDate))
     {
-        if (!TryGetUserId(out var userId))
-            return Unauthorized();
-
-        if (!DateTime.TryParseExact(
-            date,
-            "yyyy-MM-dd",
-            System.Globalization.CultureInfo.InvariantCulture,
-            System.Globalization.DateTimeStyles.None,
-            out var parsedDate))
+        return BadRequest(new
         {
-            return BadRequest(new
-            {
-                message = "Date must use yyyy-MM-dd format."
-            });
-        }
-
-        var startDate = parsedDate.Date;
-        var endDate = startDate.AddDays(1);
-
-        var history = await _context.OperationHistories
-            .AsNoTracking()
-            .Where(item =>
-                item.UserId == userId &&
-                item.OperationDate >= startDate &&
-                item.OperationDate < endDate)
-            .OrderByDescending(item => item.CreatedAt)
-            .FirstOrDefaultAsync();
-
-        if (history == null)
-        {
-            return NotFound(new
-            {
-                message = "No operation history exists for this date."
-            });
-        }
-
-        return Content(history.RouteData, "application/json");
+            message = "Date must use yyyy-MM-dd format."
+        });
     }
+
+    var startDate = parsedDate.Date;
+    var endDate = startDate.AddDays(1);
+
+    var history = await _context.OperationHistories
+        .AsNoTracking()
+        .Where(item =>
+            item.UserId == userId &&
+            item.OperationDate >= startDate &&
+            item.OperationDate < endDate)
+        .OrderByDescending(item => item.CreatedAt)
+        .FirstOrDefaultAsync();
+
+    if (history == null)
+    {
+        return NotFound(new
+        {
+            message = "No operation history exists for this date."
+        });
+    }
+
+    try
+    {
+        var routeData = JsonNode.Parse(history.RouteData);
+
+        if (routeData is not JsonObject routeObject)
+        {
+            return StatusCode(500, new
+            {
+                message = "The saved route data is invalid."
+            });
+        }
+
+        var today = GetPhilippineOperationDate();
+
+        var displayedStatus = history.Status;
+
+        // A paused operation becomes officially cancelled
+        // only when its operation date has passed.
+        if (
+            history.Status == "Paused" &&
+            history.OperationDate.Date < today
+        )
+        {
+            displayedStatus = "Cancelled";
+        }
+
+        routeObject["operation_status"] = displayedStatus;
+
+        return Content(
+            routeObject.ToJsonString(),
+            "application/json");
+    }
+    catch (JsonException)
+    {
+        return StatusCode(500, new
+        {
+            message = "The saved route data is invalid."
+        });
+    }
+}
 
 
     private DateTime GetPhilippineOperationDate()
@@ -289,90 +329,248 @@ public class MlController : ControllerBase
         }
     }
 
-    [HttpPost("routes/operation/cancel")]
-    public async Task<IActionResult> CancelOperation()
+    
+
+
+[HttpPost("routes/operation/cancel")]
+public async Task<IActionResult> CancelOperation()
+{
+    if (!TryGetUserId(out var userId))
+        return Unauthorized();
+
+    var operationDate = GetPhilippineOperationDate();
+
+    var operation = await _context.OperationHistories
+        .Where(item =>
+            item.UserId == userId &&
+            item.OperationDate >= operationDate &&
+            item.OperationDate < operationDate.AddDays(1))
+        .OrderByDescending(item => item.CreatedAt)
+        .FirstOrDefaultAsync();
+
+    if (operation == null)
     {
-        if (!TryGetUserId(out var userId))
-            return Unauthorized();
-
-        var operationDate = GetPhilippineOperationDate();
-
-        var operation = await _context.OperationHistories
-            .Where(item =>
-                item.UserId == userId &&
-                item.OperationDate >= operationDate &&
-                item.OperationDate < operationDate.AddDays(1))
-            .OrderByDescending(item => item.CreatedAt)
-            .FirstOrDefaultAsync();
-
-        if (operation == null)
-            return NotFound(new { message = "No operation exists for today." });
-
-        if (operation.Status == "Completed")
-            return Conflict(new { message = "This operation is already completed." });
-
-        operation.Status = "Paused";
-        await _context.SaveChangesAsync();
-
-        return Ok(new { message = "Operation paused.", status = operation.Status });
+        return NotFound(new
+        {
+            message = "No operation exists for today."
+        });
     }
 
-    [HttpPost("routes/operation/resume")]
-    public async Task<IActionResult> ResumeOperation()
+    if (operation.Status == "Completed")
     {
-        if (!TryGetUserId(out var userId))
-            return Unauthorized();
-
-        var operationDate = GetPhilippineOperationDate();
-
-        var operation = await _context.OperationHistories
-            .Where(item =>
-                item.UserId == userId &&
-                item.OperationDate >= operationDate &&
-                item.OperationDate < operationDate.AddDays(1))
-            .OrderByDescending(item => item.CreatedAt)
-            .FirstOrDefaultAsync();
-
-        if (operation == null)
-            return NotFound(new { message = "No operation exists to resume." });
-
-        if (operation.Status == "Completed")
-            return Conflict(new { message = "This operation is already completed." });
-
-        operation.Status = "Active";
-        await _context.SaveChangesAsync();
-
-        return Content(operation.RouteData, "application/json");
+        return Conflict(new
+        {
+            message = "This operation is already completed."
+        });
     }
 
-    [HttpPost("routes/operation/finish")]
-    public async Task<IActionResult> FinishOperation()
+    if (operation.Status == "Paused")
     {
-        if (!TryGetUserId(out var userId))
-            return Unauthorized();
-
-        var operationDate = GetPhilippineOperationDate();
-
-        var operation = await _context.OperationHistories
-            .Where(item =>
-                item.UserId == userId &&
-                item.OperationDate >= operationDate &&
-                item.OperationDate < operationDate.AddDays(1))
-            .OrderByDescending(item => item.CreatedAt)
-            .FirstOrDefaultAsync();
-
-        if (operation == null)
-            return NotFound(new { message = "No operation exists for today." });
-
-        operation.Status = "Completed";
-        await _context.SaveChangesAsync();
-
         return Ok(new
         {
-            message = "Operation completed.",
+            message = "Operation is already paused.",
             status = operation.Status
         });
     }
+
+    operation.Status = "Paused";
+
+    await _context.SaveChangesAsync();
+
+    return Ok(new
+    {
+        message = "Operation paused. You can resume it today.",
+        status = operation.Status
+    });
+}
+
+    
+[HttpPost("routes/operation/resume")]
+public async Task<IActionResult> ResumeOperation()
+{
+    if (!TryGetUserId(out var userId))
+        return Unauthorized();
+
+    var operationDate = GetPhilippineOperationDate();
+
+    var operation = await _context.OperationHistories
+        .Where(item =>
+            item.UserId == userId &&
+            item.OperationDate >= operationDate &&
+            item.OperationDate < operationDate.AddDays(1))
+        .OrderByDescending(item => item.CreatedAt)
+        .FirstOrDefaultAsync();
+
+    if (operation == null)
+    {
+        return NotFound(new
+        {
+            message = "No operation exists to resume."
+        });
+    }
+
+    if (operation.Status == "Completed")
+    {
+        return Conflict(new
+        {
+            message = "This operation is already completed."
+        });
+    }
+
+    if (operation.Status != "Paused" &&
+        operation.Status != "Cancelled")
+    {
+        return Conflict(new
+        {
+            message = "Only a paused or cancelled operation can be resumed."
+        });
+    }
+
+    operation.Status = "Active";
+
+    await _context.SaveChangesAsync();
+
+    return Content(operation.RouteData, "application/json");
+}
+
+    
+[HttpPost("routes/operation/finish-truck")]
+public async Task<IActionResult> FinishTruck(
+    [FromBody] JsonElement request)
+{
+    if (!TryGetUserId(out var userId))
+        return Unauthorized();
+
+    if (request.ValueKind != JsonValueKind.Object ||
+        !request.TryGetProperty("vehicleId", out var vehicleIdElement) ||
+        !vehicleIdElement.TryGetInt32(out var vehicleId) ||
+        vehicleId <= 0)
+    {
+        return BadRequest(new
+        {
+            message = "A valid vehicleId is required."
+        });
+    }
+
+    var operationDate = GetPhilippineOperationDate();
+
+    var operation = await _context.OperationHistories
+        .Where(item =>
+            item.UserId == userId &&
+            item.OperationDate >= operationDate &&
+            item.OperationDate < operationDate.AddDays(1))
+        .OrderByDescending(item => item.CreatedAt)
+        .FirstOrDefaultAsync();
+
+    if (operation == null)
+        return NotFound(new
+        {
+            message = "No operation exists for today."
+        });
+
+    if (operation.Status != "Active")
+        return Conflict(new
+        {
+            message = "Only an active operation can finish a truck."
+        });
+
+    JsonNode? root;
+
+    try
+    {
+        root = JsonNode.Parse(operation.RouteData);
+    }
+    catch (JsonException)
+    {
+        return StatusCode(500, new
+        {
+            message = "The saved route data is invalid."
+        });
+    }
+
+    var routes = root?["routes"]?.AsArray();
+
+    if (routes == null)
+        return BadRequest(new
+        {
+            message = "No routes were found in the saved operation."
+        });
+
+    foreach (var route in routes)
+{
+    if (route == null || route["status"] != null)
+        continue;
+
+    var distanceExceeded =
+        string.Equals(
+            route["distance_exceeded"]?.ToString(),
+            "true",
+            StringComparison.OrdinalIgnoreCase);
+
+    route["status"] = distanceExceeded ? "Pending" : "Active";
+}
+
+    JsonNode? targetRoute = null;
+
+    foreach (var route in routes)
+    {
+        if (route == null)
+            continue;
+
+        var savedVehicleId =
+            route["vehicle_id"]?.ToString() ??
+            route["vehicleId"]?.ToString();
+
+        if (int.TryParse(savedVehicleId, out var parsedVehicleId) &&
+            parsedVehicleId == vehicleId)
+        {
+            targetRoute = route;
+            break;
+        }
+    }
+
+    if (targetRoute == null)
+        return NotFound(new
+        {
+            message = "The specified truck was not found in this operation."
+        });
+
+    if (string.Equals(
+        targetRoute["status"]?.ToString(),
+        "Completed",
+        StringComparison.OrdinalIgnoreCase))
+    {
+        return Conflict(new
+        {
+            message = "This truck's route is already completed."
+        });
+    }
+
+    targetRoute["status"] = "Completed";
+
+    var allRoutesCompleted = routes.Count > 0 &&
+        routes.All(route =>
+            route != null &&
+            string.Equals(
+                route["status"]?.ToString(),
+                "Completed",
+                StringComparison.OrdinalIgnoreCase));
+
+    operation.Status = allRoutesCompleted ? "Completed" : "Active";
+    operation.RouteData = root!.ToJsonString();
+
+    await _context.SaveChangesAsync();
+
+    return Ok(new
+    {
+        message = allRoutesCompleted
+            ? "All truck routes are completed. The operation is complete."
+            : "Truck route marked as completed.",
+        status = operation.Status,
+        routeData = JsonSerializer.Deserialize<JsonElement>(
+            operation.RouteData)
+    });
+}
 
 
 [HttpGet("routes/operation/status/{date}")]
