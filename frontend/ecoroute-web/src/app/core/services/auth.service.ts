@@ -3,7 +3,6 @@ import { HttpClient } from '@angular/common/http';
 import { Observable, tap, finalize } from 'rxjs';
 import { ApiService } from './api.service';
 
-
 export interface LoginRequest {
   usernameOrEmail: string;
   password: string;
@@ -11,12 +10,41 @@ export interface LoginRequest {
 }
 
 export interface AuthResponse {
+  requiresTwoFactor?: false;
   token: string;
   userId: number;
   fullName: string;
   email: string;
   username: string;
   role: string;
+}
+
+export interface TwoFactorRequiredResponse {
+  requiresTwoFactor: true;
+  challengeId: string;
+  maskedEmail: string;
+  expiresInSeconds: number;
+  resendAvailableInSeconds: number;
+}
+
+export type LoginResponse = AuthResponse | TwoFactorRequiredResponse;
+
+export interface PendingTwoFactor {
+  challengeId: string;
+  maskedEmail: string;
+  resendAvailableAt: number;
+}
+
+export interface ResendCodeResponse {
+  message: string;
+  expiresInSeconds: number;
+  resendAvailableInSeconds: number;
+}
+
+export function isTwoFactorRequired(
+  response: LoginResponse
+): response is TwoFactorRequiredResponse {
+  return response.requiresTwoFactor === true;
 }
 
 @Injectable({
@@ -26,34 +54,121 @@ export class AuthService {
 
   private readonly tokenKey = 'ecoroute_token';
   private readonly userKey = 'ecoroute_user';
+  private readonly twoFactorKey = 'ecoroute_2fa';
 
   constructor(
     private http: HttpClient,
     private api: ApiService
   ) {}
 
-  login(request: LoginRequest): Observable<AuthResponse> {
+  login(request: LoginRequest): Observable<LoginResponse> {
     return this.http
-      .post<AuthResponse>(
+      .post<LoginResponse>(
         `${this.api.getBaseUrl()}/Auth/login`,
-        request
+        request,
+        { withCredentials: true } // SENDS THE TRUSTED DEVICE COOKIE
       )
       .pipe(
         tap(response => {
-          localStorage.setItem(this.tokenKey, response.token);
+          // 2FA NEEDED: DON'T SAVE A TOKEN YET
 
-          localStorage.setItem(
-            this.userKey,
-            JSON.stringify({
-              userId: response.userId,
-              fullName: response.fullName,
-              email: response.email,
-              username: response.username,
-              role: response.role
-            })
-          );
+          if (isTwoFactorRequired(response)) {
+            this.savePendingTwoFactor(response);
+            return;
+          }
+
+          this.clearPendingTwoFactor();
+          this.saveSession(response);
         })
       );
+  }
+
+  verifyTwoFactor(code: string): Observable<AuthResponse> {
+    const pending = this.getPendingTwoFactor();
+
+    return this.http
+      .post<AuthResponse>(
+        `${this.api.getBaseUrl()}/Auth/verify-two-factor`,
+        { challengeId: pending?.challengeId ?? '', code },
+        { withCredentials: true } // RECEIVES THE TRUSTED DEVICE COOKIE
+      )
+      .pipe(
+        tap(response => {
+          this.saveSession(response);
+          this.clearPendingTwoFactor();
+        })
+      );
+  }
+
+  resendTwoFactorCode(): Observable<ResendCodeResponse> {
+    const pending = this.getPendingTwoFactor();
+
+    return this.http
+      .post<ResendCodeResponse>(
+        `${this.api.getBaseUrl()}/Auth/resend-two-factor-code`,
+        { challengeId: pending?.challengeId ?? '' }
+      )
+      .pipe(
+        tap(response => {
+          this.setResendAvailableIn(response.resendAvailableInSeconds);
+        })
+      );
+  }
+
+  // PENDING 2FA (sessionStorage SO IT SURVIVES A REFRESH)
+
+  getPendingTwoFactor(): PendingTwoFactor | null {
+    const value = sessionStorage.getItem(this.twoFactorKey);
+
+    if (!value) {
+      return null;
+    }
+
+    try {
+      return JSON.parse(value);
+    } catch {
+      return null;
+    }
+  }
+
+  setResendAvailableIn(seconds: number): void {
+    const pending = this.getPendingTwoFactor();
+
+    if (!pending) {
+      return;
+    }
+
+    pending.resendAvailableAt = Date.now() + seconds * 1000;
+    sessionStorage.setItem(this.twoFactorKey, JSON.stringify(pending));
+  }
+
+  clearPendingTwoFactor(): void {
+    sessionStorage.removeItem(this.twoFactorKey);
+  }
+
+  private savePendingTwoFactor(response: TwoFactorRequiredResponse): void {
+    const pending: PendingTwoFactor = {
+      challengeId: response.challengeId,
+      maskedEmail: response.maskedEmail,
+      resendAvailableAt: Date.now() + response.resendAvailableInSeconds * 1000
+    };
+
+    sessionStorage.setItem(this.twoFactorKey, JSON.stringify(pending));
+  }
+
+  private saveSession(response: AuthResponse): void {
+    localStorage.setItem(this.tokenKey, response.token);
+
+    localStorage.setItem(
+      this.userKey,
+      JSON.stringify({
+        userId: response.userId,
+        fullName: response.fullName,
+        email: response.email,
+        username: response.username,
+        role: response.role
+      })
+    );
   }
 
   logout(): Observable<any> {

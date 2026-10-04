@@ -4,6 +4,7 @@ using EcoRoute.API.Models;
 using EcoRoute.API.Models.Account;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 
 namespace EcoRoute.API.Controllers;
@@ -64,7 +65,8 @@ public class UsersController : ControllerBase
             username = user.Username,
             role = user.Role,
             createdAt = user.CreatedAt,
-            updatedAt = user.UpdatedAt
+            updatedAt = user.UpdatedAt,
+            twoFactorEnabled = user.TwoFactorEnabled
         });
     }
 
@@ -324,6 +326,82 @@ public class UsersController : ControllerBase
         return Ok(new
         {
             message = "Password changed successfully."
+        });
+    }
+
+    // TWO-FACTOR SETTING
+
+    [HttpPut("two-factor")]
+    [EnableRateLimiting("auth")]
+    public async Task<IActionResult> UpdateTwoFactor(
+        UpdateTwoFactorRequest request)
+    {
+        var userIdClaim = User.FindFirstValue(
+            ClaimTypes.NameIdentifier);
+
+        if (!int.TryParse(userIdClaim, out var userId))
+        {
+            return Unauthorized(new
+            {
+                message = "Invalid user identity."
+            });
+        }
+
+        var user = await _context.Users
+            .FirstOrDefaultAsync(u => u.UserId == userId);
+
+        if (user == null)
+        {
+            return NotFound(new
+            {
+                message = "User not found."
+            });
+        }
+
+        // TURNING OFF NEEDS THE PASSWORD (400, NOT 401, SO THE USER STAYS LOGGED IN)
+
+        if (!request.Enabled && user.TwoFactorEnabled)
+        {
+            if (string.IsNullOrEmpty(request.CurrentPassword))
+            {
+                return BadRequest(new
+                {
+                    message = "Please enter your password to turn off two-factor authentication."
+                });
+            }
+
+            if (!BCrypt.Net.BCrypt.Verify(request.CurrentPassword, user.PasswordHash))
+            {
+                return BadRequest(new
+                {
+                    message = "Incorrect password."
+                });
+            }
+        }
+
+        user.TwoFactorEnabled = request.Enabled;
+        user.UpdatedAt = DateTime.UtcNow;
+
+        // TURNING ON: EVERY DEVICE HAS TO VERIFY AGAIN
+
+        if (request.Enabled)
+        {
+            await _context.TrustedDevices
+                .Where(d =>
+                    d.UserId == userId &&
+                    d.RevokedAt == null)
+                .ExecuteUpdateAsync(s => s
+                    .SetProperty(d => d.RevokedAt, (DateTime?)DateTime.UtcNow));
+        }
+
+        await _context.SaveChangesAsync();
+
+        return Ok(new
+        {
+            twoFactorEnabled = user.TwoFactorEnabled,
+            message = request.Enabled
+                ? "Two-factor authentication enabled."
+                : "Two-factor authentication disabled."
         });
     }
 

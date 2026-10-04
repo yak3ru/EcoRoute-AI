@@ -19,6 +19,7 @@ import { SystemComponent } from './settings/system/system.component';
 import { DataPreferencesComponent } from './settings/data-preferences/data-preferences.component';
 
 import { authGuard } from './core/guards/auth.guard';
+import { TwoFactorComponent } from './auth/two-factor/two-factor.component';
 
 export const routes: Routes = [
   {
@@ -39,6 +40,11 @@ export const routes: Routes = [
   {
     path: 'reset-password',
     component: ResetPasswordComponent
+  },
+
+  {
+    path: 'verify-code',
+    component: TwoFactorComponent
   },
 
   {

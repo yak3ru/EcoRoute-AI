@@ -11,6 +11,12 @@ export interface UserProfile {
   role: string;
   createdAt: string;
   updatedAt: string;
+  twoFactorEnabled: boolean;
+}
+
+export interface UpdateTwoFactorResponse {
+  twoFactorEnabled: boolean;
+  message: string;
 }
 
 export interface UpdateAccountRequest {
@@ -71,6 +77,18 @@ export class UserService {
     return this.http.put(
       `${this.api.getBaseUrl()}/Users/password`,
       request
+    );
+  }
+
+  // PASSWORD IS ONLY NEEDED WHEN TURNING 2FA OFF
+
+  updateTwoFactor(
+    enabled: boolean,
+    currentPassword?: string
+  ): Observable<UpdateTwoFactorResponse> {
+    return this.http.put<UpdateTwoFactorResponse>(
+      `${this.api.getBaseUrl()}/Users/two-factor`,
+      { enabled, currentPassword }
     );
   }
 

@@ -400,6 +400,35 @@
   transform: translateX(18px);
 }
 
+.toggle-switch:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.two-factor-message {
+  margin: 10px 0 0;
+  font-size: 13px;
+}
+
+.two-factor-message.error {
+  color: #d92d20;
+}
+
+.two-factor-message.success {
+  color: #15802a;
+}
+
+// TURN OFF 2FA DIALOG
+
+.disable-two-factor-field {
+  margin-top: 16px;
+  text-align: left;
+}
+
+.session-dialog p.dialog-error {
+  color: #d92d20;
+}
+
 // ACTIVE SESSIONS
 .sessions-card {
   padding: 18px 26px 14px;

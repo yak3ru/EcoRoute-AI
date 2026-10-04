@@ -13,4 +13,7 @@ public class User
     public string? PasswordResetToken { get; set; }
     public DateTime? PasswordResetTokenExpiresAt { get; set; }
     public DateTime? PasswordResetLastSentAt { get; set; }
+
+    // OFF BY DEFAULT, USERS TURN IT ON IN SETTINGS
+    public bool TwoFactorEnabled { get; set; }
 }

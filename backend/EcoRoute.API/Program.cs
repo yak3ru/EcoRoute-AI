@@ -5,6 +5,9 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
+using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -156,9 +159,42 @@ builder.Services.AddAuthentication(
         };
     });
 
-// CONTROLLERS
+// AUTHORIZATION (LOGIN REQUIRED BY DEFAULT)
 
-builder.Services.AddControllers();
+builder.Services.AddAuthorization(options =>
+{
+    options.FallbackPolicy = new AuthorizationPolicyBuilder()
+        .RequireAuthenticatedUser()
+        .Build();
+});
+
+// RATE LIMITING (10 REQUESTS PER MINUTE PER IP)
+
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+    options.AddPolicy("auth", httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 10,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0
+            }));
+
+    options.OnRejected = async (context, cancellationToken) =>
+    {
+        await context.HttpContext.Response.WriteAsJsonAsync(
+            new
+            {
+                errorCode = "RATE_LIMITED",
+                message = "Too many requests. Please wait a minute and try again."
+            },
+            cancellationToken);
+    };
+});
 
 // CORS
 
@@ -169,9 +205,14 @@ builder.Services.AddCors(options =>
         policy
             .WithOrigins("http://localhost:4200")
             .AllowAnyHeader()
-            .AllowAnyMethod();
+            .AllowAnyMethod()
+            .AllowCredentials();
     });
 });
+
+// CONTROLLERS
+
+builder.Services.AddControllers();
 
 // SWAGGER
 
@@ -211,6 +252,8 @@ if (app.Environment.IsDevelopment())
 // MIDDLEWARE
 
 app.UseCors("AngularClient");
+
+app.UseRateLimiter();
 
 app.UseAuthentication();
 app.UseAuthorization();

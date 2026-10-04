@@ -229,6 +229,115 @@ namespace EcoRoute.API.Migrations
                     b.ToTable("saved_route_plans", (string)null);
                 });
 
+            modelBuilder.Entity("EcoRoute.API.Models.TrustedDevice", b =>
+                {
+                    b.Property<int>("TrustedDeviceId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("TrustedDeviceId"));
+
+                    b.Property<string>("Browser")
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)")
+                        .HasColumnName("Browser");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("Device")
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)")
+                        .HasColumnName("Device");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<DateTime?>("LastUsedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<DateTime?>("RevokedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("TokenHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("varchar(64)")
+                        .HasColumnName("TokenHash");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("TrustedDeviceId");
+
+                    b.HasIndex("TokenHash")
+                        .IsUnique();
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("trusted_devices", (string)null);
+                });
+
+            modelBuilder.Entity("EcoRoute.API.Models.TwoFactorChallenge", b =>
+                {
+                    b.Property<int>("TwoFactorChallengeId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("TwoFactorChallengeId"));
+
+                    b.Property<string>("ChallengeId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("varchar(64)")
+                        .HasColumnName("ChallengeId");
+
+                    b.Property<string>("CodeHash")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("varchar(255)")
+                        .HasColumnName("CodeHash");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<int>("FailedAttempts")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("LastSentAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<bool>("RememberMe")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<int>("ResendCount")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)")
+                        .HasColumnName("Status");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("VerifiedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.HasKey("TwoFactorChallengeId");
+
+                    b.HasIndex("ChallengeId")
+                        .IsUnique();
+
+                    b.HasIndex("UserId", "Status");
+
+                    b.ToTable("two_factor_challenges", (string)null);
+                });
+
             modelBuilder.Entity("EcoRoute.API.Models.User", b =>
                 {
                     b.Property<int>("UserId")
@@ -279,6 +388,10 @@ namespace EcoRoute.API.Migrations
                         .HasColumnType("varchar(50)")
                         .HasDefaultValue("Administrator")
                         .HasColumnName("Role");
+
+                    b.Property<bool>("TwoFactorEnabled")
+                        .HasColumnType("tinyint(1)")
+                        .HasColumnName("TwoFactorEnabled");
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime(6)")
@@ -512,6 +625,28 @@ namespace EcoRoute.API.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("EcoRoute.API.Models.TrustedDevice", b =>
+                {
+                    b.HasOne("EcoRoute.API.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("EcoRoute.API.Models.TwoFactorChallenge", b =>
+                {
+                    b.HasOne("EcoRoute.API.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("EcoRoute.API.Models.UserSession", b =>

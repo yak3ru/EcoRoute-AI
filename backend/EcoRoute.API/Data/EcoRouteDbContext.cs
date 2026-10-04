@@ -22,6 +22,8 @@ public class EcoRouteDbContext : DbContext
     public DbSet<UserSession> UserSessions => Set<UserSession>();
     public DbSet<SavedRoutePlan> SavedRoutePlans => Set<SavedRoutePlan>();
     public DbSet<OperationHistory> OperationHistories => Set<OperationHistory>();
+    public DbSet<TwoFactorChallenge> TwoFactorChallenges => Set<TwoFactorChallenge>();
+    public DbSet<TrustedDevice> TrustedDevices => Set<TrustedDevice>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -319,6 +321,9 @@ public class EcoRouteDbContext : DbContext
 
             entity.Property(u => u.PasswordResetTokenExpiresAt)
                 .HasColumnName("PasswordResetTokenExpiresAt");
+
+            entity.Property(u => u.TwoFactorEnabled)
+                .HasColumnName("TwoFactorEnabled");
         });
 
         // USER SESSIONS
@@ -383,7 +388,6 @@ public class EcoRouteDbContext : DbContext
             entity.HasIndex(s => s.UserId);
         });
 
-        
         // SAVED ROUTE PLANS
 
         modelBuilder.Entity<SavedRoutePlan>(entity =>
@@ -437,5 +441,71 @@ public class EcoRouteDbContext : DbContext
         .HasForeignKey(e => e.UserId)
         .OnDelete(DeleteBehavior.Cascade);
 });
+
+        // TWO-FACTOR CHALLENGES
+
+        modelBuilder.Entity<TwoFactorChallenge>(entity =>
+        {
+            entity.ToTable("two_factor_challenges");
+
+            entity.HasKey(c => c.TwoFactorChallengeId);
+
+            entity.Property(c => c.ChallengeId)
+                .HasColumnName("ChallengeId")
+                .HasMaxLength(64)
+                .IsRequired();
+
+            entity.HasIndex(c => c.ChallengeId)
+                .IsUnique();
+
+            entity.Property(c => c.CodeHash)
+                .HasColumnName("CodeHash")
+                .HasMaxLength(255)
+                .IsRequired();
+
+            entity.Property(c => c.Status)
+                .HasColumnName("Status")
+                .HasMaxLength(20)
+                .IsRequired();
+
+            entity.HasOne(c => c.User)
+                .WithMany()
+                .HasForeignKey(c => c.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(c => new { c.UserId, c.Status });
+        });
+
+        // TRUSTED DEVICES
+
+        modelBuilder.Entity<TrustedDevice>(entity =>
+        {
+            entity.ToTable("trusted_devices");
+
+            entity.HasKey(d => d.TrustedDeviceId);
+
+            entity.Property(d => d.TokenHash)
+                .HasColumnName("TokenHash")
+                .HasMaxLength(64)
+                .IsRequired();
+
+            entity.HasIndex(d => d.TokenHash)
+                .IsUnique();
+
+            entity.Property(d => d.Device)
+                .HasColumnName("Device")
+                .HasMaxLength(100);
+
+            entity.Property(d => d.Browser)
+                .HasColumnName("Browser")
+                .HasMaxLength(100);
+
+            entity.HasOne(d => d.User)
+                .WithMany()
+                .HasForeignKey(d => d.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(d => d.UserId);
+        });
     }
 }

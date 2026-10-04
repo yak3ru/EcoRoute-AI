@@ -652,4 +652,107 @@ public class EmailService : IEmailService
 
         await smtp.DisconnectAsync(true);
     }
+
+    // 2FA CODE (PLAIN TEXT FOR NOW)
+
+    public async Task SendTwoFactorCodeEmailAsync(
+        string email,
+        string fullName,
+        string code)
+    {
+        var message = CreateMessage(
+            email,
+            fullName,
+            "Your EcoRoute AI Two-Factor Authentication Code");
+
+        message.Body = new TextPart("plain")
+        {
+            Text = $"Your EcoRoute AI verification code is: {code}\n\n" +
+                "This code expires in 5 minutes."
+        };
+
+        await SendMessageAsync(message);
+    }
+
+    private MimeMessage CreateMessage(
+        string email,
+        string fullName,
+        string subject)
+    {
+        var username =
+            _configuration["Email:Username"]
+            ?? throw new InvalidOperationException(
+                "Email:Username is not configured.");
+
+        var fromAddress = _configuration["Email:FromAddress"] ?? username;
+        var fromName = _configuration["Email:FromName"] ?? "EcoRoute AI";
+
+        var message = new MimeMessage();
+        message.From.Add(new MailboxAddress(fromName, fromAddress));
+        message.To.Add(new MailboxAddress(fullName, email));
+        message.Subject = subject;
+
+        return message;
+    }
+
+    private async Task SendMessageAsync(MimeMessage message)
+    {
+        var smtpHost =
+            _configuration["Email:SmtpHost"]
+            ?? throw new InvalidOperationException(
+                "Email:SmtpHost is not configured.");
+
+        var smtpPort = int.Parse(_configuration["Email:SmtpPort"] ?? "587");
+
+        var username =
+            _configuration["Email:Username"]
+            ?? throw new InvalidOperationException(
+                "Email:Username is not configured.");
+
+        var password =
+            _configuration["Email:SmtpPassword"]
+            ?? throw new InvalidOperationException(
+                "Email:SmtpPassword is not configured.");
+
+        using var smtp = new SmtpClient();
+
+        smtp.ServerCertificateValidationCallback =
+            (sender, certificate, chain, sslPolicyErrors) =>
+            {
+                if (sslPolicyErrors ==
+                    System.Net.Security.SslPolicyErrors.None)
+                {
+                    return true;
+                }
+
+                if (sslPolicyErrors ==
+                    System.Net.Security.SslPolicyErrors.RemoteCertificateChainErrors)
+                {
+                    if (chain?.ChainStatus != null)
+                    {
+                        foreach (var status in chain.ChainStatus)
+                        {
+                            if (status.Status !=
+                                    System.Security.Cryptography.X509Certificates
+                                        .X509ChainStatusFlags.RevocationStatusUnknown &&
+                                status.Status !=
+                                    System.Security.Cryptography.X509Certificates
+                                        .X509ChainStatusFlags.OfflineRevocation)
+                            {
+                                return false;
+                            }
+                        }
+
+                        return true;
+                    }
+                }
+
+                return false;
+            };
+
+        await smtp.ConnectAsync(smtpHost, smtpPort, SecureSocketOptions.StartTls);
+        await smtp.AuthenticateAsync(username, password);
+        await smtp.SendAsync(message);
+        await smtp.DisconnectAsync(true);
+    }
 }

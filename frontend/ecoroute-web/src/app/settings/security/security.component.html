@@ -321,6 +321,7 @@
           type="button"
           class="toggle-switch"
           [class.enabled]="twoFactorEnabled"
+          [disabled]="isUpdatingTwoFactor || !hasLoadedTwoFactor"
           (click)="toggleTwoFactor()"
           [attr.aria-label]="
             twoFactorEnabled
@@ -334,6 +335,113 @@
         <span>Enable 2FA</span>
 
       </div>
+
+    </div>
+
+    <p class="two-factor-message error" *ngIf="twoFactorError">
+      {{ twoFactorError }}
+    </p>
+
+    <p class="two-factor-message success" *ngIf="twoFactorSuccess">
+      {{ twoFactorSuccess }}
+    </p>
+
+    <!-- TURN OFF 2FA CONFIRMATION -->
+
+    <div
+      class="session-dialog-backdrop"
+      *ngIf="showDisableTwoFactorDialog"
+      (click)="closeDisableTwoFactorDialog()"
+    >
+
+      <form
+        class="session-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="disable-two-factor-title"
+        (click)="$event.stopPropagation()"
+        (ngSubmit)="confirmDisableTwoFactor()"
+      >
+
+        <h3 id="disable-two-factor-title">Turn off two-factor authentication?</h3>
+
+        <p>
+          Your account will only be protected by your password. Enter your
+          password to confirm.
+        </p>
+
+        <div class="form-field disable-two-factor-field">
+          <label for="disableTwoFactorPassword">
+            Password
+          </label>
+
+          <div class="password-input">
+
+            <img
+              src="assets/icons/lock.svg"
+              alt=""
+              class="input-lock"
+            />
+
+            <input
+              id="disableTwoFactorPassword"
+              name="disableTwoFactorPassword"
+              [type]="showDisableTwoFactorPassword ? 'text' : 'password'"
+              [(ngModel)]="disableTwoFactorPassword"
+              placeholder="Enter your password"
+              autocomplete="current-password"
+              [disabled]="isUpdatingTwoFactor"
+            />
+
+            <button
+              type="button"
+              class="eye-button"
+              (click)="toggleDisableTwoFactorPassword()"
+              [attr.aria-label]="
+                showDisableTwoFactorPassword
+                  ? 'Hide password'
+                  : 'Show password'
+              "
+            >
+              <img
+                [src]="
+                  showDisableTwoFactorPassword
+                    ? 'assets/icons/eyeclose.svg'
+                    : 'assets/icons/eye.svg'
+                "
+                alt=""
+              />
+            </button>
+
+          </div>
+        </div>
+
+        <p class="dialog-error" *ngIf="disableTwoFactorError">
+          {{ disableTwoFactorError }}
+        </p>
+
+        <div class="dialog-actions">
+
+          <button
+            type="button"
+            class="dialog-cancel-button"
+            (click)="closeDisableTwoFactorDialog()"
+            [disabled]="isUpdatingTwoFactor"
+          >
+            Cancel
+          </button>
+
+          <button
+            type="submit"
+            class="dialog-logout-button"
+            [disabled]="isUpdatingTwoFactor"
+          >
+            {{ isUpdatingTwoFactor ? 'Turning off...' : 'Turn Off 2FA' }}
+          </button>
+
+        </div>
+
+      </form>
 
     </div>
 

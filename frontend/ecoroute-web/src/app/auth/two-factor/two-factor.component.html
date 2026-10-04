@@ -1,0 +1,137 @@
+<div class="two-factor-page">
+  <!-- LEFT SIDE -->
+  <section class="two-factor-left">
+    <div class="two-factor-container">
+      <!-- BRAND -->
+      <div class="brand">
+        <img
+          class="brand-logo"
+          src="assets/icons/ecoroute-logo.svg"
+          alt="EcoRoute AI Logo"
+        >
+
+        <div class="brand-text">
+          <h1>EcoRoute AI</h1>
+          <p>The Developers Company</p>
+        </div>
+      </div>
+
+      <!-- MAIL ICON -->
+      <div class="mail-badge" aria-hidden="true">
+        <span class="spark spark-left-top"></span>
+        <span class="spark spark-left-bottom"></span>
+        <span class="spark spark-right-top"></span>
+        <span class="spark spark-right-bottom"></span>
+
+        <div class="mail-circle">
+          <svg class="mail-icon" viewBox="0 0 120 84">
+            <rect x="0" y="0" width="120" height="84" rx="8" fill="#3fbf55" />
+            <path d="M4 6 L60 48 L116 6" fill="none" stroke="#2a9c3e" stroke-width="7" stroke-linejoin="round" />
+            <path d="M4 80 L46 40 M116 80 L74 40" fill="none" stroke="#35b04b" stroke-width="5" />
+          </svg>
+
+          <svg class="shield-icon" viewBox="0 0 48 56">
+            <path d="M24 2 L44 9 V26 C44 40 35 50 24 54 C13 50 4 40 4 26 V9 Z" fill="#127a2a" stroke="#ffffff" stroke-width="3" />
+            <path d="M15 28 L22 35 L34 21" fill="none" stroke="#ffffff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </div>
+      </div>
+
+      <!-- HEADER -->
+      <div class="two-factor-header">
+        <h2>Two-Factor Authentication</h2>
+
+        <p>
+          We've sent a 4-digit verification code to your email address.
+        </p>
+
+        <span class="email-pill" *ngIf="maskedEmail">
+          {{ maskedEmail }}
+        </span>
+
+        <p class="instruction">
+          Enter the code below to verify your identity and continue.
+        </p>
+      </div>
+
+      <!-- CODE BOXES -->
+      <div class="code-inputs" (paste)="onPaste($event)">
+        <input
+          #digitInput
+          *ngFor="let digit of digits; let i = index; trackBy: trackByIndex"
+          class="code-box"
+          [class.filled]="digit"
+          [class.has-error]="errorMessage"
+          type="text"
+          inputmode="numeric"
+          autocomplete="one-time-code"
+          placeholder="&#8226;"
+          [attr.aria-label]="'Digit ' + (i + 1)"
+          [value]="digit"
+          [disabled]="isVerifying || sessionEnded"
+          (input)="onDigitInput(i, $event)"
+          (keydown)="onDigitKeyDown(i, $event)"
+        >
+      </div>
+
+      <!-- MESSAGES -->
+      <p class="message error-message" *ngIf="errorMessage">
+        {{ errorMessage }}
+      </p>
+
+      <p class="message success-message" *ngIf="successMessage">
+        {{ successMessage }}
+      </p>
+
+      <!-- RESEND -->
+      <p class="resend-row">
+        Didn't receive a code?
+
+        <button
+          type="button"
+          class="resend-button"
+          [disabled]="resendCooldown > 0 || isResending || sessionEnded"
+          (click)="resend()"
+        >
+          <ng-container *ngIf="isResending">Sending...</ng-container>
+          <ng-container *ngIf="!isResending && resendCooldown > 0">Resend Code ({{ resendCooldown }}s)</ng-container>
+          <ng-container *ngIf="!isResending && resendCooldown === 0">Resend Code</ng-container>
+        </button>
+      </p>
+
+      <!-- VERIFY -->
+      <button
+        type="button"
+        class="verify-button"
+        [disabled]="!isCodeComplete || isVerifying || sessionEnded"
+        (click)="verify()"
+      >
+        {{ isVerifying ? 'Verifying...' : 'Verify Code' }}
+      </button>
+
+      <div class="divider"></div>
+
+      <!-- BACK -->
+      <button
+        type="button"
+        class="back-button"
+        (click)="backToLogin()"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M20 12 H5 M11 5 L4 12 L11 19" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+
+        Back to Login
+      </button>
+    </div>
+  </section>
+
+  <!-- RIGHT SIDE -->
+  <section class="two-factor-right">
+    <img
+      class="hero-image"
+      src="assets/images/login-hero.png"
+      alt="EcoRoute AI smarter routes cleaner communities"
+    >
+  </section>
+</div>

@@ -6,4 +6,9 @@ public interface IEmailService
         string recipientEmail,
         string recipientName,
         string resetUrl);
+
+    Task SendTwoFactorCodeEmailAsync(
+        string recipientEmail,
+        string recipientName,
+        string twoFactorCode);
 }

@@ -2,7 +2,7 @@ import { Component } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { NgIf } from '@angular/common';
-import { AuthService } from '../../core/services/auth.service';
+import { AuthService, isTwoFactorRequired } from '../../core/services/auth.service';
 
 @Component({
   selector: 'app-login',
@@ -58,8 +58,16 @@ export class LoginComponent {
       password: this.password,
       rememberMe: this.rememberMe
     }).subscribe({
-      next: () => {
+      next: (response) => {
         this.isLoading = false;
+
+        // NEW DEVICE: ASK FOR THE CODE
+
+        if (isTwoFactorRequired(response)) {
+          this.router.navigate(['/verify-code']);
+          return;
+        }
+
         this.router.navigate(['/dashboard']);
       },
 
@@ -68,9 +76,12 @@ export class LoginComponent {
 
         if (error.status === 401) {
           this.errorMessage = 'Invalid username/email or password.';
-        } else if (error.status === 400) {
+        } else if (error.status === 400 || error.status === 429) {
           this.errorMessage =
             error.error?.message ?? 'Please check your login details.';
+        } else if (error.status === 500) {
+          this.errorMessage =
+            error.error?.message ?? 'Something went wrong. Please try again.';
         } else {
           this.errorMessage =
             'Unable to connect to the server. Please try again.';

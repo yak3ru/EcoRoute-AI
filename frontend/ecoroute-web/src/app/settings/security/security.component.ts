@@ -47,6 +47,17 @@ export class SecurityComponent implements OnInit, OnDestroy {
   showConfirmPassword = false;
 
   twoFactorEnabled = false;
+  hasLoadedTwoFactor = false;
+  isUpdatingTwoFactor = false;
+  twoFactorError = '';
+  twoFactorSuccess = '';
+
+  // TURN OFF 2FA DIALOG
+
+  showDisableTwoFactorDialog = false;
+  disableTwoFactorPassword = '';
+  showDisableTwoFactorPassword = false;
+  disableTwoFactorError = '';
 
   passwordError = '';
   passwordSuccess = '';
@@ -85,6 +96,7 @@ export class SecurityComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.loadSessions();
+    this.loadTwoFactorSetting();
   }
 
   ngOnDestroy(): void {
@@ -377,8 +389,103 @@ export class SecurityComponent implements OnInit, OnDestroy {
     this.showConfirmPassword = false;
   }
 
+  // TWO-FACTOR
+
+  loadTwoFactorSetting(): void {
+    this.userService.getCurrentUser().subscribe({
+      next: (user) => {
+        this.twoFactorEnabled = user.twoFactorEnabled;
+        this.hasLoadedTwoFactor = true;
+      },
+
+      error: () => {
+        this.twoFactorError = 'Unable to load your two-factor setting.';
+      }
+    });
+  }
+
   toggleTwoFactor(): void {
-    this.twoFactorEnabled = !this.twoFactorEnabled;
+    if (this.isUpdatingTwoFactor || !this.hasLoadedTwoFactor) {
+      return;
+    }
+
+    this.twoFactorError = '';
+    this.twoFactorSuccess = '';
+
+    // TURNING OFF: ASK FOR PASSWORD FIRST
+
+    if (this.twoFactorEnabled) {
+      this.disableTwoFactorPassword = '';
+      this.showDisableTwoFactorPassword = false;
+      this.disableTwoFactorError = '';
+      this.showDisableTwoFactorDialog = true;
+      return;
+    }
+
+    // TURNING ON: NO PASSWORD NEEDED
+
+    this.saveTwoFactor(true);
+  }
+
+  toggleDisableTwoFactorPassword(): void {
+    this.showDisableTwoFactorPassword = !this.showDisableTwoFactorPassword;
+  }
+
+  confirmDisableTwoFactor(): void {
+    if (this.isUpdatingTwoFactor) {
+      return;
+    }
+
+    if (!this.disableTwoFactorPassword) {
+      this.disableTwoFactorError = 'Please enter your password.';
+      return;
+    }
+
+    this.saveTwoFactor(false, this.disableTwoFactorPassword);
+  }
+
+  @HostListener('document:keydown.escape')
+  closeDisableTwoFactorDialog(): void {
+    if (!this.showDisableTwoFactorDialog || this.isUpdatingTwoFactor) {
+      return;
+    }
+
+    this.showDisableTwoFactorDialog = false;
+    this.disableTwoFactorPassword = '';
+    this.disableTwoFactorError = '';
+  }
+
+  private saveTwoFactor(enabled: boolean, currentPassword?: string): void {
+    this.isUpdatingTwoFactor = true;
+    this.disableTwoFactorError = '';
+
+    this.userService.updateTwoFactor(enabled, currentPassword).subscribe({
+      next: (response) => {
+        this.isUpdatingTwoFactor = false;
+        this.twoFactorEnabled = response.twoFactorEnabled;
+        this.twoFactorSuccess = response.message;
+
+        this.showDisableTwoFactorDialog = false;
+        this.disableTwoFactorPassword = '';
+      },
+
+      error: (error) => {
+        this.isUpdatingTwoFactor = false;
+
+        const message =
+          error.error?.message ??
+          'Unable to update two-factor authentication. Please try again.';
+
+        // SHOW THE ERROR INSIDE THE DIALOG IF IT IS OPEN
+
+        if (this.showDisableTwoFactorDialog) {
+          this.disableTwoFactorError = message;
+          this.disableTwoFactorPassword = '';
+        } else {
+          this.twoFactorError = message;
+        }
+      }
+    });
   }
 
   // LOGOUT DIALOG

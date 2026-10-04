@@ -13,4 +13,7 @@ public class AuthResponse
     public string Username { get; set; } = string.Empty;
 
     public string Role { get; set; } = string.Empty;
+
+    // ALWAYS FALSE HERE, SEE TwoFactorRequiredResponse
+    public bool RequiresTwoFactor => false;
 }

@@ -6,18 +6,32 @@ using EcoRoute.API.Models.Account;
 using EcoRoute.API.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace EcoRoute.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[AllowAnonymous]
 public class AuthController : ControllerBase
 {
     private readonly EcoRouteDbContext _context;
     private readonly JwtService _jwtService;
     private readonly IEmailService _emailService;
     private readonly IConfiguration _configuration;
+
+    // 2FA SETTINGS
+
+    private const string TrustedDeviceCookieName = "ecoroute_trusted_device";
+    private const int CodeExpiryMinutes = 5;
+    private const int MaxVerifyAttempts = 5;
+    private const int ResendCooldownSeconds = 60;
+    private const int MaxResends = 5;
+    private const int ChallengeLifetimeMinutes = 15;
+    private const int TrustedDeviceDays = 30;
 
     public AuthController(
         EcoRouteDbContext context,
@@ -151,14 +165,25 @@ public class AuthController : ControllerBase
     // LOGIN
 
     [HttpPost("login")]
+    [EnableRateLimiting("auth")]
     public async Task<IActionResult> Login(LoginRequest request)
     {
+        if (string.IsNullOrWhiteSpace(request.UsernameOrEmail) ||
+            string.IsNullOrEmpty(request.Password))
+        {
+            return BadRequest(new
+            {
+                message = "Username/email and password are required."
+            });
+        }
+
         var user = await _context.Users
             .FirstOrDefaultAsync(u =>
                 u.Username == request.UsernameOrEmail ||
                 u.Email == request.UsernameOrEmail);
 
-        if (user == null)
+        if (user == null ||
+            !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
         {
             return Unauthorized(new
             {
@@ -166,61 +191,317 @@ public class AuthController : ControllerBase
             });
         }
 
-        var passwordValid = BCrypt.Net.BCrypt.Verify(
-            request.Password,
-            user.PasswordHash);
-
-        if (!passwordValid)
+        if (!user.TwoFactorEnabled)
         {
-            return Unauthorized(new
-            {
-                message = "Invalid username/email or password."
-            });
+            return Ok(await CreateSessionAsync(user, request.RememberMe));
         }
 
-        // GENERATE TOKEN
+        // TRUSTED DEVICE: SKIP 2FA
 
-        var token = _jwtService.GenerateToken(
-            user,
-            request.RememberMe);
+        var trustedDevice = await FindTrustedDeviceAsync(user.UserId);
 
-        // GET EXPIRATION
-
-        var expiration = _jwtService.GetExpiration(token);
-
-        // GET DEVICE INFO
-
-        var userAgent = Request.Headers.UserAgent.ToString();
-        var clientHints = Request.Headers["Sec-CH-UA"].ToString();
-
-        // CREATE SESSION
+        if (trustedDevice != null)
+        {
+            trustedDevice.LastUsedAt = DateTime.UtcNow;
+            return Ok(await CreateSessionAsync(user, request.RememberMe));
+        }
 
         var now = DateTime.UtcNow;
 
-        var session = new UserSession
+        // REUSE A CODE SENT IN THE LAST 60s
+
+        var recentChallenge = await _context.TwoFactorChallenges
+            .Where(c =>
+                c.UserId == user.UserId &&
+                c.Status == TwoFactorChallengeStatuses.Pending &&
+                c.ExpiresAt > now &&
+                c.LastSentAt > now.AddSeconds(-ResendCooldownSeconds))
+            .OrderByDescending(c => c.LastSentAt)
+            .FirstOrDefaultAsync();
+
+        if (recentChallenge != null)
         {
+            recentChallenge.RememberMe = request.RememberMe;
+            await _context.SaveChangesAsync();
+
+            return Ok(BuildTwoFactorResponse(recentChallenge, user, now));
+        }
+
+        // NEW CODE: CANCEL OLDER ONES
+
+        await _context.TwoFactorChallenges
+            .Where(c =>
+                c.UserId == user.UserId &&
+                c.Status == TwoFactorChallengeStatuses.Pending)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(c => c.Status, TwoFactorChallengeStatuses.Replaced));
+
+        var code = GenerateCode();
+
+        var challenge = new TwoFactorChallenge
+        {
+            ChallengeId = Convert.ToHexString(RandomNumberGenerator.GetBytes(32)),
             UserId = user.UserId,
-            Token = token,
+            CodeHash = BCrypt.Net.BCrypt.HashPassword(code),
+            RememberMe = request.RememberMe,
+            Status = TwoFactorChallengeStatuses.Pending,
             CreatedAt = now,
-            LastActiveAt = now,
-            ExpiresAt = expiration,
-            IsActive = true,
-            Device = UserAgentParser.GetDevice(userAgent),
-            Browser = UserAgentParser.GetBrowser(userAgent, clientHints),
-            IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString()
+            ExpiresAt = now.AddMinutes(CodeExpiryMinutes),
+            LastSentAt = now
         };
 
-        _context.UserSessions.Add(session);
+        // SEND FIRST, SAVE AFTER
+
+        try
+        {
+            await _emailService.SendTwoFactorCodeEmailAsync(
+                user.Email,
+                user.FullName,
+                code);
+        }
+        catch (Exception)
+        {
+            return StatusCode(
+                StatusCodes.Status500InternalServerError,
+                new
+                {
+                    message = "We could not send your verification code. Please try again later."
+                });
+        }
+
+        _context.TwoFactorChallenges.Add(challenge);
         await _context.SaveChangesAsync();
 
-        return Ok(new AuthResponse
+        // NO JWT UNTIL THE CODE IS VERIFIED
+
+        return Ok(BuildTwoFactorResponse(challenge, user, now));
+    }
+
+    // VERIFY 2FA CODE
+
+    [HttpPost("verify-two-factor")]
+    [EnableRateLimiting("auth")]
+    public async Task<IActionResult> VerifyTwoFactor(VerifyTwoFactorRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.ChallengeId))
         {
-            Token = token,
-            UserId = user.UserId,
-            FullName = user.FullName,
-            Email = user.Email,
-            Username = user.Username,
-            Role = user.Role
+            return TwoFactorError(
+                "INVALID_CHALLENGE",
+                "This verification session is invalid. Please log in again.");
+        }
+
+        var code = request.Code?.Trim() ?? string.Empty;
+
+        if (code.Length != 4 || !code.All(char.IsAsciiDigit))
+        {
+            return TwoFactorError("INVALID_CODE", "Please enter the 4-digit code.");
+        }
+
+        var challenge = await _context.TwoFactorChallenges
+            .AsNoTracking()
+            .Include(c => c.User)
+            .FirstOrDefaultAsync(c =>
+                c.ChallengeId == request.ChallengeId);
+
+        if (challenge?.User == null)
+        {
+            return TwoFactorError(
+                "INVALID_CHALLENGE",
+                "This verification session is invalid. Please log in again.");
+        }
+
+        switch (challenge.Status)
+        {
+            case TwoFactorChallengeStatuses.Verified:
+                return TwoFactorError(
+                    "CODE_USED",
+                    "This code has already been used. Please log in again.");
+
+            case TwoFactorChallengeStatuses.Locked:
+                return TwoFactorError(
+                    "TOO_MANY_ATTEMPTS",
+                    "Too many incorrect attempts. Please log in again.");
+
+            case TwoFactorChallengeStatuses.Replaced:
+                return TwoFactorError(
+                    "INVALID_CHALLENGE",
+                    "A newer code was requested. Please log in again.");
+        }
+
+        var now = DateTime.UtcNow;
+
+        if (challenge.ExpiresAt <= now)
+        {
+            return TwoFactorError(
+                "CODE_EXPIRED",
+                "This code has expired. Please log in again.");
+        }
+
+        // COUNT THE ATTEMPT IN THE DB FIRST (BLOCKS PARALLEL GUESSES)
+
+        var reserved = await _context.TwoFactorChallenges
+            .Where(c =>
+                c.TwoFactorChallengeId == challenge.TwoFactorChallengeId &&
+                c.Status == TwoFactorChallengeStatuses.Pending &&
+                c.FailedAttempts < MaxVerifyAttempts)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(c => c.FailedAttempts, c => c.FailedAttempts + 1));
+
+        if (reserved == 0)
+        {
+            return TwoFactorError(
+                "TOO_MANY_ATTEMPTS",
+                "Too many incorrect attempts. Please log in again.");
+        }
+
+        // WRONG CODE
+
+        if (!BCrypt.Net.BCrypt.Verify(code, challenge.CodeHash))
+        {
+            var attemptsRemaining =
+                MaxVerifyAttempts - (challenge.FailedAttempts + 1);
+
+            if (attemptsRemaining <= 0)
+            {
+                await _context.TwoFactorChallenges
+                    .Where(c => c.TwoFactorChallengeId == challenge.TwoFactorChallengeId)
+                    .ExecuteUpdateAsync(s => s
+                        .SetProperty(c => c.Status, TwoFactorChallengeStatuses.Locked));
+
+                return TwoFactorError(
+                    "TOO_MANY_ATTEMPTS",
+                    "Too many incorrect attempts. Please log in again.");
+            }
+
+            return BadRequest(new
+            {
+                errorCode = "INVALID_CODE",
+                message = $"Incorrect code. {attemptsRemaining} attempt(s) remaining.",
+                attemptsRemaining
+            });
+        }
+
+        // CORRECT CODE: MARK AS USED AND GIVE THE ATTEMPT BACK
+
+        var verified = await _context.TwoFactorChallenges
+            .Where(c =>
+                c.TwoFactorChallengeId == challenge.TwoFactorChallengeId &&
+                c.Status == TwoFactorChallengeStatuses.Pending)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(c => c.Status, TwoFactorChallengeStatuses.Verified)
+                .SetProperty(c => c.VerifiedAt, (DateTime?)now)
+                .SetProperty(c => c.FailedAttempts, c => c.FailedAttempts - 1));
+
+        if (verified == 0)
+        {
+            return TwoFactorError(
+                "CODE_USED",
+                "This code has already been used. Please log in again.");
+        }
+
+        IssueTrustedDevice(challenge.UserId, now);
+
+        return Ok(await CreateSessionAsync(challenge.User, challenge.RememberMe));
+    }
+
+    // RESEND 2FA CODE
+
+    [HttpPost("resend-two-factor-code")]
+    [EnableRateLimiting("auth")]
+    public async Task<IActionResult> ResendTwoFactorCode(
+        ResendTwoFactorCodeRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.ChallengeId))
+        {
+            return TwoFactorError(
+                "INVALID_CHALLENGE",
+                "This verification session is invalid. Please log in again.");
+        }
+
+        var challenge = await _context.TwoFactorChallenges
+            .Include(c => c.User)
+            .FirstOrDefaultAsync(c => c.ChallengeId == request.ChallengeId);
+
+        if (challenge?.User == null ||
+            challenge.Status != TwoFactorChallengeStatuses.Pending)
+        {
+            return TwoFactorError(
+                "INVALID_CHALLENGE",
+                "This verification session is no longer valid. Please log in again.");
+        }
+
+        var now = DateTime.UtcNow;
+
+        if (challenge.CreatedAt.AddMinutes(ChallengeLifetimeMinutes) <= now)
+        {
+            return TwoFactorError(
+                "CHALLENGE_EXPIRED",
+                "This verification session has expired. Please log in again.");
+        }
+
+        // 60 SECOND COOLDOWN
+
+        var secondsSinceLastSend = (now - challenge.LastSentAt).TotalSeconds;
+
+        if (secondsSinceLastSend < ResendCooldownSeconds)
+        {
+            var retryAfterSeconds =
+                (int)Math.Ceiling(ResendCooldownSeconds - secondsSinceLastSend);
+
+            return StatusCode(
+                StatusCodes.Status429TooManyRequests,
+                new
+                {
+                    errorCode = "RESEND_COOLDOWN",
+                    message = $"Please wait {retryAfterSeconds} seconds before requesting a new code.",
+                    retryAfterSeconds
+                });
+        }
+
+        if (challenge.ResendCount >= MaxResends)
+        {
+            return StatusCode(
+                StatusCodes.Status429TooManyRequests,
+                new
+                {
+                    errorCode = "TOO_MANY_RESENDS",
+                    message = "Too many codes requested. Please log in again."
+                });
+        }
+
+        var code = GenerateCode();
+
+        try
+        {
+            await _emailService.SendTwoFactorCodeEmailAsync(
+                challenge.User.Email,
+                challenge.User.FullName,
+                code);
+        }
+        catch (Exception)
+        {
+            return StatusCode(
+                StatusCodes.Status500InternalServerError,
+                new
+                {
+                    message = "We could not send your verification code. Please try again later."
+                });
+        }
+
+        // FAILED ATTEMPTS ARE NOT RESET
+
+        challenge.CodeHash = BCrypt.Net.BCrypt.HashPassword(code);
+        challenge.ExpiresAt = now.AddMinutes(CodeExpiryMinutes);
+        challenge.LastSentAt = now;
+        challenge.ResendCount++;
+
+        await _context.SaveChangesAsync();
+
+        return Ok(new
+        {
+            message = "A new verification code has been sent.",
+            expiresInSeconds = CodeExpiryMinutes * 60,
+            resendAvailableInSeconds = ResendCooldownSeconds
         });
     }
 
@@ -543,6 +824,15 @@ public class AuthController : ControllerBase
             session.LogoutReason = SessionLogoutReasons.PasswordReset;
         }
 
+        // REVOKE TRUSTED DEVICES
+
+        await _context.TrustedDevices
+            .Where(d =>
+                d.UserId == user.UserId &&
+                d.RevokedAt == null)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(d => d.RevokedAt, (DateTime?)loggedOutAt));
+
         // SAVE
 
         await _context.SaveChangesAsync();
@@ -551,5 +841,143 @@ public class AuthController : ControllerBase
         {
             message = "Your password has been reset successfully."
         });
+    }
+
+    // HELPERS
+
+    private async Task<AuthResponse> CreateSessionAsync(User user, bool rememberMe)
+    {
+        var token = _jwtService.GenerateToken(user, rememberMe);
+        var expiration = _jwtService.GetExpiration(token);
+
+        var userAgent = Request.Headers.UserAgent.ToString();
+        var clientHints = Request.Headers["Sec-CH-UA"].ToString();
+
+        var now = DateTime.UtcNow;
+
+        _context.UserSessions.Add(new UserSession
+        {
+            UserId = user.UserId,
+            Token = token,
+            CreatedAt = now,
+            LastActiveAt = now,
+            ExpiresAt = expiration,
+            IsActive = true,
+            Device = UserAgentParser.GetDevice(userAgent),
+            Browser = UserAgentParser.GetBrowser(userAgent, clientHints),
+            IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString()
+        });
+
+        await _context.SaveChangesAsync();
+
+        return new AuthResponse
+        {
+            Token = token,
+            UserId = user.UserId,
+            FullName = user.FullName,
+            Email = user.Email,
+            Username = user.Username,
+            Role = user.Role
+        };
+    }
+
+    private async Task<TrustedDevice?> FindTrustedDeviceAsync(int userId)
+    {
+        if (!Request.Cookies.TryGetValue(TrustedDeviceCookieName, out var deviceToken) ||
+            string.IsNullOrWhiteSpace(deviceToken))
+        {
+            return null;
+        }
+
+        var tokenHash = HashToken(deviceToken);
+        var now = DateTime.UtcNow;
+
+        // ONLY THE COOKIE DECIDES TRUST, NOT IP OR BROWSER
+
+        return await _context.TrustedDevices
+            .FirstOrDefaultAsync(d =>
+                d.UserId == userId &&
+                d.TokenHash == tokenHash &&
+                d.RevokedAt == null &&
+                d.ExpiresAt > now);
+    }
+
+    private void IssueTrustedDevice(int userId, DateTime now)
+    {
+        var deviceToken = Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
+        var expiresAt = now.AddDays(TrustedDeviceDays);
+        var userAgent = Request.Headers.UserAgent.ToString();
+
+        _context.TrustedDevices.Add(new TrustedDevice
+        {
+            UserId = userId,
+            TokenHash = HashToken(deviceToken),
+            CreatedAt = now,
+            ExpiresAt = expiresAt,
+            LastUsedAt = now,
+            Device = UserAgentParser.GetDevice(userAgent),
+            Browser = UserAgentParser.GetBrowser(
+                userAgent,
+                Request.Headers["Sec-CH-UA"].ToString())
+        });
+
+        Response.Cookies.Append(
+            TrustedDeviceCookieName,
+            deviceToken,
+            new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.Strict,
+                Expires = expiresAt,
+                Path = "/api/Auth",
+                IsEssential = true
+            });
+    }
+
+    private static TwoFactorRequiredResponse BuildTwoFactorResponse(
+        TwoFactorChallenge challenge,
+        User user,
+        DateTime now)
+    {
+        return new TwoFactorRequiredResponse
+        {
+            ChallengeId = challenge.ChallengeId,
+            MaskedEmail = MaskEmail(user.Email),
+            ExpiresInSeconds =
+                (int)Math.Max(0, (challenge.ExpiresAt - now).TotalSeconds),
+            ResendAvailableInSeconds =
+                (int)Math.Max(0, Math.Ceiling(
+                    ResendCooldownSeconds - (now - challenge.LastSentAt).TotalSeconds))
+        };
+    }
+
+    private BadRequestObjectResult TwoFactorError(string errorCode, string message)
+    {
+        return BadRequest(new { errorCode, message });
+    }
+
+    private static string GenerateCode()
+    {
+        return RandomNumberGenerator.GetInt32(0, 10000).ToString("D4");
+    }
+
+    private static string HashToken(string token)
+    {
+        return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(token)));
+    }
+
+    // r••••••@gmail.com
+
+    private static string MaskEmail(string email)
+    {
+        var at = email.IndexOf('@');
+
+        if (at <= 1)
+        {
+            return email;
+        }
+
+        return email[0] + new string('•', at - 1) + email[at..];
     }
 }
