@@ -399,7 +399,12 @@ public class AuthController : ControllerBase
                 "This code has already been used. Please log in again.");
         }
 
-        IssueTrustedDevice(challenge.UserId, now);
+        // ONLY TRUST THE DEVICE WHEN REMEMBER ME IS CHECKED
+
+        if (challenge.RememberMe)
+        {
+            IssueTrustedDevice(challenge.UserId, now);
+        }
 
         return Ok(await CreateSessionAsync(challenge.User, challenge.RememberMe));
     }
