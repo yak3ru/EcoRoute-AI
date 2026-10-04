@@ -38,6 +38,7 @@ interface MlRoute {
   vehicle_id: number;
   vehicle_name: string;
   capacity_kg: number;
+  status?: string;
   maximum_distance_km: number;
   collection_start: string;
   collection_end: string;
@@ -56,6 +57,7 @@ interface MlRoutesResponse {
   routes: MlRoute[];
   unassigned: unknown[];
   alternative_route_found?: boolean;
+  operation_status?: string;
 }
 
 interface AreaLocation {
@@ -138,6 +140,13 @@ export class RoutePlanningComponent
 
   selectedRouteId = '';
   private mapViewRouteId: string | null = null;
+
+  operation_status?: string;
+
+  showFinishConfirmation = false;
+  routePendingFinish: Route | null = null;
+
+  showCancelConfirmation = false;
   
   isOptimizing = false;
   isLoadingRoutes = true;
@@ -146,9 +155,16 @@ export class RoutePlanningComponent
 
   isStartingOperation = false;
   isHistoricalView = false;
+  
+historicalOperationStatus:
+  'Active' | 'Paused' | 'Completed' | 'Cancelled' | null = null;
 
-  operationStatus: 'NotStarted' | 'Active' | 'Paused' | 'Completed' =
-    'NotStarted';
+  operationStatus:
+  | 'NotStarted'
+  | 'Active'
+  | 'Paused'
+  | 'Completed'
+  | 'Cancelled' = 'NotStarted';
 
   searchTerm = '';
 
@@ -373,11 +389,17 @@ private loadCurrentOperation(): void {
       `${this.mlApiUrl}/routes/operation/status/${today}`
     ).subscribe({
       next: result => {
-        this.operationStatus =
-          result.status === 'Paused' ? 'Paused' :
-          result.status === 'Completed' ? 'Completed' : 'Active';
+        
+    this.operationStatus =
+  result.status === 'Paused' || result.status === 'Cancelled'
+    ? 'Paused'
+    : result.status === 'Completed'
+      ? 'Completed'
+      : 'Active';
 
-        this.loadOperationRoutes(today, this.operationStatus);
+this.historicalOperationStatus = null;
+
+this.loadOperationRoutes(today, this.operationStatus);
       },
       error: error => {
         if (error.status === 404) {
@@ -402,7 +424,12 @@ private loadCurrentOperation(): void {
 
 private loadOperationRoutes(
   date: string,
-  status: 'NotStarted' | 'Active' | 'Paused' | 'Completed'
+  status:
+  | 'NotStarted'
+  | 'Active'
+  | 'Paused'
+  | 'Completed'
+  | 'Cancelled'
 ): void {
   this.isLoadingRoutes = true;
   this.roadGeometry.clear();
@@ -419,12 +446,16 @@ private loadOperationRoutes(
 
         this.unassignedAreas = response.unassigned ?? [];
 
-        this.routes = response.routes.map((route, index) => ({
-          ...this.mapMlRoute(route, index),
+        this.routes = response.routes.map((route, index) => {
+        const mappedRoute = this.mapMlRoute(route, index);
+
+        return {
+          ...mappedRoute,
           status: status === 'Completed'
             ? 'Completed' as const
-            : this.mapMlRoute(route, index).status
-        }));
+            : mappedRoute.status
+        };
+      });
 
         this.selectedRouteId = this.routes[0]?.id ?? '';
         this.isLoadingRoutes = false;
@@ -497,9 +528,11 @@ private loadOperationRoutes(
         `${route.distance_km.toFixed(2)} km`,
 
       status:
-        route.distance_exceeded
-          ? 'Pending'
-          : 'Active',
+        route.status === 'Completed'
+          ? 'Completed'
+          : route.distance_exceeded
+            ? 'Pending'
+            : 'Active',
 
       eta:
         this.formatTime(route.collection_end),
@@ -606,8 +639,9 @@ startOperation(): void {
   );
 }
 
-cancelOperation(): void {
+confirmCancelOperation(): void {
   if (this.operationStatus !== 'Active' || this.isHistoricalView) {
+    this.showCancelConfirmation = false;
     return;
   }
 
@@ -618,13 +652,35 @@ cancelOperation(): void {
     ).subscribe({
       next: () => {
         this.operationStatus = 'Paused';
+        this.showCancelConfirmation = false;
       },
       error: error => {
         console.error('Failed to pause operation:', error);
-        alert(error.error?.message || 'Could not pause the operation.');
+
+        this.showCancelConfirmation = false;
+
+        alert(
+          error.error?.message ||
+          'Could not pause the operation.'
+        );
       }
     })
   );
+}
+
+cancelOperation(): void {
+  if (
+    this.operationStatus !== 'Active' ||
+    this.isHistoricalView
+  ) {
+    return;
+  }
+
+  this.showCancelConfirmation = true;
+}
+
+closeCancelConfirmation(): void {
+  this.showCancelConfirmation = false;
 }
 
 resumeOperation(): void {
@@ -657,6 +713,100 @@ resumeOperation(): void {
         alert(error.error?.message || 'Could not resume the operation.');
       }
     })
+  );
+}
+
+finishTruck(route: Route): void {
+  if (
+    this.operationStatus !== 'Active' ||
+    this.isHistoricalView ||
+    route.status === 'Completed'
+  ) {
+    return;
+  }
+
+  this.routePendingFinish = route;
+  this.showFinishConfirmation = true;
+}
+
+confirmFinishTruck(): void {
+  const route = this.routePendingFinish;
+
+  if (!route) {
+    return;
+  }
+
+  this.showFinishConfirmation = false;
+
+  this.subscriptions.add(
+    this.http
+      .post<{
+        message: string;
+        status: string;
+        routeData: MlRoutesResponse;
+      }>(
+        `${this.mlApiUrl}/routes/operation/finish-truck`,
+        { vehicleId: route.vehicleId }
+      )
+      .subscribe({
+        next: response => {
+          this.currentRouteResponse = response.routeData;
+
+          this.operationStatus =
+            response.status === 'Completed'
+              ? 'Completed'
+              : 'Active';
+
+          this.routes = response.routeData.routes.map(
+            (mlRoute, index) => this.mapMlRoute(mlRoute, index)
+          );
+
+          this.selectedRouteId =
+            this.routes.find(
+              item => item.vehicleId === route.vehicleId
+            )?.id ?? this.routes[0]?.id ?? '';
+
+          this.mapBoundsInitialized = false;
+          this.roadGeometry.clear();
+
+          this.loadRoadGeometry();
+          this.loadAvailableOperationDates();
+
+          if (this.operationStatus === 'Completed') {
+            alert(
+              'All truck routes are completed. You can now upload the report.'
+            );
+          }
+        },
+        error: error => {
+          console.error('Failed to finish truck route:', error);
+
+          alert(
+            error.error?.message ||
+            'Could not finish this truck route. Please try again.'
+          );
+        }
+      })
+  );
+
+  this.routePendingFinish = null;
+}
+
+cancelFinishConfirmation(): void {
+  this.showFinishConfirmation = false;
+  this.routePendingFinish = null;
+}
+
+uploadReport(): void {
+  if (
+    this.operationStatus !== 'Completed' ||
+    this.isHistoricalView
+  ) {
+    return;
+  }
+
+  alert(
+    'Report upload will be implemented in the next phase.'
   );
 }
 
@@ -751,7 +901,11 @@ selectOperationDate(date: Date): void {
   this.selectedDate = new Date(date);
   this.isCalendarOpen = false;
 
-  if (dateString === todayString) {
+  
+if (dateString === todayString) {
+  this.isHistoricalView = false;
+  this.historicalOperationStatus = null;
+
   this.isRoutePanelOpen = false;
   this.animateMapLayout = true;
 
@@ -768,7 +922,6 @@ selectOperationDate(date: Date): void {
 }
 
   this.isHistoricalView = true;
-  this.operationStatus = 'Completed';
   this.loadHistoricalRoutes(dateString);
 }
 
@@ -791,14 +944,39 @@ private loadHistoricalRoutes(date: string): void {
       )
       .subscribe({
         next: response => {
-          this.currentRouteResponse = response;
+          const savedStatus = response.operation_status;
+
+          // Display only Completed or Cancelled for old operations.
+          this.historicalOperationStatus =
+            savedStatus === 'Completed'
+              ? 'Completed'
+              : 'Cancelled';
+
+          this.operationStatus =
+            savedStatus === 'Completed'
+              ? 'Completed'
+              : savedStatus === 'Paused'
+                ? 'Paused'
+                : savedStatus === 'Active'
+                  ? 'Active'
+                  : 'Cancelled';
+
           this.routeMode = 'Historical Operation';
           this.unassignedAreas = response.unassigned ?? [];
 
-          this.routes = response.routes.map((route, index) => ({
-            ...this.mapMlRoute(route, index),
-            status: 'Completed' as const
-          }));
+          this.routes = response.routes.map(
+            (route, index) => {
+              const mappedRoute = this.mapMlRoute(route, index);
+
+              return {
+                ...mappedRoute,
+                status:
+                  savedStatus === 'Completed'
+                    ? 'Completed' as const
+                    : mappedRoute.status
+              };
+            }
+          );
 
           this.selectedRouteId = this.routes[0]?.id ?? '';
           this.isLoadingRoutes = false;
@@ -807,7 +985,11 @@ private loadHistoricalRoutes(date: string): void {
           this.loadRoadGeometry();
         },
         error: error => {
-          console.error('Failed to load historical routes:', error);
+          console.error(
+            'Failed to load historical routes:',
+            error
+          );
+
           this.isLoadingRoutes = false;
           alert('Could not load routes for this date.');
         }

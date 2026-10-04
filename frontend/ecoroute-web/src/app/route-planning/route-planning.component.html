@@ -101,61 +101,65 @@
 
     </button>
 
-  <!-- OPERATION BUTTONS -->
-  <button
-    class="operation-button start"
-    type="button"
-    *ngIf="operationStatus === 'NotStarted' && !isHistoricalView"
-    [disabled]="isStartingOperation || isLoadingRoutes"
-    (click)="startOperation()">
-    <span *ngIf="!isStartingOperation">Start Operation</span>
-    <span *ngIf="isStartingOperation">Starting...</span>
-  </button>
 
-  <button
-    class="operation-button cancel"
-    type="button"
-    *ngIf="operationStatus === 'Active' && !isHistoricalView"
-    (click)="cancelOperation()">
-    Cancel Operation
-  </button>
 
-  <button
-    class="operation-button resume"
-    type="button"
-    *ngIf="operationStatus === 'Paused' && !isHistoricalView"
-    (click)="resumeOperation()">
-    Resume Operation
-  </button>
-
-  <button
-    class="operation-button finished"
-    type="button"
-    *ngIf="operationStatus === 'Completed' || isHistoricalView"
-    disabled>
-    Operation Finished
+<!-- START OPERATION -->
+<button
+  class="operation-button start"
+  type="button"
+  *ngIf="operationStatus === 'NotStarted' && !isHistoricalView"
+  [disabled]="isStartingOperation || isLoadingRoutes"
+  (click)="startOperation()">
+  <span *ngIf="!isStartingOperation">Start Operation</span>
+  <span *ngIf="isStartingOperation">Optimizing...</span>
 </button>
 
-      <button
-        class="optimize-button"
-        type="button"
-        [disabled]="
-          operationStatus !== 'Active' ||
-          isHistoricalView ||
-          isOptimizing ||
-          isLoadingRoutes
-        "
-        (click)="optimizeRoutes()">
+<!-- ACTIVE OPERATION -->
+<button
+  class="operation-button cancel"
+  type="button"
+  *ngIf="operationStatus === 'Active' && !isHistoricalView"
+  (click)="cancelOperation()">
+  Cancel Operation
+</button>
 
-        <span *ngIf="!isOptimizing">
-          Optimize Routes
-        </span>
+<!-- PAUSED OPERATION -->
+<button
+  class="operation-button resume"
+  type="button"
+  *ngIf="operationStatus === 'Paused' && !isHistoricalView"
+  (click)="resumeOperation()">
+  Resume Operation
+</button>
 
-        <span *ngIf="isOptimizing">
-          Optimizing...
-        </span>
 
-      </button>
+<!-- CURRENT OPERATION STATUS -->
+<button
+  class="operation-button start operation-state"
+  type="button"
+  *ngIf="!isHistoricalView && operationStatus === 'Completed'"
+  disabled>
+  Operation Completed
+</button>
+
+<!-- PREVIOUS OPERATION STATUS -->
+<button
+  class="operation-button start operation-state"
+  type="button"
+  *ngIf="isHistoricalView"
+  disabled>
+  Operation {{ historicalOperationStatus }}
+</button>
+
+
+<!-- UPLOAD REPORT -->
+<button
+  class="operation-button upload-report"
+  type="button"
+  [disabled]="isHistoricalView || operationStatus !== 'Completed'"
+  (click)="uploadReport()">
+  Upload Report
+</button>
 
     </div>
 
@@ -823,24 +827,28 @@
             </td>
 
 
-            <td>
+            
+<td class="route-action-buttons">
+  <button
+    class="view-button"
+    type="button"
+    (click)="viewRoute(route)">
+    <img src="assets/icons/eye.svg" alt="View">
+    <span>View</span>
+  </button>
 
-              <button
-                class="view-button"
-                type="button"
-                (click)="viewRoute(route)">
-
-                <img
-                  src="assets/icons/eye.svg"
-                  alt="View">
-
-                <span>
-                  View
-                </span>
-
-              </button>
-
-            </td>
+  <button
+    class="finish-button"
+    type="button"
+    [disabled]="
+      isHistoricalView ||
+      operationStatus !== 'Active' ||
+      route.status === 'Completed'
+    "
+    (click)="finishTruck(route)">
+    Finish
+  </button>
+</td>
 
           </tr>
 
@@ -962,30 +970,126 @@
 </div>
 
 
-  <!-- START OPERATION LOADING WINDOW -->
+
+<!-- ROUTE OPTIMIZATION LOADING WINDOW -->
+<div
+  class="operation-loading-backdrop"
+  *ngIf="isStartingOperation"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="operationLoadingTitle">
+
+  <div class="operation-loading-modal">
+    <div class="operation-spinner"></div>
+
+    <h2 id="operationLoadingTitle">
+      Optimizing Routes...
+    </h2>
+
+    <p>
+      EcoRoute AI is generating optimized collection routes
+      based on predicted waste and routing constraints.
+    </p>
+
+    <span class="operation-loading-note">
+      Please wait while the routes are being prepared.
+    </span>
+  </div>
+</div>
+
+<!-- FINISH TRUCK CONFIRMATION POPUP -->
+<div
+  class="confirmation-backdrop"
+  *ngIf="showFinishConfirmation"
+  (click)="cancelFinishConfirmation()">
+
   <div
-    class="operation-loading-backdrop"
-    *ngIf="isStartingOperation"
+    class="confirmation-modal"
     role="dialog"
     aria-modal="true"
-    aria-labelledby="operationLoadingTitle">
+    aria-labelledby="finishConfirmationTitle"
+    (click)="$event.stopPropagation()">
 
-    <div class="operation-loading-modal">
-      <div class="operation-spinner"></div>
+    <img
+  class="confirmation-check-icon"
+  src="assets/icons/check-mark.svg"
+  alt="Confirmation">
 
-      <h2 id="operationLoadingTitle">
-        Starting routing and prediction
-      </h2>
+    <h2 id="finishConfirmationTitle">
+      Finish Collection Route?
+    </h2>
 
-      <p>
-        EcoRoute AI is predicting waste generation and
-        generating optimized collection routes.
-      </p>
+    <p>
+      Are you sure you want to finish the collection route for
+      <strong>{{ routePendingFinish?.vehicle }}</strong>?
+    </p>
 
-      <span class="operation-loading-note">
-        Please wait. This may take a moment.
-      </span>
+    <p class="confirmation-note">
+      This will mark the truck's route as completed.
+      This action cannot be undone.
+    </p>
+
+    <div class="confirmation-actions">
+      <button
+        type="button"
+        class="confirmation-cancel"
+        (click)="cancelFinishConfirmation()">
+        Cancel
+      </button>
+
+      <button
+        type="button"
+        class="confirmation-confirm"
+        (click)="confirmFinishTruck()">
+        Confirm Finish
+      </button>
     </div>
+
   </div>
+</div>
+
+<!-- CANCEL OPERATION CONFIRMATION -->
+<div
+  class="confirmation-backdrop"
+  *ngIf="showCancelConfirmation"
+  (click)="closeCancelConfirmation()">
+
+  <div
+    class="confirmation-modal"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="cancelConfirmationTitle"
+    (click)="$event.stopPropagation()">
+
+    <h2 id="cancelConfirmationTitle">
+      Cancel Operation?
+    </h2>
+
+    <p>
+      Are you sure you want to cancel the current collection operation?
+    </p>
+
+    <p class="confirmation-note">
+      The operation will be paused, and you can resume it later.
+    </p>
+
+    <div class="confirmation-actions">
+      <button
+        type="button"
+        class="confirmation-cancel"
+        (click)="closeCancelConfirmation()">
+        Keep Operation
+      </button>
+
+      <button
+        type="button"
+        class="confirmation-danger"
+        (click)="confirmCancelOperation()">
+        Cancel Operation
+      </button>
+    </div>
+
+  </div>
+</div>
 
 </main>
