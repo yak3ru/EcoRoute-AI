@@ -133,7 +133,7 @@ coordinates = ";".join(
 
 encoded_coordinates = quote(
     coordinates,
-    safe=";,. "
+    safe=";,."
 )
 
 url = (
@@ -280,7 +280,7 @@ srp_coordinates = ";".join(
 
 encoded_srp_coordinates = quote(
     srp_coordinates,
-    safe=";,. "
+    safe=";,."
 )
 
 srp_url = (
