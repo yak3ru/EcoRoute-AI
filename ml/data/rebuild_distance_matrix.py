@@ -1,4 +1,3 @@
-import argparse
 import json
 import os
 from pathlib import Path
@@ -9,271 +8,473 @@ import pymysql
 from dotenv import load_dotenv
 
 
+# ============================================================
+# LOAD ENVIRONMENT
+# ============================================================
+
 BASE_DIR = Path(__file__).resolve().parents[1]
+
 load_dotenv(BASE_DIR / ".env")
 
 
-def get_connection():
-    return pymysql.connect(
-        host=os.getenv("DB_HOST", "localhost"),
-        port=int(os.getenv("DB_PORT", "3306")),
-        user=os.getenv("DB_USER"),
-        password=os.getenv("DB_PASSWORD"),
-        database=os.getenv("DB_NAME"),
-        cursorclass=pymysql.cursors.DictCursor,
-        autocommit=False,
+DB_HOST = os.getenv("DB_HOST", "localhost")
+DB_PORT = int(os.getenv("DB_PORT", "3306"))
+DB_NAME = os.getenv("DB_NAME")
+DB_USER = os.getenv("DB_USER")
+DB_PASSWORD = os.getenv("DB_PASSWORD")
+
+
+# ============================================================
+# LOAD SRP DISPOSAL DESTINATION
+# ============================================================
+
+connection = pymysql.connect(
+    host=DB_HOST,
+    port=DB_PORT,
+    user=DB_USER,
+    password=DB_PASSWORD,
+    database=DB_NAME,
+    cursorclass=pymysql.cursors.DictCursor
+)
+
+try:
+    with connection.cursor() as cursor:
+        cursor.execute("""
+            SELECT
+                FacilityId,
+                FacilityName,
+                Latitude,
+                Longitude
+            FROM disposal_facilities
+            WHERE IsActive = 1
+            ORDER BY FacilityId
+            LIMIT 1
+        """)
+
+        facility = cursor.fetchone()
+
+finally:
+    connection.close()
+
+if not facility:
+    raise RuntimeError(
+        "No active disposal facility was found."
+    )
+
+print(
+    f"Disposal destination: {facility['FacilityName']}"
+)
+
+
+# ============================================================
+# LOAD AREAS FROM MYSQL
+# ============================================================
+
+connection = pymysql.connect(
+    host=DB_HOST,
+    port=DB_PORT,
+    user=DB_USER,
+    password=DB_PASSWORD,
+    database=DB_NAME,
+    cursorclass=pymysql.cursors.DictCursor
+)
+
+try:
+
+    with connection.cursor() as cursor:
+
+        cursor.execute("""
+            SELECT
+                AreaId,
+                AreaName,
+                Latitude,
+                Longitude
+            FROM areas
+            WHERE IsActive = 1
+            ORDER BY AreaId
+        """)
+
+        areas = cursor.fetchall()
+
+finally:
+    connection.close()
+
+
+if len(areas) != 10:
+    raise RuntimeError(
+        f"Expected 10 active areas, but found {len(areas)}."
     )
 
 
-def request_osrm_table(locations, label):
-    """Return road distances (meters) and durations (seconds) for coordinates."""
-    coordinates = ";".join(
-        f"{float(item['Longitude'])},{float(item['Latitude'])}"
-        for item in locations
-    )
-    encoded_coordinates = quote(coordinates, safe=";,.")
-    url = (
-        "https://router.project-osrm.org/table/v1/driving/"
-        f"{encoded_coordinates}?annotations=distance,duration"
-    )
+print()
+print("Active areas:")
+print("-" * 60)
 
-    request = Request(
-        url,
-        headers={
-            "User-Agent": "EcoRouteAI/1.0",
-            "Accept": "application/json",
-        },
+for area in areas:
+    print(
+        f"{area['AreaId']:>2}  "
+        f"{area['AreaName']:<22} "
+        f"{float(area['Latitude']):.7f}, "
+        f"{float(area['Longitude']):.7f}"
     )
 
-    print(f"Requesting {label} from OSRM...")
-    with urlopen(request, timeout=60) as response:
-        data = json.loads(response.read().decode("utf-8"))
+print()
 
-    if data.get("code") != "Ok":
+
+# ============================================================
+# BUILD OSRM COORDINATES
+# OSRM expects longitude,latitude
+# ============================================================
+
+coordinates = ";".join(
+    f"{float(area['Longitude'])},{float(area['Latitude'])}"
+    for area in areas
+)
+
+encoded_coordinates = quote(
+    coordinates,
+    safe=";,. "
+)
+
+url = (
+    "http://router.project-osrm.org/"
+    "table/v1/driving/"
+    f"{encoded_coordinates}"
+    "?annotations=distance,duration"
+)
+
+
+print("Requesting road distance matrix from OSRM...")
+print()
+
+
+# ============================================================
+# CALL OSRM TABLE SERVICE
+# ============================================================
+
+request = Request(
+    url,
+    headers={
+        "User-Agent": "EcoRouteAI/1.0",
+        "Accept": "application/json"
+    }
+)
+
+with urlopen(request, timeout=60) as response:
+
+    data = json.loads(
+        response.read().decode("utf-8")
+    )
+
+
+if data.get("code") != "Ok":
+
+    raise RuntimeError(
+        "OSRM failed:\n"
+        + json.dumps(data, indent=2)
+    )
+
+
+distances = data.get("distances")
+durations = data.get("durations")
+
+if not distances:
+
+    raise RuntimeError(
+        "OSRM did not return a distance matrix."
+    )
+
+
+if len(distances) != len(areas):
+
+    raise RuntimeError(
+        "OSRM matrix size does not match area count."
+    )
+
+if not durations or len(durations) != len(areas):
+    raise RuntimeError(
+        "OSRM did not return a valid duration matrix."
+    )
+
+
+
+# ============================================================
+# PREPARE MATRIX
+# ============================================================
+
+matrix_rows = []
+
+for origin_index, origin_area in enumerate(areas):
+
+    row = distances[origin_index]
+    duration_row = durations[origin_index]
+
+    if len(row) != len(areas) or len(duration_row) != len(areas):
         raise RuntimeError(
-            f"OSRM {label} request failed:\n{json.dumps(data, indent=2)}"
+            f"Invalid matrix row for AreaId {origin_area['AreaId']}."
         )
 
-    distances = data.get("distances")
-    durations = data.get("durations")
-    expected_count = len(locations)
+    for destination_index, distance_meters in enumerate(row):
 
-    if (
-        not distances
-        or not durations
-        or len(distances) != expected_count
-        or len(durations) != expected_count
-    ):
-        raise RuntimeError(f"OSRM returned an invalid {label} matrix.")
+        destination_area = areas[destination_index]
+        duration_seconds = duration_row[destination_index]
 
-    for index in range(expected_count):
-        if (
-            len(distances[index]) != expected_count
-            or len(durations[index]) != expected_count
-        ):
-            raise RuntimeError(f"OSRM returned an invalid {label} matrix row.")
-
-    return distances, durations
-
-
-def main():
-    parser = argparse.ArgumentParser(
-        description=(
-            "Rebuild road distance data for one EcoRoute AI user without "
-            "deleting other users' distance records."
-        )
-    )
-    parser.add_argument(
-        "--user-id",
-        type=int,
-        required=True,
-        help="UserId whose active areas should be processed.",
-    )
-    args = parser.parse_args()
-    user_id = args.user_id
-
-    connection = get_connection()
-    try:
-        with connection.cursor() as cursor:
-            cursor.execute(
-                """
-                SELECT AreaId, AreaName, Latitude, Longitude
-                FROM areas
-                WHERE IsActive = 1 AND UserId = %s
-                ORDER BY AreaId
-                """,
-                (user_id,),
-            )
-            areas = cursor.fetchall()
-
-            cursor.execute(
-                """
-                SELECT FacilityId, FacilityName, Latitude, Longitude
-                FROM disposal_facilities
-                WHERE IsActive = 1
-                ORDER BY FacilityId
-                LIMIT 1
-                """
-            )
-            facility = cursor.fetchone()
-    finally:
-        connection.close()
-
-    if not areas:
-        raise RuntimeError(
-            f"No active areas were found for UserId {user_id}. "
-            "No distance records were changed."
-        )
-
-    if not facility:
-        raise RuntimeError(
-            "No active disposal facility was found. No distance records were changed."
-        )
-
-    missing_coordinates = [
-        area["AreaName"]
-        for area in areas
-        if area["Latitude"] is None or area["Longitude"] is None
-    ]
-    if missing_coordinates:
-        raise RuntimeError(
-            "These active areas are missing latitude or longitude: "
-            + ", ".join(missing_coordinates)
-            + ". No distance records were changed."
-        )
-
-    if facility["Latitude"] is None or facility["Longitude"] is None:
-        raise RuntimeError(
-            "The selected disposal facility is missing coordinates. "
-            "No distance records were changed."
-        )
-
-    print(f"User ID: {user_id}")
-    print(f"Active areas found: {len(areas)}")
-    print(f"Disposal destination: {facility['FacilityName']}")
-    for area in areas:
-        print(
-            f"  {area['AreaId']} | {area['AreaName']} | "
-            f"{float(area['Latitude']):.7f}, {float(area['Longitude']):.7f}"
-        )
-
-    distances, durations = request_osrm_table(areas, "area-to-area distances")
-
-    matrix_rows = []
-    for origin_index, origin_area in enumerate(areas):
-        for destination_index, destination_area in enumerate(areas):
-            distance_meters = distances[origin_index][destination_index]
-            duration_seconds = durations[origin_index][destination_index]
-
-            if distance_meters is None or duration_seconds is None:
-                raise RuntimeError(
-                    f"No road distance or travel time found between "
-                    f"{origin_area['AreaName']} and {destination_area['AreaName']}. "
-                    "No distance records were changed."
-                )
-
-            matrix_rows.append(
-                (
-                    origin_area["AreaId"],
-                    destination_area["AreaId"],
-                    round(float(distance_meters) / 1000, 2),
-                    round(float(duration_seconds) / 60, 2),
-                )
-            )
-
-    # Request the same matrix with the facility as the final coordinate.
-    facility_locations = [*areas, facility]
-    facility_distances, facility_durations = request_osrm_table(
-        facility_locations, "area-to-facility distances"
-    )
-    facility_index = len(facility_locations) - 1
-
-    facility_rows = []
-    for area_index, area in enumerate(areas):
-        distance_meters = facility_distances[area_index][facility_index]
-        duration_seconds = facility_durations[area_index][facility_index]
-
-        if distance_meters is None or duration_seconds is None:
+        if distance_meters is None:
             raise RuntimeError(
-                f"No road route found between {area['AreaName']} and "
-                f"{facility['FacilityName']}. No distance records were changed."
+                f"No road route found between "
+                f"{origin_area['AreaName']} and "
+                f"{destination_area['AreaName']}."
             )
 
-        facility_rows.append(
+        if duration_seconds is None:
+            raise RuntimeError(
+                f"No travel time found between "
+                f"{origin_area['AreaName']} and "
+                f"{destination_area['AreaName']}."
+            )
+
+        distance_km = round(
+            float(distance_meters) / 1000,
+            2
+        )
+
+        travel_time_minutes = round(
+            float(duration_seconds) / 60,
+            2
+        )
+
+        matrix_rows.append(
             (
-                area["AreaId"],
-                facility["FacilityId"],
-                round(float(distance_meters) / 1000, 2),
-                round(float(duration_seconds) / 60, 2),
+                origin_area["AreaId"],
+                destination_area["AreaId"],
+                distance_km,
+                travel_time_minutes
             )
         )
 
-    area_ids = [area["AreaId"] for area in areas]
-    placeholders = ", ".join(["%s"] * len(area_ids))
+if len(matrix_rows) != len(areas) ** 2:
+    raise RuntimeError(
+        f"Expected {len(areas) ** 2} matrix entries, "
+        f"but prepared {len(matrix_rows)}."
+    )
 
-    # Update both tables in one transaction. Only rows belonging to this
-    # user's active area set are replaced; other users' rows are preserved.
-    connection = get_connection()
-    try:
-        with connection.cursor() as cursor:
-            cursor.execute(
-                f"""
-                DELETE FROM distance_matrix
-                WHERE OriginAreaId IN ({placeholders})
-                  AND DestinationAreaId IN ({placeholders})
-                """,
-                tuple(area_ids + area_ids),
+print(f"Prepared {len(matrix_rows)} area-to-area records.")
+
+
+# ============================================================
+# CALCULATE AREA TO SRP DISTANCES AND TRAVEL TIMES
+# ============================================================
+
+srp_coordinates = ";".join(
+    [
+        *[
+            f"{float(area['Longitude'])},{float(area['Latitude'])}"
+            for area in areas
+        ],
+        (
+            f"{float(facility['Longitude'])},"
+            f"{float(facility['Latitude'])}"
+        )
+    ]
+)
+
+encoded_srp_coordinates = quote(
+    srp_coordinates,
+    safe=";,. "
+)
+
+srp_url = (
+    "http://router.project-osrm.org/"
+    "table/v1/driving/"
+    f"{encoded_srp_coordinates}"
+    "?annotations=distance,duration"
+)
+
+print("Requesting area to SRP road distances and travel times...")
+
+srp_request = Request(
+    srp_url,
+    headers={
+        "User-Agent": "EcoRouteAI/1.0",
+        "Accept": "application/json"
+    }
+)
+
+with urlopen(srp_request, timeout=60) as response:
+    srp_data = json.loads(
+        response.read().decode("utf-8")
+    )
+
+if srp_data.get("code") != "Ok":
+    raise RuntimeError(
+        "OSRM SRP request failed:\n"
+        + json.dumps(srp_data, indent=2)
+    )
+
+srp_distances = srp_data.get("distances")
+srp_durations = srp_data.get("durations")
+
+if not srp_distances or not srp_durations:
+    raise RuntimeError(
+        "OSRM did not return SRP distances and travel times."
+    )
+
+facility_index = len(areas)
+srp_rows = []
+
+for area_index, area in enumerate(areas):
+    distance_meters = srp_distances[area_index][facility_index]
+    duration_seconds = srp_durations[area_index][facility_index]
+
+    if distance_meters is None or duration_seconds is None:
+        raise RuntimeError(
+            f"No road route found from {area['AreaName']} to SRP."
+        )
+
+    distance_km = round(float(distance_meters) / 1000, 2)
+    travel_time_minutes = round(float(duration_seconds) / 60, 2)
+
+    srp_rows.append(
+        (
+            area["AreaId"],
+            facility["FacilityId"],
+            distance_km,
+            travel_time_minutes
+        )
+    )
+
+print(f"Calculated {len(srp_rows)} area to SRP routes.")
+
+# ============================================================
+# REPLACE OLD DISTANCE MATRIX
+# ============================================================
+
+connection = pymysql.connect(
+    host=DB_HOST,
+    port=DB_PORT,
+    user=DB_USER,
+    password=DB_PASSWORD,
+    database=DB_NAME
+)
+
+try:
+
+    with connection.cursor() as cursor:
+
+        print(
+            "Removing old distance matrix..."
+        )
+
+        cursor.execute(
+            "DELETE FROM distance_matrix"
+        )
+
+        print(
+            "Inserting new distance matrix..."
+        )
+
+        cursor.executemany(
+            """
+            INSERT INTO distance_matrix
+(
+    OriginAreaId,
+    DestinationAreaId,
+    DistanceKm,
+    TravelTimeMinutes
+)
+VALUES (%s, %s, %s, %s)
+            """,
+            matrix_rows
+        )
+
+    connection.commit()
+
+finally:
+    connection.close()
+
+
+# ============================================================
+# SAVE AREA TO SRP DISTANCES
+# ============================================================
+
+connection = pymysql.connect(
+    host=DB_HOST,
+    port=DB_PORT,
+    user=DB_USER,
+    password=DB_PASSWORD,
+    database=DB_NAME
+)
+
+try:
+    with connection.cursor() as cursor:
+        cursor.executemany(
+            """
+            INSERT INTO area_disposal_distances
+            (
+                AreaId,
+                FacilityId,
+                DistanceKm,
+                TravelTimeMinutes
             )
+            VALUES (%s, %s, %s, %s)
+            ON DUPLICATE KEY UPDATE
+                DistanceKm = VALUES(DistanceKm),
+                TravelTimeMinutes = VALUES(TravelTimeMinutes)
+            """,
+            srp_rows
+        )
 
-            cursor.executemany(
-                """
-                INSERT INTO distance_matrix
-                    (OriginAreaId, DestinationAreaId, DistanceKm, TravelTimeMinutes)
-                VALUES (%s, %s, %s, %s)
-                ON DUPLICATE KEY UPDATE
-                    DistanceKm = VALUES(DistanceKm),
-                    TravelTimeMinutes = VALUES(TravelTimeMinutes)
-                """,
-                matrix_rows,
-            )
+    connection.commit()
 
-            cursor.execute(
-                f"""
-                DELETE FROM area_disposal_distances
-                WHERE AreaId IN ({placeholders}) AND FacilityId = %s
-                """,
-                tuple(area_ids + [facility["FacilityId"]]),
-            )
+finally:
+    connection.close()
 
-            cursor.executemany(
-                """
-                INSERT INTO area_disposal_distances
-                    (AreaId, FacilityId, DistanceKm, TravelTimeMinutes)
-                VALUES (%s, %s, %s, %s)
-                ON DUPLICATE KEY UPDATE
-                    DistanceKm = VALUES(DistanceKm),
-                    TravelTimeMinutes = VALUES(TravelTimeMinutes)
-                """,
-                facility_rows,
-            )
+print(f"Saved {len(srp_rows)} area to SRP distances.")
 
-        connection.commit()
-    except Exception:
-        connection.rollback()
-        raise
-    finally:
-        connection.close()
+
+# ============================================================
+# DISPLAY RESULT
+# ============================================================
+
+print()
+print("=" * 60)
+print("DISTANCE MATRIX REBUILT SUCCESSFULLY")
+print("=" * 60)
+
+print()
+print(
+    f"Areas: {len(areas)}"
+)
+
+print(
+    f"Matrix entries: {len(matrix_rows)}"
+)
+
+print()
+
+for origin_index, origin_area in enumerate(areas):
+
+    print(
+        f"{origin_area['AreaName']:<22}",
+        end=""
+    )
+
+    for destination_index in range(len(areas)):
+
+        distance_meters = distances[
+            origin_index
+        ][destination_index]
+
+        distance_km = (
+            float(distance_meters) / 1000
+        )
+
+        print(
+            f"{distance_km:>7.2f}",
+            end=""
+        )
 
     print()
-    print("=" * 60)
-    print("DISTANCE DATA REBUILT SUCCESSFULLY")
-    print("=" * 60)
-    print(f"User ID: {user_id}")
-    print(f"Areas processed: {len(areas)}")
-    print(f"Area-to-area records saved: {len(matrix_rows)}")
-    print(f"Area-to-facility records saved: {len(facility_rows)}")
-    print("Distance records for other users were not deleted.")
 
-
-if __name__ == "__main__":
-    main()
+print()
+print("Done.")
