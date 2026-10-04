@@ -24,6 +24,7 @@ public class EcoRouteDbContext : DbContext
     public DbSet<OperationHistory> OperationHistories => Set<OperationHistory>();
     public DbSet<TwoFactorChallenge> TwoFactorChallenges => Set<TwoFactorChallenge>();
     public DbSet<TrustedDevice> TrustedDevices => Set<TrustedDevice>();
+    public DbSet<OperationReportUpload> OperationReportUploads { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -441,6 +442,31 @@ public class EcoRouteDbContext : DbContext
         .HasForeignKey(e => e.UserId)
         .OnDelete(DeleteBehavior.Cascade);
 });
+
+
+        // OPERATION REPORT UPLOADS
+
+        modelBuilder.Entity<OperationReportUpload>(entity =>
+        {
+            entity.ToTable("operation_report_uploads");
+
+            entity.HasKey(e => new
+            {
+                e.UserId,
+                e.OperationDate
+            });
+
+            entity.Property(e => e.UserId)
+                .HasColumnName("UserId");
+
+            entity.Property(e => e.OperationDate)
+                .HasColumnName("OperationDate")
+                .HasColumnType("date");
+
+            entity.Property(e => e.UploadedAt)
+                .HasColumnName("UploadedAt");
+        });
+
 
         // TWO-FACTOR CHALLENGES
 

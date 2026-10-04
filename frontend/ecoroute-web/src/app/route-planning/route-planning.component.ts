@@ -8,7 +8,7 @@ import {
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
-import { Subscription } from 'rxjs';
+import { Subscription, firstValueFrom } from 'rxjs';
 
 import * as L from 'leaflet';
 
@@ -145,6 +145,7 @@ export class RoutePlanningComponent
 
   showFinishConfirmation = false;
   routePendingFinish: Route | null = null;
+  showAllRoutesCompletedModal = false;
 
   showCancelConfirmation = false;
   
@@ -152,6 +153,8 @@ export class RoutePlanningComponent
   isLoadingRoutes = true;
   isRoutePanelOpen = false;
   animateMapLayout = false;
+
+  reportAlreadyUploaded = false;
 
   isStartingOperation = false;
   isHistoricalView = false;
@@ -335,6 +338,39 @@ historicalOperationStatus:
     }
   }
 
+  closeAllRoutesCompletedModal(): void {
+    this.showAllRoutesCompletedModal = false;
+  }
+
+  goToReportUpload(): void {
+    this.showAllRoutesCompletedModal = false;
+    this.uploadReport();
+  }
+
+  private loadReportUploadStatus(date: string): void {
+  this.reportAlreadyUploaded = false;
+
+  this.subscriptions.add(
+    this.http.get<{ operationDate: string; uploaded: boolean }>(
+      `http://localhost:5276/api/Waste/report-upload-status`,
+      {
+        params: { operationDate: date }
+      }
+    ).subscribe({
+      next: result => {
+        // Only apply the response if the user is still viewing this date.
+        if (this.toLocalDateString(this.selectedDate) === date) {
+          this.reportAlreadyUploaded = result.uploaded;
+        }
+      },
+      error: error => {
+        console.error('Failed to check report upload status:', error);
+        this.reportAlreadyUploaded = false;
+      }
+    })
+  );
+}
+
   // ============================================================
   // LOAD DATA
   // ============================================================
@@ -383,6 +419,8 @@ private loadCurrentOperation(): void {
 
   this.selectedDate = new Date();
   this.isHistoricalView = false;
+
+  this.loadReportUploadStatus(today);
 
   this.subscriptions.add(
     this.http.get<{ status: string }>(
@@ -773,9 +811,7 @@ confirmFinishTruck(): void {
           this.loadAvailableOperationDates();
 
           if (this.operationStatus === 'Completed') {
-            alert(
-              'All truck routes are completed. You can now upload the report.'
-            );
+            this.showAllRoutesCompletedModal = true;
           }
         },
         error: error => {
@@ -797,17 +833,286 @@ cancelFinishConfirmation(): void {
   this.routePendingFinish = null;
 }
 
+
+showUploadReportModal = false;
+showImportSuccessModal = false;
+importedRecordsCount = 0;
+selectedReportFile: File | null = null;
+isReportDragging = false;
+isReportValidating = false;
+reportValidationMessage = '';
+reportValidationSuccess = false;
+
+onReportFileSelected(event: Event): void {
+  const input = event.target as HTMLInputElement;
+  const file = input.files?.[0];
+
+  if (!file) {
+    return;
+  }
+
+  if (!file.name.toLowerCase().endsWith('.csv')) {
+    this.selectedReportFile = null;
+    this.reportValidationSuccess = false;
+    this.reportValidationMessage = 'Error: Invalid file type. Please select a CSV file.';
+    input.value = '';
+    return;
+  }
+
+  if (file.size > 10 * 1024 * 1024) {
+    this.selectedReportFile = null;
+    this.reportValidationSuccess = false;
+    this.reportValidationMessage = 'Error: File exceeds 10 MB size limit.';
+    input.value = '';
+    return;
+  }
+
+  this.selectedReportFile = file;
+  this.reportValidationMessage = '';
+  this.reportValidationSuccess = false;
+  input.value = '';
+}
+
+
+async validateReportCsv(): Promise<void> {
+  if (!this.selectedReportFile || this.isReportValidating) {
+    return;
+  }
+
+  this.isReportValidating = true;
+  this.reportValidationMessage = '';
+  this.reportValidationSuccess = false;
+
+  try {
+    const content = (await this.selectedReportFile.text())
+      .replace(/^\uFEFF/, '');
+
+    const lines = content
+      .split(/\r?\n/)
+      .filter(line => line.trim() !== '');
+
+    if (lines.length < 2) {
+      this.reportValidationMessage =
+        'Error: The CSV must contain a header and at least one data row.';
+      return;
+    }
+
+    const headers = lines[0]
+      .split(',')
+      .map(header => header.trim().replace(/^"|"$/g, ''));
+
+    const requiredHeaders = [
+      'WasteRecordId',
+      'AreaId',
+      'CollectionDate',
+      'WasteType',
+      'WeightKg',
+      'Status',
+      'CreatedAt'
+    ];
+
+    const missingHeaders = requiredHeaders.filter(
+      header => !headers.includes(header)
+    );
+
+    if (missingHeaders.length > 0) {
+      this.reportValidationMessage =
+        `Error: Missing required columns: ${missingHeaders.join(', ')}`;
+      return;
+    }
+
+    const columnIndex = (name: string) => headers.indexOf(name);
+
+    const validWasteTypes = [
+      'biodegradable',
+      'non-biodegradable',
+      'non biodegradable'
+    ];
+
+    const validStatuses = [
+      'completed',
+      'failed',
+      'pending'
+    ];
+
+    for (let i = 1; i < lines.length; i++) {
+      const values = lines[i]
+        .split(',')
+        .map(value => value.trim().replace(/^"|"$/g, ''));
+
+      const rowNumber = i + 1;
+
+      if (values.length !== headers.length) {
+        this.reportValidationMessage =
+          `Error: Row ${rowNumber} has an incorrect number of columns.`;
+        return;
+      }
+
+      const areaId = values[columnIndex('AreaId')];
+      const collectionDate = values[columnIndex('CollectionDate')];
+      const wasteType = values[columnIndex('WasteType')].toLowerCase();
+      const weightKg = values[columnIndex('WeightKg')];
+      const status = values[columnIndex('Status')].toLowerCase();
+
+      if (!areaId || !Number.isInteger(Number(areaId)) ||
+          Number(areaId) <= 0) {
+        this.reportValidationMessage =
+          `Error: Row ${rowNumber} has an invalid AreaId.`;
+        return;
+      }
+
+      if (!collectionDate ||
+          Number.isNaN(Date.parse(collectionDate))) {
+        this.reportValidationMessage =
+          `Error: Row ${rowNumber} has an invalid CollectionDate.`;
+        return;
+      }
+
+      if (!validWasteTypes.includes(wasteType)) {
+        this.reportValidationMessage =
+          `Error: Row ${rowNumber} has an invalid WasteType.`;
+        return;
+      }
+
+      if (weightKg === '' ||
+          !Number.isFinite(Number(weightKg)) ||
+          Number(weightKg) < 0) {
+        this.reportValidationMessage =
+          `Error: Row ${rowNumber} has an invalid WeightKg.`;
+        return;
+      }
+
+      if (!validStatuses.includes(status)) {
+        this.reportValidationMessage =
+          `Error: Row ${rowNumber} has an invalid Status.`;
+        return;
+      }
+    }
+
+    
+const records = lines.slice(1).map(line => {
+  const values = line
+    .split(',')
+    .map(value => value.trim().replace(/^"|"$/g, ''));
+
+  const wasteType = values[columnIndex('WasteType')].toLowerCase();
+  const status = values[columnIndex('Status')].toLowerCase();
+
+  return {
+    areaId: Number(values[columnIndex('AreaId')]),
+    collectionDate: new Date(
+      values[columnIndex('CollectionDate')]
+    ).toISOString(),
+    wasteType: wasteType === 'biodegradable'
+      ? 'Biodegradable'
+      : 'Non-biodegradable',
+    weightKg: Number(values[columnIndex('WeightKg')]),
+    status: status.charAt(0).toUpperCase() + status.slice(1)
+  };
+});
+
+try {
+  const operationDate = this.toLocalDateString(this.selectedDate);
+
+const result = await firstValueFrom(
+  this.http.post<{
+    message: string;
+    importedCount: number;
+  }>(
+    `http://localhost:5276/api/Waste/import?operationDate=${operationDate}`,
+    records
+  )
+);
+
+  this.reportAlreadyUploaded = true;
+  this.importedRecordsCount = result.importedCount;
+
+  // Close the upload modal
+  this.showUploadReportModal = false;
+
+  // Open the success modal
+  this.showImportSuccessModal = true;
+  this.reportValidationMessage =
+    `Success: ${result.importedCount} records imported successfully.`;
+
+  this.loadReportUploadStatus(operationDate);
+
+} catch (error: any) {
+  console.error('CSV import failed:', error);
+
+  this.reportValidationSuccess = false;
+  this.reportValidationMessage =
+    error?.error?.message ||
+    'Upload failed. Please check your connection and try again.';
+}
+
+  } catch {
+    this.reportValidationMessage =
+      'Unable to read this file. Please select a valid CSV file.';
+  } finally {
+    this.isReportValidating = false;
+  }
+}
+
+onReportDragOver(event: DragEvent): void {
+  event.preventDefault();
+  this.isReportDragging = true;
+}
+
+onReportDragLeave(event: DragEvent): void {
+  event.preventDefault();
+  this.isReportDragging = false;
+}
+
+onReportFileDrop(event: DragEvent): void {
+  event.preventDefault();
+  this.isReportDragging = false;
+
+  const file = event.dataTransfer?.files?.[0];
+
+  if (file) {
+    this.validateReportFile(file);
+  }
+}
+
+private validateReportFile(file: File): void {
+  if (
+    !file.name.toLowerCase().endsWith('.csv') ||
+    file.size > 10 * 1024 * 1024
+  ) {
+    this.selectedReportFile = null;
+    this.reportValidationSuccess = false;
+    this.reportValidationMessage = 'Error: Invalid file type. Please select a CSV file.';
+    return;
+  }
+
+  this.selectedReportFile = file;
+  this.reportValidationMessage = '';
+  this.reportValidationSuccess = false;
+}
+
 uploadReport(): void {
   if (
     this.operationStatus !== 'Completed' ||
-    this.isHistoricalView
+    this.reportAlreadyUploaded
   ) {
     return;
   }
 
-  alert(
-    'Report upload will be implemented in the next phase.'
-  );
+  this.showUploadReportModal = true;
+}
+
+closeUploadReportModal(): void {
+  this.showUploadReportModal = false;
+  this.selectedReportFile = null;
+  this.reportValidationMessage = '';
+  this.reportValidationSuccess = false;
+  this.isReportValidating = false;
+  this.isReportDragging = false;
+}
+
+closeImportSuccessModal(): void {
+  this.showImportSuccessModal = false;
 }
 
 toggleCalendar(): void {
@@ -922,6 +1227,8 @@ if (dateString === todayString) {
 }
 
   this.isHistoricalView = true;
+
+  this.loadReportUploadStatus(dateString);
   this.loadHistoricalRoutes(dateString);
 }
 

@@ -156,7 +156,7 @@
 <button
   class="operation-button upload-report"
   type="button"
-  [disabled]="isHistoricalView || operationStatus !== 'Completed'"
+[disabled]= "isHistoricalView ||operationStatus !== 'Completed' || reportAlreadyUploaded"
   (click)="uploadReport()">
   Upload Report
 </button>
@@ -1088,6 +1088,199 @@
         Cancel Operation
       </button>
     </div>
+
+  </div>
+</div>
+
+
+<!-- ALL ROUTES COMPLETED SUCCESS MODAL -->
+<div
+  class="confirmation-backdrop"
+  *ngIf="showAllRoutesCompletedModal"
+  (click)="closeAllRoutesCompletedModal()">
+
+  <div
+    class="confirmation-modal success-modal"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="allRoutesCompletedTitle"
+    (click)="$event.stopPropagation()">
+
+    <img
+      class="confirmation-check-icon"
+      src="assets/icons/check-mark.svg"
+      alt="Success">
+
+    <h2 id="allRoutesCompletedTitle">
+      All Routes Completed!
+    </h2>
+
+    <p>
+      All truck routes are completed.
+      You can now upload the report.
+    </p>
+
+    <p class="confirmation-note">
+      Your collection operation has been successfully completed.
+    </p>
+
+    <div class="confirmation-actions">
+      <button
+        type="button"
+        class="confirmation-cancel"
+        (click)="closeAllRoutesCompletedModal()">
+        Close
+      </button>
+
+      <button
+        type="button"
+        class="confirmation-confirm"
+        (click)="goToReportUpload()">
+        Upload Report
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<!-- UPLOAD REPORT MODAL -->
+<div
+  class="confirmation-backdrop"
+  *ngIf="showUploadReportModal"
+  (click)="closeUploadReportModal()">
+
+  <div
+    class="upload-report-modal"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="uploadReportTitle"
+    (click)="$event.stopPropagation()">
+
+    <div class="upload-report-header">
+      <div>
+        <h2 id="uploadReportTitle">Upload Operation Report</h2>
+        <p>Upload the CSV file containing your collection records.</p>
+      </div>
+
+      <button
+        type="button"
+        class="modal-close"
+        aria-label="Close"
+        (click)="closeUploadReportModal()">
+        ×
+      </button>
+    </div>
+
+<div
+  class="csv-dropzone"
+  [class.dragging]="isReportDragging"
+  (dragover)="onReportDragOver($event)"
+  (dragleave)="onReportDragLeave($event)"
+  (drop)="onReportFileDrop($event)">
+
+  <div class="csv-upload-icon">
+    <span>↑</span>
+  </div>
+
+  <h3 *ngIf="!selectedReportFile">
+    Drag and drop your CSV file here
+  </h3>
+
+  <h3 *ngIf="selectedReportFile">
+    {{ selectedReportFile.name }}
+  </h3>
+
+  <p *ngIf="!selectedReportFile">
+    or browse files from your computer
+  </p>
+
+  <p *ngIf="selectedReportFile">
+    File selected successfully.
+  </p>
+
+  <label class="browse-report-button">
+    Browse Files
+    <input
+      type="file"
+      accept=".csv,text/csv"
+      (change)="onReportFileSelected($event)">
+  </label>
+
+  <span class="csv-file-limit">
+    CSV files only · Maximum file size 10 MB
+  </span>
+</div>
+
+<div class="upload-report-footer">
+  <button
+    type="button"
+    class="confirmation-cancel"
+    (click)="closeUploadReportModal()">
+    Cancel
+  </button>
+
+  <button
+    type="button"
+    class="confirmation-confirm"
+    [disabled]="!selectedReportFile || isReportValidating"
+    (click)="validateReportCsv()">
+    {{ isReportValidating ? 'Validating...' : 'Validate & Upload' }}
+  </button>
+</div>
+
+<div
+  *ngIf="reportValidationMessage"
+  class="report-validation-message"
+  [class.report-validation-error]="!reportValidationSuccess"
+  [class.report-validation-success]="reportValidationSuccess">
+  {{ reportValidationMessage }}
+</div>
+
+  </div>
+</div>
+
+<!-- Records Imported Successfully Modal -->
+<div
+  class="confirmation-backdrop"
+  *ngIf="showImportSuccessModal"
+>
+<div class="upload-report-modal import-success-modal">
+
+    <button
+      type="button"
+      class="modal-close"
+      aria-label="Close"
+      (click)="closeImportSuccessModal()"
+    >
+      &times;
+    </button>
+
+    <div class="success-icon">
+      <img
+        src="assets/icons/check-mark.svg"
+        alt="Success"
+        class="success-check-icon"
+      />
+    </div>
+
+    <h2>Records Imported Successfully</h2>
+
+    <p>
+      Your collection records have been successfully imported
+      into EcoRoute AI.
+    </p>
+
+    <div class="imported-count">
+      <strong>{{ importedRecordsCount }}</strong>
+      <span>records imported successfully</span>
+    </div>
+
+    <button
+      type="button"
+      class="confirmation-confirm"
+      (click)="closeImportSuccessModal()">
+      Done
+    </button>
 
   </div>
 </div>
