@@ -20,9 +20,12 @@ app = FastAPI(
     description="Machine learning prediction and route optimization API",
     version="1.0.0",
 )
-
 ML_SERVICE_KEY = os.getenv("ML_SERVICE_KEY")
 
+print(
+    "ML key fingerprint:",
+    ML_SERVICE_KEY[:8] if ML_SERVICE_KEY else "NONE"
+)
 
 def verify_ml_service_key(
     x_ml_service_key: str | None = Header(default=None),
@@ -75,9 +78,12 @@ def health_check():
     "/predictions",
     dependencies=[Depends(verify_ml_service_key)],
 )
-def get_predictions(user_id: int = Query(..., ge=1)):
+def get_predictions(
+    user_id: int = Query(..., ge=1),
+    target_date: str | None = Query(default=None),
+):
     try:
-        predictions = predict_areas(user_id=user_id)
+        predictions = predict_areas(user_id=user_id, target_date=target_date)
 
         return {
             "status": "success",

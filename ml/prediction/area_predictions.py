@@ -154,7 +154,10 @@ def prepare_prediction_data(user_id: int):
     return data
 
 
-def predict_areas(user_id: int):
+def predict_areas(
+    user_id: int,
+    target_date: str | None = None,
+):
     data = prepare_prediction_data(user_id)
 
     # Load the trained quantile models.
@@ -168,15 +171,26 @@ def predict_areas(user_id: int):
     with open(calibration_path, "r") as file:
         calibration_factor = float(file.read().strip())
 
-    # Forecast for the next day after the latest data,
-    # but never return a forecast date in the past.
-    latest_history_date = data["CollectionDate"].max().normalize()
-    tomorrow = pd.Timestamp.now().normalize() + pd.Timedelta(days=1)
+    # Use the requested target date when provided.
+    # Otherwise keep the existing behavior for route planning.
+    if target_date:
+        forecast_date = pd.Timestamp(
+            target_date
+        ).normalize()
+    else:
+        latest_history_date = (
+            data["CollectionDate"].max().normalize()
+        )
 
-    forecast_date = max(
-        latest_history_date + pd.Timedelta(days=1),
-        tomorrow,
-    )
+        tomorrow = (
+            pd.Timestamp.now().normalize()
+            + pd.Timedelta(days=1)
+        )
+
+        forecast_date = max(
+            latest_history_date + pd.Timedelta(days=1),
+            tomorrow,
+        )
 
     future_rows = []
 

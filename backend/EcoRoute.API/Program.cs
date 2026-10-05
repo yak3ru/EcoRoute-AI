@@ -203,7 +203,12 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AngularClient", policy =>
     {
         policy
-            .WithOrigins("http://localhost:4200")
+            .WithOrigins(
+                "http://localhost:4200",
+                "https://ecoroute-ai.pages.dev",
+                "https://ecorouteai.com",
+                "https://www.ecorouteai.com"
+            )
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials();

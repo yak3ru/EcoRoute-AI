@@ -36,14 +36,19 @@ public class MlController : ControllerBase
     }
 
     [HttpGet("predictions")]
-    public async Task<IActionResult> GetPredictions()
+    public async Task<IActionResult> GetPredictions(
+        [FromQuery] string? targetDate = null)
     {
         if (!TryGetUserId(out var userId))
             return Unauthorized();
 
         try
         {
-            var result = await _mlService.GetPredictionsAsync(userId);
+            var result = await _mlService.GetPredictionsAsync(
+                userId,
+                targetDate
+            );
+
             return Ok(result);
         }    
         catch (MlServiceException ex)

@@ -17,103 +17,137 @@
   <!-- SUMMARY CARDS -->
   <section class="summary-cards">
 
-    <!-- WASTE TODAY -->
-    <div class="summary-card waste-card">
-      <div class="summary-icon">
-        <img
-          src="/assets/icons/trash-green.svg"
-          alt=""
-        >
-      </div>
+    <!-- WASTE -->
+<div class="summary-card waste-card">
+  <div class="summary-icon">
+    <img
+      src="/assets/icons/trash-green.svg"
+      alt=""
+    >
+  </div>
 
-      <div class="summary-content">
-        <div class="summary-title">
-          Waste Today
-        </div>
-
-        <div class="summary-value">
-          45.7 tons
-        </div>
-
-        <div class="summary-change positive">
-          ↑ 12.4%
-          <span>since last week</span>
-        </div>
-      </div>
+  <div class="summary-content">
+    <div class="summary-title">
+      {{ dashboardMode === 'current'
+        ? 'Waste Today'
+        : 'Previous Waste' }}
     </div>
 
-    <!-- PREDICTED WASTE -->
-    <div class="summary-card prediction-card">
-      <div class="summary-icon">
-        <img
-          src="/assets/icons/waste-data-blue.svg"
-          alt=""
-        >
-      </div>
-
-      <div class="summary-content">
-        <div class="summary-title">
-          Predicted Waste
-        </div>
-
-        <div class="summary-value">
-          60.0 tons
-        </div>
-
-        <div class="summary-change positive">
-          ↑ 22.1%
-          <span>vs. average</span>
-        </div>
-      </div>
+    <div class="summary-value">
+      {{ wasteDisplay }}
     </div>
 
-    <!-- ROUTE TODAY -->
-    <div class="summary-card route-card">
-      <div class="summary-icon">
-        <img
-          src="/assets/icons/route-orange.svg"
-          alt=""
-        >
-      </div>
-
-      <div class="summary-content">
-        <div class="summary-title">
-          Route Today
-        </div>
-
-        <div class="summary-value">
-          8
-        </div>
-
-        <div class="summary-description">
-          Active collection routes
-        </div>
-      </div>
+    <div
+      class="summary-description"
+      *ngIf="dashboardMode === 'current' && !hasWasteData"
+    >
+      No collection data uploaded
     </div>
 
-    <!-- VEHICLES ACTIVE -->
-    <div class="summary-card vehicle-card">
-      <div class="summary-icon">
-        <img
-          src="/assets/icons/truck-purple.svg"
-          alt=""
-        >
-      </div>
-
-      <div class="summary-content">
-        <div class="summary-title">
-          Vehicles Active
-        </div>
-
-        <div class="summary-value">
-          3
-        </div>
-
-        <div class="summary-description">
-          Out of 4 total vehicles
-        </div>
-      </div>
+    <div
+      class="summary-description"
+      *ngIf="dashboardMode === 'current' && hasWasteData"
+    >
+      Collected waste today
     </div>
+
+    <div
+      class="summary-description"
+      *ngIf="dashboardMode === 'previous'"
+    >
+      Previous operation
+    </div>
+  </div>
+</div>
+
+
+<!-- PREDICTED WASTE -->
+<div class="summary-card prediction-card">
+  <div class="summary-icon">
+    <img
+      src="/assets/icons/waste-data-blue.svg"
+      alt=""
+    >
+  </div>
+
+  <div class="summary-content">
+    <div class="summary-title">
+      {{ dashboardMode === 'current'
+        ? 'Predicted Waste'
+        : 'Previous Prediction' }}
+    </div>
+
+    <div class="summary-value">
+  {{ dashboardMode === 'current'
+    ? (aiPredictedWaste / 1000).toFixed(1) + ' tons'
+    : predictedWasteDisplay }}
+</div>
+
+    <div class="summary-description">
+      {{ dashboardMode === 'current'
+        ? 'AI predicted waste'
+        : 'Previous operation' }}
+    </div>
+  </div>
+</div>
+
+
+<!-- ROUTES -->
+<div class="summary-card route-card">
+  <div class="summary-icon">
+    <img
+      src="/assets/icons/route-orange.svg"
+      alt=""
+    >
+  </div>
+
+  <div class="summary-content">
+    <div class="summary-title">
+      {{ dashboardMode === 'current'
+        ? 'Routes Today'
+        : 'Previous Routes' }}
+    </div>
+
+    <div class="summary-value">
+      {{ routeCount }}
+    </div>
+
+    <div class="summary-description">
+      {{ dashboardMode === 'current'
+        ? 'Active collection routes'
+        : 'Previous operation' }}
+    </div>
+  </div>
+</div>
+
+
+<!-- VEHICLES -->
+<div class="summary-card vehicle-card">
+  <div class="summary-icon">
+    <img
+      src="/assets/icons/truck-purple.svg"
+      alt=""
+    >
+  </div>
+
+  <div class="summary-content">
+    <div class="summary-title">
+      {{ dashboardMode === 'current'
+        ? 'Vehicles Active'
+        : 'Previous Vehicles' }}
+    </div>
+
+    <div class="summary-value">
+      {{ vehicleCount }}
+    </div>
+
+    <div class="summary-description">
+      {{ dashboardMode === 'current'
+        ? 'Vehicles deployed'
+        : 'Previous operation' }}
+    </div>
+  </div>
+</div>
 
   </section>
 
@@ -122,74 +156,129 @@
 
     <!-- WASTE COLLECTION HISTORY -->
     <div class="history-card">
-      <h2>
-        Waste Collection History
-      </h2>
 
-      <div class="chart-container">
-        <canvas id="wasteChart"></canvas>
-      </div>
+  <div class="history-header">
+
+    <h2>
+      Waste Collection History
+    </h2>
+
+    <div class="history-navigation">
+
+      <button
+        type="button"
+        class="history-nav-button"
+        (click)="previousChartPeriod()"
+        aria-label="Previous 7 days"
+      >
+        ‹
+      </button>
+
+      <button
+        type="button"
+        class="history-nav-button"
+        (click)="nextChartPeriod()"
+        aria-label="Next 7 days"
+      >
+        ›
+      </button>
+
     </div>
+
+  </div>
+
+  <div class="chart-container">
+    <canvas id="wasteChart"></canvas>
+  </div>
+
+</div>
 
     <!-- AI INSIGHT -->
-    <div class="insight-card">
-      <div class="insight-header">
-        <div class="insight-title">
-          <div class="insight-logo">
-            <img
-              src="assets/images/ecoroute-logo.png"
-              alt=""
-            >
-          </div>
-
-          <h2>
-            EcoRoute AI Insight
-          </h2>
-        </div>
-
-        <span class="prediction-badge">
-          Prediction
-        </span>
+<div class="insight-card">
+  <div class="insight-header">
+    <div class="insight-title">
+      <div class="insight-logo">
+        <img
+          src="assets/images/ecoroute-logo.png"
+          alt=""
+        >
       </div>
 
-      <p class="insight-message">
-        High waste generation predicted in
-        Barangay Talamban tomorrow.
-      </p>
+      <h2>
+        EcoRoute AI Insight
+      </h2>
+    </div>
 
-      <div class="prediction-details">
-        <div class="prediction-row">
-          <span>Predicted:</span>
-          <strong>60,000 kg</strong>
-        </div>
+    <span class="prediction-badge">
+      Prediction
+    </span>
+  </div>
 
-        <div class="prediction-row">
-          <span>Normal:</span>
-          <strong>49,200 kg</strong>
-        </div>
+  <p class="insight-message">
+  <strong *ngIf="predictionLevel">
+    {{ predictionLevel }}
+  </strong>
+  <br>
+  {{ predictionInsight }}
+  <span *ngIf="predictionLevel">
+    {{ predictionTarget }}
+    in Barangay Talamban.
+  </span>
+</p>
 
-        <div class="prediction-row increase">
-          <span>Increase:</span>
-          <strong>+22%</strong>
-        </div>
+  <div class="prediction-details">
+
+    <div class="prediction-row">
+      <span>Predicted:</span>
+      <strong>
+        {{ aiPredictedWaste.toLocaleString() }} kg
+      </strong>
+    </div>
+
+    <div class="prediction-row">
+      <span>Normal:</span>
+      <strong>
+        {{ aiNormalWaste.toLocaleString() }} kg
+      </strong>
+    </div>
+
+    <div
+      class="prediction-row"
+      [class.increase]="aiPredictionChange > 0"
+    >
+      <span>
+        {{ aiPredictionChange >= 0
+          ? 'Increase:'
+          : 'Decrease:' }}
+      </span>
+
+      <strong>
+        {{ aiPredictionChange >= 0 ? '+' : '' }}{{
+          aiPredictionChange
+        }}%
+      </strong>
+    </div>
+
+  </div>
+
+  <div class="suggested-action">
+
+    <div class="action-icon">
+      !
+    </div>
+
+    <div>
+      <div class="action-title">
+        Suggested Action
       </div>
 
-      <div class="suggested-action">
-        <div class="action-icon">
-          !
-        </div>
-
-        <div>
-          <div class="action-title">
-            Suggested Action
-          </div>
-
-          <div class="action-text">
-            Review Route #03 capacity.
-          </div>
-        </div>
+      <div class="action-text">
+        {{ predictionAction }}
       </div>
     </div>
+
+  </div>
+</div>
 
   </section>
 
@@ -199,7 +288,9 @@
     [class.expanded]="isMapExpanded"
   >
     <div class="map-title">
-      Collection Routes
+      {{ dashboardMode === 'current'
+        ? 'Collection Routes Today'
+        : 'Previous Collection Routes' }}
     </div>
 
     <div

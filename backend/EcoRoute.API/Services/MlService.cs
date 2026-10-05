@@ -28,9 +28,18 @@ public class MlService
         _httpClientFactory = httpClientFactory;
     }
 
-    public Task<JsonElement> GetPredictionsAsync(int userId)
+    public Task<JsonElement> GetPredictionsAsync(
+        int userId,
+        string? targetDate = null)
     {
-        return GetAsync($"/predictions?user_id={userId}");
+        var url = $"/predictions?user_id={userId}";
+
+        if (!string.IsNullOrWhiteSpace(targetDate))
+        {
+            url += $"&target_date={targetDate}";
+        }
+
+        return GetAsync(url);
     }
 
     public Task<JsonElement> GetRoutesAsync(int userId)
@@ -55,6 +64,15 @@ public class MlService
         var client = _httpClientFactory.CreateClient("PythonML");
 
         using var response = await client.GetAsync(url);
+
+        var key = client.DefaultRequestHeaders
+    .GetValues("X-ML-Service-Key")
+    .FirstOrDefault();
+
+Console.WriteLine(
+    $"ASP.NET ML key fingerprint: " +
+    $"{key?.Substring(0, 8)}"
+);
 
         var responseBody = await response.Content.ReadAsStringAsync();
 
