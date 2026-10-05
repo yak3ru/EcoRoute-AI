@@ -1,208 +1,204 @@
 <div class="account-page">
 
   <!-- ACCOUNT INFORMATION -->
-<section class="settings-card account-information">
+  <section class="settings-card account-information">
 
-  <div class="card-header">
+    <div class="card-header">
 
-    <div>
-      <h2>Account Information</h2>
-      <p>View and update your account details.</p>
+      <div>
+        <h2>Account Information</h2>
+        <p>View and update your account details.</p>
+      </div>
+
+      <!-- HEADER ACTIONS -->
+      <div class="header-actions">
+
+        <!-- SUCCESS MESSAGE -->
+        <div
+          class="account-message success"
+          *ngIf="!isEditing && successMessage"
+        >
+          {{ successMessage }}
+        </div>
+
+        <!-- NORMAL MODE -->
+        <button
+          *ngIf="!isEditing"
+          type="button"
+          class="edit-profile-button"
+          (click)="startEditing()"
+        >
+          <img
+            src="assets/icons/pencil.svg"
+            alt=""
+            class="button-icon"
+          />
+
+          <span>Edit profile</span>
+        </button>
+
+        <!-- EDIT MODE -->
+        <div
+          *ngIf="isEditing"
+          class="edit-profile-actions"
+        >
+
+          <button
+            type="button"
+            class="cancel-edit-button"
+            (click)="cancelEditing()"
+            [disabled]="isSaving"
+          >
+            Cancel
+          </button>
+
+          <button
+            type="button"
+            class="save-profile-button"
+            (click)="saveProfile()"
+            [disabled]="isSaving"
+          >
+            {{ isSaving ? 'Saving...' : 'Save Changes' }}
+          </button>
+
+        </div>
+
+      </div>
+
     </div>
 
-    <!-- NORMAL MODE -->
-    <button
-      *ngIf="!isEditing"
-      type="button"
-      class="edit-profile-button"
-      (click)="startEditing()"
-    >
-      <img
-        src="assets/icons/pencil.svg"
-        alt=""
-        class="button-icon"
-      />
 
-      <span>Edit profile</span>
-    </button>
+    <!-- ACCOUNT DETAILS -->
+    <div class="account-details">
 
-    <!-- EDIT MODE -->
+      <!-- PROFILE -->
+      <div class="profile-section">
+
+        <div class="profile-picture">
+          {{ getInitials(user?.fullName) }}
+        </div>
+
+      </div>
+
+
+      <!-- ACCOUNT FIELDS -->
+      <div class="information-grid">
+
+        <!-- FULL NAME -->
+        <div class="information-item">
+
+          <span class="information-label">
+            Full Name
+          </span>
+
+          <!-- VIEW MODE -->
+          <span
+            *ngIf="!isEditing"
+            class="information-value"
+          >
+            {{ user?.fullName || 'Loading...' }}
+          </span>
+
+          <!-- EDIT MODE -->
+          <input
+            *ngIf="isEditing"
+            type="text"
+            class="information-input"
+            [(ngModel)]="editFullName"
+            autocomplete="name"
+          />
+
+        </div>
+
+
+        <!-- EMAIL -->
+        <div class="information-item">
+
+          <span class="information-label">
+            Email Address
+          </span>
+
+          <!-- VIEW MODE -->
+          <span
+            *ngIf="!isEditing"
+            class="information-value"
+          >
+            {{ user?.email || 'Loading...' }}
+          </span>
+
+          <!-- EDIT MODE -->
+          <input
+            *ngIf="isEditing"
+            type="email"
+            class="information-input"
+            [(ngModel)]="editEmail"
+            autocomplete="email"
+          />
+
+        </div>
+
+
+        <!-- USERNAME -->
+        <div class="information-item">
+
+          <span class="information-label">
+            Username
+          </span>
+
+          <!-- VIEW MODE -->
+          <span
+            *ngIf="!isEditing"
+            class="information-value"
+          >
+            {{ user?.username || 'Loading...' }}
+          </span>
+
+          <!-- EDIT MODE -->
+          <input
+            *ngIf="isEditing"
+            type="text"
+            class="information-input"
+            [(ngModel)]="editUsername"
+            autocomplete="username"
+          />
+
+        </div>
+
+
+        <!-- ROLE -->
+        <div class="information-item">
+
+          <span class="information-label">
+            Role
+          </span>
+
+          <span class="role-badge">
+            {{ user?.role || 'Loading...' }}
+          </span>
+
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <!-- EDIT ERROR -->
     <div
-      *ngIf="isEditing"
-      class="edit-profile-actions"
+      class="account-message error"
+      *ngIf="isEditing && errorMessage"
     >
-
-      <button
-        type="button"
-        class="cancel-edit-button"
-        (click)="cancelEditing()"
-        [disabled]="isSaving"
-      >
-        Cancel
-      </button>
-
-      <button
-        type="button"
-        class="save-profile-button"
-        (click)="saveProfile()"
-        [disabled]="isSaving"
-      >
-        {{ isSaving ? 'Saving...' : 'Save Changes' }}
-      </button>
-
+      {{ errorMessage }}
     </div>
 
-  </div>
+  </section>
 
-
-  <div class="account-details">
-
-    <!-- PROFILE -->
-    <div class="profile-section">
-
-      <div class="profile-picture">
-        RS
-      </div>
-
-      <button
-        type="button"
-        class="change-photo-button"
-        aria-label="Change profile photo"
-      >
-        <img
-          src="assets/icons/camera.svg"
-          alt=""
-        />
-      </button>
-
-    </div>
-
-
-    <!-- ACCOUNT FIELDS -->
-    <div class="information-grid">
-
-      <!-- FULL NAME -->
-      <div class="information-item">
-
-        <span class="information-label">
-          Full Name
-        </span>
-
-        <!-- VIEW MODE -->
-        <span
-          *ngIf="!isEditing"
-          class="information-value"
-        >
-          {{ user?.fullName || 'Loading...' }}
-        </span>
-
-        <!-- EDIT MODE -->
-        <input
-          *ngIf="isEditing"
-          type="text"
-          class="information-input"
-          [(ngModel)]="editFullName"
-          autocomplete="name"
-        />
-
-      </div>
-
-
-      <!-- EMAIL -->
-      <div class="information-item">
-
-        <span class="information-label">
-          Email Address
-        </span>
-
-        <!-- VIEW MODE -->
-        <span
-          *ngIf="!isEditing"
-          class="information-value"
-        >
-          {{ user?.email || 'Loading...' }}
-        </span>
-
-        <!-- EDIT MODE -->
-        <input
-          *ngIf="isEditing"
-          type="email"
-          class="information-input"
-          [(ngModel)]="editEmail"
-          autocomplete="email"
-        />
-
-      </div>
-
-
-      <!-- USERNAME -->
-      <div class="information-item">
-
-        <span class="information-label">
-          Username
-        </span>
-
-        <!-- VIEW MODE -->
-        <span
-          *ngIf="!isEditing"
-          class="information-value"
-        >
-          {{ user?.username || 'Loading...' }}
-        </span>
-
-        <!-- EDIT MODE -->
-        <input
-          *ngIf="isEditing"
-          type="text"
-          class="information-input"
-          [(ngModel)]="editUsername"
-          autocomplete="username"
-        />
-
-      </div>
-
-
-      <!-- ROLE -->
-      <div class="information-item">
-
-        <span class="information-label">
-          Role
-        </span>
-
-        <span class="role-badge">
-          {{ user?.role || 'Loading...' }}
-        </span>
-
-      </div>
-
-    </div>
-
-  </div>
-
-
-  <!-- EDIT ERROR -->
-  <div
-    class="account-message error"
-    *ngIf="isEditing && errorMessage"
-  >
-    {{ errorMessage }}
-  </div>
-
-
-  <!-- EDIT SUCCESS -->
-  <div
-    class="account-message success"
-    *ngIf="!isEditing && successMessage"
-  >
-    {{ successMessage }}
-  </div>
-
-</section>
 
   <!-- SECURITY -->
   <section class="settings-card security-card">
 
     <div class="card-header">
+
       <div>
         <h2>Security</h2>
         <p>Manage your password and account security.</p>
@@ -220,7 +216,9 @@
 
         <span>Change Password</span>
       </a>
+
     </div>
+
 
     <div class="password-row">
 
@@ -232,6 +230,7 @@
       </div>
 
       <div class="password-information">
+
         <span class="password-title">
           Password
         </span>
@@ -239,21 +238,29 @@
         <span class="password-description">
           Keep your account secured with a strong password.
         </span>
+
       </div>
 
       <div class="password-status">
+
         <span class="password-hidden">
           ••••••••••••
         </span>
 
-        <span class="password-date" *ngIf="user">
-          Last changed: {{ user.passwordChangedAt | date: 'MMMM d, y' }}
+        <span
+          class="password-date"
+          *ngIf="user"
+        >
+          Last changed:
+          {{ user.passwordChangedAt | date: 'MMMM d, y' }}
         </span>
+
       </div>
 
     </div>
 
   </section>
+
 
   <!-- DELETE ACCOUNT -->
   <button
@@ -263,6 +270,7 @@
   >
     Delete Account
   </button>
+
 
   <!-- DELETE ACCOUNT MODAL -->
   <div
@@ -286,6 +294,7 @@
         </div>
 
         <div class="modal-title">
+
           <h2>
             Delete Account
           </h2>
@@ -294,9 +303,11 @@
             Permanently delete your account and all associated data.
             This action cannot be undone.
           </p>
+
         </div>
 
       </div>
+
 
       <div class="delete-password-field">
 
@@ -331,6 +342,7 @@
 
         </div>
 
+
         <div
           class="account-message error"
           *ngIf="deleteError"
@@ -339,6 +351,7 @@
         </div>
 
       </div>
+
 
       <div class="modal-actions">
 

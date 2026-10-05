@@ -191,4 +191,27 @@ export class AccountComponent implements OnInit {
     });
   }
 
+  getInitials(fullName: string | undefined | null): string {
+  if (!fullName?.trim()) {
+    return '';
+  }
+
+  const nameParts = fullName
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+
+  if (nameParts.length === 1) {
+    return nameParts[0].substring(0, 2).toUpperCase();
+  }
+
+  const firstName = nameParts[0];
+  const lastName = nameParts[nameParts.length - 1];
+
+  return (
+    firstName.charAt(0) +
+    lastName.charAt(0)
+  ).toUpperCase();
+}
+
 }
