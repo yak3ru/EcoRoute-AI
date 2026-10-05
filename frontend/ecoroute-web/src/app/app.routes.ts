@@ -5,6 +5,9 @@ import { SignupComponent } from './auth/signup/signup.component';
 import { ForgotPasswordComponent } from './auth/forgot-password/forgot-password.component';
 import { ResetPasswordComponent } from './auth/reset-password/reset-password.component';
 
+import { TermsOfServiceComponent } from './terms-of-service/terms-of-service.component';
+import { PrivacyPolicyComponent } from './privacy-policy/privacy-policy.component';
+
 import { LayoutComponent } from './shared/layout/layout.component';
 
 import { DashboardComponent } from './dashboard/dashboard.component';
@@ -30,6 +33,16 @@ export const routes: Routes = [
   {
     path: 'signup',
     component: SignupComponent
+  },
+
+  {
+    path: 'terms-of-service',
+    component: TermsOfServiceComponent
+  },
+
+  {
+    path: 'privacy-policy',
+    component: PrivacyPolicyComponent
   },
 
   {

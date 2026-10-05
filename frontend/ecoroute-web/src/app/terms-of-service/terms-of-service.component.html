@@ -1,0 +1,417 @@
+<div class="terms-page">
+
+  <section class="terms-left">
+
+    <!-- SIDEBAR -->
+    <div class="terms-sidebar-area">
+
+      <!-- BRAND -->
+      <div class="brand">
+        <img
+          class="brand-logo"
+          src="assets/icons/ecoroute-logo.svg"
+          alt="EcoRoute AI Logo"
+        >
+
+        <div class="brand-text">
+          <h1>EcoRoute AI</h1>
+          <p>The Developers Company</p>
+        </div>
+      </div>
+
+      <!-- BACK -->
+      <a
+        class="back-link"
+        routerLink="/signup"
+      >
+        <span class="back-arrow">←</span>
+        <span>Back to Sign Up</span>
+      </a>
+
+      <!-- SIDEBAR -->
+      <nav class="terms-sidebar">
+
+        @for (section of sections; track section.number) {
+          <button
+            type="button"
+            class="sidebar-item"
+            [class.active]="activeSection === section.number"
+            (click)="scrollToSection(section.number)"
+          >
+            <span class="sidebar-number">
+              {{ section.number }}.
+            </span>
+
+            <span class="sidebar-title">
+              {{ section.title }}
+            </span>
+          </button>
+        }
+
+      </nav>
+
+    </div>
+
+
+    <!-- TERMS CONTENT -->
+    <div class="terms-main">
+
+      <div class="terms-header">
+
+        <h2>Terms of Service</h2>
+
+        <h3>EcoRoute AI</h3>
+
+        <p class="last-updated">
+          Last updated: September 16, 2026
+        </p>
+
+      </div>
+
+      <div class="terms-divider"></div>
+
+
+      <div
+        #termsContent
+        class="terms-content"
+      >
+
+        <p class="intro">
+          These Terms of Service govern access to and use of EcoRoute AI,
+          a web-based academic and research prototype developed to support
+          data-driven municipal waste management through waste-generation
+          prediction and garbage-collection route optimization.
+        </p>
+
+
+        <!-- 1 -->
+        <article
+          #termSection
+          class="term-section"
+          data-section="1"
+        >
+          <div class="section-heading">
+            <span class="section-number">1</span>
+            <h3>Purpose and Scope</h3>
+          </div>
+
+          <p>
+            EcoRoute AI is developed as an academic and research-oriented
+            software system. Its principal functions are to analyze relevant
+            waste-management data, generate waste-generation predictions,
+            and produce optimized collection routes. The research is focused
+            on Barangay Talamban, Cebu City, and the intended users include
+            local government units (LGUs), waste-management administrators,
+            project evaluators, and other authorized users.
+          </p>
+
+          <p>
+            EcoRoute AI is decision-support software. It is not a substitute
+            for official government procedures, field verification, emergency
+            response, or professional judgment.
+          </p>
+        </article>
+
+
+        <!-- 2 -->
+        <article
+          #termSection
+          class="term-section"
+          data-section="2"
+        >
+          <div class="section-heading">
+            <span class="section-number">2</span>
+            <h3>Authorized Use and Accounts</h3>
+          </div>
+
+          <p>
+            Users may access EcoRoute AI only for authorized academic,
+            research, evaluation, demonstration, or waste-management purposes
+            consistent with the project. Users must provide accurate
+            registration information and keep their account credentials
+            confidential.
+          </p>
+        </article>
+
+
+        <!-- 3 -->
+        <article
+          #termSection
+          class="term-section"
+          data-section="3"
+        >
+          <div class="section-heading">
+            <span class="section-number">3</span>
+            <h3>User Responsibilities</h3>
+          </div>
+
+          <ul>
+            <li>Provide accurate and reasonably current account and operational information.</li>
+            <li>Use EcoRoute AI only for lawful and authorized purposes.</li>
+            <li>Protect usernames, passwords, password-reset links, and other authentication information.</li>
+            <li>Submit only data that the user is authorized to provide and process.</li>
+            <li>Review predictions and generated routes against current operational conditions before relying on them.</li>
+            <li>Report suspected unauthorized access, security issues, or materially incorrect system behavior.</li>
+          </ul>
+        </article>
+
+
+        <!-- 4 -->
+        <article
+          #termSection
+          class="term-section"
+          data-section="4"
+        >
+          <div class="section-heading">
+            <span class="section-number">4</span>
+            <h3>Prohibited Uses</h3>
+          </div>
+
+          <p>
+            Users must not use EcoRoute AI for unlawful or unauthorized
+            purposes; attempt unauthorized access; interfere with system
+            security or operation; upload malicious code; access or disclose
+            another user's information without authorization; or copy,
+            redistribute, reverse engineer, modify, or commercially exploit
+            protected project materials without permission or legal
+            authorization.
+          </p>
+        </article>
+
+
+        <!-- 5 -->
+        <article
+          #termSection
+          class="term-section"
+          data-section="5"
+        >
+          <div class="section-heading">
+            <span class="section-number">5</span>
+            <h3>Predictions and Route Outputs</h3>
+          </div>
+
+          <p>
+            EcoRoute AI uses historical waste-collection records and relevant
+            environmental and geographic parameters, including population
+            density, area activity levels, collection frequencies, geographic
+            parameters, and routing constraints, to support prediction and
+            route generation.
+          </p>
+
+          <p>
+            Predictions and routes depend on the quality and completeness of
+            the available data and model assumptions. They are not guaranteed
+            to be accurate or complete and should be reviewed by authorized
+            personnel.
+          </p>
+
+          <p>
+            The current research scope does not provide real-time dynamic
+            rerouting around live traffic accidents or sudden road closures.
+            The system relies on static distance information and historical
+            parameters and is limited to prediction and route generation;
+            it does not provide waste-segregation operations,
+            recycling-facility operations, or landfill-management functions.
+          </p>
+        </article>
+
+
+        <!-- 6 -->
+        <article
+          #termSection
+          class="term-section"
+          data-section="6"
+        >
+          <div class="section-heading">
+            <span class="section-number">6</span>
+            <h3>Internet and External Services</h3>
+          </div>
+
+          <p>
+            EcoRoute AI is web-based and requires an active internet connection
+            for map rendering and optimization. External mapping or other
+            services may have separate terms and privacy practices.
+          </p>
+        </article>
+
+
+        <!-- 7 -->
+        <article
+          #termSection
+          class="term-section"
+          data-section="7"
+        >
+          <div class="section-heading">
+            <span class="section-number">7</span>
+            <h3>Intellectual Property</h3>
+          </div>
+
+          <p>
+            EcoRoute AI, including its software, interface design,
+            documentation, original models, and project materials, remains
+            subject to the intellectual-property rights of the applicable
+            project developers, contributors, and institutional rights
+            holders. Nothing in these Terms transfers ownership to a user.
+          </p>
+
+          <p>
+            Users may not reproduce, publish, redistribute, commercially
+            exploit, or create derivative works from protected project
+            materials except with authorization or where permitted by
+            applicable law.
+          </p>
+        </article>
+
+
+        <!-- 8 -->
+        <article
+          #termSection
+          class="term-section"
+          data-section="8"
+        >
+          <div class="section-heading">
+            <span class="section-number">8</span>
+            <h3>Academic and Research Nature</h3>
+          </div>
+
+          <p>
+            EcoRoute AI is an academic/research prototype. Features, models,
+            interfaces, datasets, and workflows may change during development,
+            testing, evaluation, and maintenance. Demonstration or sample
+            values may be illustrative and should not be treated as official
+            municipal records unless expressly identified as such.
+          </p>
+        </article>
+
+
+        <!-- 9 -->
+        <article
+          #termSection
+          class="term-section"
+          data-section="9"
+        >
+          <div class="section-heading">
+            <span class="section-number">9</span>
+            <h3>Availability and Changes</h3>
+          </div>
+
+          <p>
+            The project team may modify, suspend, or discontinue features for
+            development, testing, maintenance, security, or academic
+            evaluation. Continuous availability or error-free operation is
+            not guaranteed.
+          </p>
+        </article>
+
+
+        <!-- 10 -->
+        <article
+          #termSection
+          class="term-section"
+          data-section="10"
+        >
+          <div class="section-heading">
+            <span class="section-number">10</span>
+            <h3>Disclaimer and Limitation of Liability</h3>
+          </div>
+
+          <p>
+            To the extent permitted by applicable law, EcoRoute AI is provided
+            on an 'as is' and 'as available' basis. The project team does not
+            guarantee that predictions, routes, data displays, or other outputs
+            will always be accurate, complete, current, uninterrupted, or
+            error-free.
+          </p>
+
+          <p>
+            Users should not rely solely on automated outputs where human
+            review, safety considerations, official records, or current field
+            conditions are required. To the extent permitted by law, the
+            project team and applicable institutional rights holders are not
+            responsible for losses arising from unauthorized use, inaccurate
+            user-provided data, reliance on unverified outputs, service
+            interruptions, or failures of external services.
+          </p>
+        </article>
+
+
+        <!-- 11 -->
+        <article
+          #termSection
+          class="term-section"
+          data-section="11"
+        >
+          <div class="section-heading">
+            <span class="section-number">11</span>
+            <h3>Suspension or Termination</h3>
+          </div>
+
+          <p>
+            Access may be suspended or terminated when necessary to protect
+            the system, users, research integrity, security, or institutional
+            requirements, including material violations of these Terms.
+            Users may request account deletion subject to applicable retention
+            requirements.
+          </p>
+        </article>
+
+
+        <!-- 12 -->
+        <article
+          #termSection
+          class="term-section"
+          data-section="12"
+        >
+          <div class="section-heading">
+            <span class="section-number">12</span>
+            <h3>Changes to These Terms</h3>
+          </div>
+
+          <p>
+            These Terms may be updated when the system, research scope,
+            applicable requirements, or project practices materially change.
+            Significant changes should be communicated as appropriate, and
+            the latest version should remain accessible through EcoRoute AI.
+          </p>
+        </article>
+
+
+        <!-- 13 -->
+        <article
+          #termSection
+          class="term-section"
+          data-section="13"
+        >
+          <div class="section-heading">
+            <span class="section-number">13</span>
+            <h3>Contact and Acceptance</h3>
+          </div>
+
+          <p>
+            Questions about these Terms should be directed to the official
+            EcoRoute AI project contact. By selecting the applicable agreement
+            during registration or using EcoRoute AI where acceptance is
+            required, the user acknowledges these Terms and agrees to comply
+            with them.
+          </p>
+        </article>
+
+      </div>
+
+    </div>
+
+  </section>
+
+
+  <!-- RIGHT IMAGE -->
+  <section class="terms-right">
+
+    <img
+      class="hero-image"
+      src="assets/images/login-hero.png"
+      alt="EcoRoute AI smarter routes cleaner communities"
+    >
+
+  </section>
+
+</div>

@@ -1,0 +1,573 @@
+:host {
+  display: block;
+}
+
+
+/* =========================================
+   PAGE
+========================================= */
+
+.privacy-page {
+  width: 100%;
+  height: 100vh;
+
+  display: grid;
+  grid-template-columns: 53% 47%;
+
+  background: #ffffff;
+
+  overflow: hidden;
+}
+
+
+/* =========================================
+   LEFT CARD
+========================================= */
+
+.privacy-left {
+  height: calc(100vh - 56px);
+
+  margin: 28px 0 28px 32px;
+
+  padding: 20px 24px;
+
+  display: grid;
+  grid-template-columns: 215px minmax(0, 1fr);
+  column-gap: 18px;
+
+  border: 1px solid #e2e2e2;
+  border-radius: 12px;
+
+  background: #ffffff;
+
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.07);
+
+  box-sizing: border-box;
+
+  overflow: hidden;
+}
+
+
+/* =========================================
+   SIDEBAR AREA
+========================================= */
+
+.privacy-sidebar-area {
+  min-width: 0;
+
+  display: flex;
+  flex-direction: column;
+
+  overflow: hidden;
+}
+
+
+/* =========================================
+   BRAND
+========================================= */
+
+.brand {
+  display: flex;
+  align-items: center;
+
+  flex-shrink: 0;
+}
+
+.brand-logo {
+  width: 48px;
+  height: 48px;
+
+  object-fit: contain;
+}
+
+.brand-text {
+  margin-left: 9px;
+}
+
+.brand-text h1 {
+  margin: 0;
+
+  font-size: 20px;
+  line-height: 1;
+
+  font-weight: 700;
+
+  color: #111111;
+}
+
+.brand-text p {
+  margin: 2px 0 0;
+
+  font-size: 11px;
+  line-height: 1;
+
+  color: #222222;
+}
+
+
+/* =========================================
+   BACK
+========================================= */
+
+.back-link {
+  display: flex;
+  align-items: center;
+
+  width: fit-content;
+
+  margin-top: 30px;
+  margin-left: 8px;
+
+  color: #111111;
+
+  text-decoration: none;
+
+  font-size: 15px;
+  font-weight: 600;
+
+  cursor: pointer;
+}
+
+.back-arrow {
+  margin-right: 13px;
+
+  font-size: 27px;
+  font-weight: 300;
+
+  line-height: 1;
+}
+
+.back-link:hover {
+  color: #209b2d;
+}
+
+
+/* =========================================
+   SIDEBAR
+========================================= */
+
+.privacy-sidebar {
+  width: 100%;
+
+  margin-top: 22px;
+
+  padding: 0;
+
+  flex: 1;
+
+  overflow-y: auto;
+
+  scrollbar-width: none;
+}
+
+.privacy-sidebar::-webkit-scrollbar {
+  display: none;
+}
+
+
+/* =========================================
+   SIDEBAR ITEMS
+========================================= */
+
+.sidebar-item {
+  width: 100%;
+
+  min-height: 46px;
+
+  display: flex;
+  align-items: center;
+
+  padding: 8px 12px;
+
+  margin-bottom: 1px;
+
+  border: none;
+  border-left: 5px solid transparent;
+
+  border-radius: 7px;
+
+  background: transparent;
+
+  color: #707070;
+
+  text-align: left;
+
+  font-family: inherit;
+  font-size: 13px;
+
+  cursor: pointer;
+
+  box-sizing: border-box;
+
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.sidebar-item:hover {
+  background: #f3faf4;
+
+  color: #209b2d;
+}
+
+.sidebar-item.active {
+  border-left-color: #209b2d;
+
+  background: #e8f8eb;
+
+  color: #209b2d;
+}
+
+.sidebar-number {
+  width: 23px;
+
+  flex-shrink: 0;
+
+  font-weight: 500;
+}
+
+.sidebar-title {
+  line-height: 1.25;
+}
+
+
+/* =========================================
+   MAIN CONTENT
+========================================= */
+
+.privacy-main {
+  min-width: 0;
+  min-height: 0;
+
+  height: 100%;
+
+  padding: 72px 20px 20px 0;
+
+  display: flex;
+  flex-direction: column;
+
+  box-sizing: border-box;
+
+  overflow: hidden;
+}
+
+
+/* =========================================
+   HEADER
+========================================= */
+
+.privacy-header {
+  flex-shrink: 0;
+}
+
+.privacy-header h2 {
+  margin: 0;
+
+  font-size: 42px;
+  line-height: 1;
+
+  font-weight: 700;
+
+  color: #050505;
+}
+
+.privacy-header h3 {
+  margin: 6px 0 0;
+
+  font-size: 20px;
+  line-height: 1.1;
+
+  font-weight: 700;
+
+  color: #111111;
+}
+
+.last-updated {
+  margin: 4px 0 0;
+
+  font-size: 14px;
+
+  color: #777777;
+}
+
+
+/* =========================================
+   DIVIDER
+========================================= */
+
+.privacy-divider {
+  width: 100%;
+  height: 1px;
+
+  flex-shrink: 0;
+
+  margin: 18px 0 10px;
+
+  background: #a7a7a7;
+}
+
+
+/* =========================================
+   SCROLLABLE CONTENT
+========================================= */
+
+.privacy-content {
+  min-height: 0;
+
+  flex: 1;
+
+  overflow-y: auto;
+
+  padding-right: 14px;
+  padding-bottom: 40px;
+
+  scrollbar-width: thin;
+  scrollbar-color: #c8c8c8 transparent;
+
+  scroll-behavior: smooth;
+}
+
+.privacy-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.privacy-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.privacy-content::-webkit-scrollbar-thumb {
+  background: #c8c8c8;
+
+  border-radius: 10px;
+}
+
+
+/* =========================================
+   INTRO
+========================================= */
+
+.intro {
+  margin: 0 0 18px;
+
+  font-size: 14px;
+  line-height: 1.3;
+
+  color: #737b82;
+}
+
+
+/* =========================================
+   SECTIONS
+========================================= */
+
+.privacy-section {
+  scroll-margin-top: 15px;
+
+  margin-bottom: 25px;
+}
+
+.section-heading {
+  display: flex;
+  align-items: center;
+
+  margin-bottom: 15px;
+}
+
+.section-number {
+  width: 30px;
+  height: 30px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  flex-shrink: 0;
+
+  margin-right: 14px;
+
+  border-radius: 50%;
+
+  background: #209b2d;
+
+  color: #ffffff;
+
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.section-heading h3 {
+  margin: 0;
+
+  font-size: 20px;
+  line-height: 1.2;
+
+  font-weight: 700;
+
+  color: #111111;
+}
+
+
+/* =========================================
+   TEXT
+========================================= */
+
+.privacy-section p {
+  margin: 0 0 15px;
+
+  padding-left: 44px;
+
+  font-size: 13.5px;
+  line-height: 1.35;
+
+  color: #707880;
+}
+
+
+/* =========================================
+   LIST
+========================================= */
+
+.privacy-section ul {
+  margin: 0;
+
+  padding-left: 61px;
+
+  color: #707880;
+}
+
+.privacy-section li {
+  margin-bottom: 7px;
+
+  padding-left: 2px;
+
+  font-size: 13.5px;
+  line-height: 1.35;
+}
+
+
+/* =========================================
+   RIGHT HERO
+========================================= */
+
+.privacy-right {
+  height: 100vh;
+
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+
+  padding-top: 26px;
+  padding-left: 50px;
+  padding-right: 50px;
+  padding-bottom: 26px;
+
+  box-sizing: border-box;
+
+  overflow: hidden;
+}
+
+.hero-image {
+  display: block;
+
+  height: calc(100vh - 52px);
+  width: auto;
+  max-width: 100%;
+
+  aspect-ratio: 644 / 971;
+
+  object-fit: cover;
+
+  border-radius: 18px;
+}
+
+
+/* =========================================
+   RESPONSIVE
+========================================= */
+
+@media (max-width: 1100px) {
+
+  .privacy-page {
+    grid-template-columns: 50% 50%;
+  }
+
+  .privacy-left {
+    grid-template-columns: 200px minmax(0, 1fr);
+  }
+
+  .privacy-right {
+    padding-right: 20px;
+    padding-left: 10px;
+  }
+}
+
+
+@media (max-width: 800px) {
+
+  .privacy-page {
+    display: block;
+  }
+
+  .privacy-left {
+    width: calc(100% - 40px);
+
+    height: auto;
+    min-height: 100vh;
+
+    margin: 20px;
+
+    display: block;
+  }
+
+  .privacy-sidebar {
+    display: none;
+  }
+
+  .privacy-main {
+    height: auto;
+
+    padding: 35px 0 20px;
+  }
+
+  .privacy-content {
+    max-height: none;
+
+    overflow: visible;
+  }
+
+  .privacy-right {
+    display: none;
+  }
+}
+
+
+@media (max-width: 500px) {
+
+  .privacy-left {
+    width: 100%;
+
+    margin: 0;
+
+    border: none;
+    border-radius: 0;
+
+    box-shadow: none;
+  }
+
+  .privacy-header h2 {
+    font-size: 30px;
+  }
+
+  .privacy-header h3 {
+    font-size: 18px;
+  }
+
+  .privacy-section p,
+  .privacy-section li {
+    font-size: 13px;
+  }
+
+  .section-heading h3 {
+    font-size: 18px;
+  }
+}

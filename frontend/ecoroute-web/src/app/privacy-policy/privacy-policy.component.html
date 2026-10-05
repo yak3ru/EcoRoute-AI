@@ -1,0 +1,620 @@
+<div class="privacy-page">
+
+  <!-- LEFT WHITE CARD -->
+  <section class="privacy-left">
+
+    <!-- SIDEBAR AREA -->
+    <div class="privacy-sidebar-area">
+
+      <!-- BRAND -->
+      <div class="brand">
+        <img
+          class="brand-logo"
+          src="assets/icons/ecoroute-logo.svg"
+          alt="EcoRoute AI Logo"
+        >
+
+        <div class="brand-text">
+          <h1>EcoRoute AI</h1>
+          <p>The Developers Company</p>
+        </div>
+      </div>
+
+
+      <!-- BACK -->
+      <a
+        class="back-link"
+        routerLink="/signup"
+      >
+        <span class="back-arrow">←</span>
+        <span>Back to Sign Up</span>
+      </a>
+
+
+      <!-- SIDEBAR -->
+      <nav class="privacy-sidebar">
+
+        @for (section of sections; track section.number) {
+
+          <button
+            type="button"
+            class="sidebar-item"
+            [class.active]="activeSection === section.number"
+            (click)="scrollToSection(section.number)"
+          >
+
+            <span class="sidebar-number">
+              {{ section.number }}.
+            </span>
+
+            <span class="sidebar-title">
+              {{ section.title }}
+            </span>
+
+          </button>
+
+        }
+
+      </nav>
+
+    </div>
+
+
+    <!-- PRIVACY CONTENT -->
+    <div class="privacy-main">
+
+      <!-- HEADER -->
+      <div class="privacy-header">
+
+        <h2>Privacy Policy</h2>
+
+        <h3>EcoRoute AI</h3>
+
+        <p class="last-updated">
+          Last updated: September 16, 2026
+        </p>
+
+      </div>
+
+
+      <div class="privacy-divider"></div>
+
+
+      <!-- SCROLLABLE CONTENT -->
+      <div
+        #privacyContent
+        class="privacy-content"
+      >
+
+        <!-- INTRO -->
+        <p class="intro">
+          EcoRoute AI respects the privacy of individuals whose personal
+          information is processed through the system. This Privacy Policy
+          explains what information may be processed, why it is processed,
+          how it is protected, how long it may be retained, and the rights
+          available to data subjects. It is intended to align the project
+          with the transparency, legitimate-purpose, and proportionality
+          principles of the Philippine Data Privacy Act of 2012
+          (Republic Act No. 10173) and related National Privacy Commission
+          guidance.
+        </p>
+
+
+        <!-- 1 -->
+        <article
+          #privacySection
+          class="privacy-section"
+          data-section="1"
+        >
+
+          <div class="section-heading">
+            <span class="section-number">1</span>
+            <h3>Scope</h3>
+          </div>
+
+          <p>
+            This Policy applies to users of the EcoRoute AI web application,
+            including authorized LGU personnel, waste-management
+            administrators, project evaluators, and other authorized users.
+            The research itself is geographically focused on Barangay
+            Talamban, Cebu City.
+          </p>
+
+        </article>
+
+
+        <!-- 2 -->
+        <article
+          #privacySection
+          class="privacy-section"
+          data-section="2"
+        >
+
+          <div class="section-heading">
+            <span class="section-number">2</span>
+            <h3>Information We May Collect or Process</h3>
+          </div>
+
+          <ul>
+            <li>
+              Account information: full name, email address, username,
+              and password information required for registration and
+              authentication.
+            </li>
+
+            <li>
+              Account-management information needed for login, password
+              recovery, password reset, account updates, and account
+              deletion.
+            </li>
+
+            <li>
+              Waste-management data: historical collection records,
+              collection dates, collection areas, waste measurements,
+              collection status, and waste-type information.
+            </li>
+
+            <li>
+              Operational/planning data: population density, area activity
+              levels, collection frequencies, geographic parameters,
+              routing constraints, vehicle information, and other
+              route-planning inputs.
+            </li>
+
+            <li>
+              System outputs: waste-generation predictions, optimized
+              routes, route assignments, and related analytical results.
+            </li>
+          </ul>
+
+          <p>
+            The research document identifies historical waste-generation
+            data, geographic parameters and routing constraints, population
+            density, area activity levels, and collection frequencies as
+            important system inputs. Personal information should be
+            collected only where necessary for account management,
+            authentication, administration, security, or another declared
+            purpose.
+          </p>
+
+        </article>
+
+
+        <!-- 3 -->
+        <article
+          #privacySection
+          class="privacy-section"
+          data-section="3"
+        >
+
+          <div class="section-heading">
+            <span class="section-number">3</span>
+            <h3>Information We Do Not Intend to Collect</h3>
+          </div>
+
+          <p>
+            EcoRoute AI is not designed to require sensitive personal
+            information such as health information, religious or political
+            affiliations, biometric information, or government-issued
+            identification numbers for its core functions. Users should
+            not submit such information unless a lawful and necessary
+            purpose and appropriate safeguards have been established.
+          </p>
+
+          <p>
+            The statement in the groupmate draft that 'No personally
+            identifiable information is gathered' should NOT be used
+            because the current signup/account features include full name,
+            email address, username, and password.
+          </p>
+
+        </article>
+
+
+        <!-- 4 -->
+        <article
+          #privacySection
+          class="privacy-section"
+          data-section="4"
+        >
+
+          <div class="section-heading">
+            <span class="section-number">4</span>
+            <h3>Purposes of Processing</h3>
+          </div>
+
+          <ul>
+            <li>
+              Creating, authenticating, maintaining, updating, and
+              deleting user accounts.
+            </li>
+
+            <li>
+              Providing password recovery and account-security functions.
+            </li>
+
+            <li>
+              Providing authorized access to EcoRoute AI.
+            </li>
+
+            <li>
+              Managing and analyzing waste-management records.
+            </li>
+
+            <li>
+              Supporting waste-generation prediction and route
+              optimization.
+            </li>
+
+            <li>
+              Evaluating functionality, usability, and technical accuracy
+              as part of the academic research.
+            </li>
+
+            <li>
+              Maintaining system security, reliability, and integrity.
+            </li>
+
+            <li>
+              Meeting applicable legal, institutional, or research
+              requirements.
+            </li>
+          </ul>
+
+        </article>
+
+
+        <!-- 5 -->
+        <article
+          #privacySection
+          class="privacy-section"
+          data-section="5"
+        >
+
+          <div class="section-heading">
+            <span class="section-number">5</span>
+            <h3>Lawful Basis and Consent</h3>
+          </div>
+
+          <p>
+            The appropriate lawful basis for each processing activity
+            should be determined by the project's or institution's
+            designated personal information controller. Where consent is
+            relied upon, it should be freely given, specific, informed,
+            and capable of withdrawal as provided by applicable law.
+            A privacy notice does not itself replace a consent mechanism
+            when consent is required.
+          </p>
+
+        </article>
+
+
+        <!-- 6 -->
+        <article
+          #privacySection
+          class="privacy-section"
+          data-section="6"
+        >
+
+          <div class="section-heading">
+            <span class="section-number">6</span>
+            <h3>Data Security</h3>
+          </div>
+
+          <p>
+            Information should be used only for declared and legitimate
+            purposes and only to the extent necessary for those purposes.
+            Access should be limited to authorized personnel and service
+            providers who need the information for authorized functions.
+          </p>
+
+          <p>
+            Appropriate technical and organizational safeguards should be
+            maintained, including access controls, secure credential
+            handling, authentication, controlled database access, and
+            reasonable measures against unauthorized access, alteration,
+            disclosure, loss, or destruction. Only safeguards actually
+            implemented by the deployed system should be represented as
+            implemented.
+          </p>
+
+        </article>
+
+
+        <!-- 7 -->
+        <article
+          #privacySection
+          class="privacy-section"
+          data-section="7"
+        >
+
+          <div class="section-heading">
+            <span class="section-number">7</span>
+            <h3>Sharing and Disclosure</h3>
+          </div>
+
+          <p>
+            Personal information should not be disclosed to third parties
+            except where necessary for an authorized system function,
+            required by law, permitted by the applicable lawful basis,
+            or otherwise properly authorized. Where external service
+            providers process information for the project, their access
+            should be limited to what is necessary and governed by
+            appropriate safeguards where required.
+          </p>
+
+          <p>
+            Academic publications or presentations should avoid unnecessary
+            disclosure of identifiable personal information and should use
+            aggregated, anonymized, or de-identified information where
+            appropriate.
+          </p>
+
+        </article>
+
+
+        <!-- 8 -->
+        <article
+          #privacySection
+          class="privacy-section"
+          data-section="8"
+        >
+
+          <div class="section-heading">
+            <span class="section-number">8</span>
+            <h3>Research Data</h3>
+          </div>
+
+          <p>
+            The research uses historical waste-generation data and
+            environmental/geographic parameters for prediction and route
+            optimization. Where research data can be linked to an
+            identifiable individual, it must be treated as personal
+            information and handled accordingly. Properly anonymized data
+            may be used for research subject to applicable institutional
+            requirements.
+          </p>
+
+        </article>
+
+
+        <!-- 9 -->
+        <article
+          #privacySection
+          class="privacy-section"
+          data-section="9"
+        >
+
+          <div class="section-heading">
+            <span class="section-number">9</span>
+            <h3>Data Retention</h3>
+          </div>
+
+          <p>
+            Personal information should be retained only for as long as
+            necessary for the purposes for which it was collected, account
+            and system operation, authorized research and evaluation, or
+            applicable legal/institutional recordkeeping. When it is no
+            longer required and no lawful retention obligation applies,
+            it should be securely deleted, destroyed, anonymized, or
+            otherwise disposed of according to documented procedures.
+          </p>
+
+          <p>
+            The research document does not establish a fixed deletion
+            date. Therefore, the project should not promise automatic
+            deletion immediately after the research ends unless the
+            University formally adopts that retention schedule.
+          </p>
+
+        </article>
+
+
+        <!-- 10 -->
+        <article
+          #privacySection
+          class="privacy-section"
+          data-section="10"
+        >
+
+          <div class="section-heading">
+            <span class="section-number">10</span>
+            <h3>Data Subject Rights</h3>
+          </div>
+
+          <p>
+            Subject to applicable law and lawful limitations, data subjects
+            may have rights to be informed about processing, access personal
+            information, request correction of inaccurate or incomplete
+            information, object to certain processing, withdraw consent
+            where consent is the basis, request erasure or blocking where
+            warranted, and lodge a complaint with the National Privacy
+            Commission.
+          </p>
+
+        </article>
+
+
+        <!-- 11 -->
+        <article
+          #privacySection
+          class="privacy-section"
+          data-section="11"
+        >
+
+          <div class="section-heading">
+            <span class="section-number">11</span>
+            <h3>Password and Account Security</h3>
+          </div>
+
+          <p>
+            Passwords are used for authentication and password-reset
+            functions. Users must keep credentials confidential and report
+            suspected unauthorized access. Password-reset links and tokens
+            should be treated as confidential security credentials.
+          </p>
+
+        </article>
+
+
+        <!-- 12 -->
+        <article
+          #privacySection
+          class="privacy-section"
+          data-section="12"
+        >
+
+          <div class="section-heading">
+            <span class="section-number">12</span>
+            <h3>Children's Privacy</h3>
+          </div>
+
+          <p>
+            EcoRoute AI is intended for authorized users participating in
+            the academic project and institutional use. The project should
+            not knowingly collect children's personal information unless
+            an appropriate lawful basis, authorization, and safeguards have
+            been established.
+          </p>
+
+        </article>
+
+
+        <!-- 13 -->
+        <article
+          #privacySection
+          class="privacy-section"
+          data-section="13"
+        >
+
+          <div class="section-heading">
+            <span class="section-number">13</span>
+            <h3>Maps and External Services</h3>
+          </div>
+
+          <p>
+            The system uses web-based mapping and geographic services for
+            route visualization and optimization. The research scope
+            specifically depends on internet access for map rendering and
+            optimization. External providers may have their own privacy
+            practices and terms.
+          </p>
+
+        </article>
+
+
+        <!-- 14 -->
+        <article
+          #privacySection
+          class="privacy-section"
+          data-section="14"
+        >
+
+          <div class="section-heading">
+            <span class="section-number">14</span>
+            <h3>Security Incidents</h3>
+          </div>
+
+          <p>
+            If a personal-data security incident occurs, the project team
+            should assess and handle it in accordance with the Data Privacy
+            Act, applicable National Privacy Commission requirements,
+            University procedures, and the project's incident-response
+            process.
+          </p>
+
+        </article>
+
+
+        <!-- 15 -->
+        <article
+          #privacySection
+          class="privacy-section"
+          data-section="15"
+        >
+
+          <div class="section-heading">
+            <span class="section-number">15</span>
+            <h3>Changes to This Policy</h3>
+          </div>
+
+          <p>
+            This Privacy Policy may be updated when the system, research
+            activities, processing purposes, technologies, or applicable
+            requirements change. Significant changes should be communicated
+            as appropriate, and the current version should remain accessible
+            through EcoRoute AI.
+          </p>
+
+        </article>
+
+
+        <!-- 16 -->
+        <article
+          #privacySection
+          class="privacy-section"
+          data-section="16"
+        >
+
+          <div class="section-heading">
+            <span class="section-number">16</span>
+            <h3>Official Privacy Contact</h3>
+          </div>
+
+          <p>
+            Privacy/Compliance Contact: The Developers Company
+          </p>
+
+          <p>
+            Email: ecorouteai.team&#64;gmail.com
+          </p>
+
+          <p>
+            Institution: University of Cebu–Banilad, College of Computer Studies
+          </p>
+
+        </article>
+
+
+        <!-- 17 -->
+        <article
+          #privacySection
+          class="privacy-section"
+          data-section="17"
+        >
+
+          <div class="section-heading">
+            <span class="section-number">17</span>
+            <h3>Acknowledgment</h3>
+          </div>
+
+          <p>
+            By using EcoRoute AI, users acknowledge that they have been
+            provided this Privacy Policy and informed about the processing
+            of their personal information. Where consent is required as
+            the lawful basis for a particular processing activity, the
+            system should obtain that consent separately and in a clear,
+            specific, and informed manner.
+          </p>
+
+        </article>
+
+      </div>
+
+    </div>
+
+  </section>
+
+
+  <!-- RIGHT HERO -->
+  <section class="privacy-right">
+
+    <img
+      class="hero-image"
+      src="assets/images/login-hero.png"
+      alt="EcoRoute AI smarter routes cleaner communities"
+    >
+
+  </section>
+
+</div>
