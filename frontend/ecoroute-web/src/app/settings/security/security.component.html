@@ -22,8 +22,8 @@
           Your account is secure
         </span>
 
-        <span class="status-date">
-          Last security check: September 16, 2026
+        <span class="status-date" *ngIf="passwordChangedAt">
+          Last password update: {{ passwordChangedAt | date: 'MMMM d, y' }}
         </span>
       </div>
 
@@ -780,54 +780,6 @@
         </div>
 
       </div>
-
-    </div>
-
-  </section>
-
-  <!-- ACCOUNT RECOVERY -->
-  <section class="security-card recovery-card">
-
-    <div class="card-heading">
-      <h2>Account Recovery</h2>
-
-      <p>
-        Set up recovery options in case you lose access to your account.
-      </p>
-    </div>
-
-    <div class="recovery-content">
-
-      <div class="recovery-information">
-
-        <div class="recovery-icon">
-          <img
-            src="assets/icons/email.svg"
-            alt=""
-          />
-        </div>
-
-        <div>
-          <h3>Recovery Email</h3>
-
-          <p>
-            Used to reset your password and receive important
-            security alerts.
-          </p>
-        </div>
-
-      </div>
-
-      <div class="recovery-email">
-        roshley.sumalpong&#64;ucebu.edu.ph
-      </div>
-
-      <button
-        type="button"
-        class="change-email-button"
-      >
-        Change
-      </button>
 
     </div>
 
