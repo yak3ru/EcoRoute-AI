@@ -62,6 +62,7 @@ export class SecurityComponent implements OnInit, OnDestroy {
   passwordError = '';
   passwordSuccess = '';
   isUpdatingPassword = false;
+  passwordChangedAt: string | null = null;
 
   // SESSIONS
 
@@ -366,6 +367,8 @@ export class SecurityComponent implements OnInit, OnDestroy {
           response?.message ??
           'Your password has been updated successfully.';
 
+        this.passwordChangedAt = new Date().toISOString();
+
         this.clearPasswordFields();
       },
 
@@ -396,6 +399,7 @@ export class SecurityComponent implements OnInit, OnDestroy {
       next: (user) => {
         this.twoFactorEnabled = user.twoFactorEnabled;
         this.hasLoadedTwoFactor = true;
+        this.passwordChangedAt = user.passwordChangedAt;
       },
 
       error: () => {

@@ -14,6 +14,9 @@ public class User
     public DateTime? PasswordResetTokenExpiresAt { get; set; }
     public DateTime? PasswordResetLastSentAt { get; set; }
 
+    // NULL FOR OLD ACCOUNTS, FALLS BACK TO CreatedAt
+    public DateTime? PasswordChangedAt { get; set; }
+
     // OFF BY DEFAULT, USERS TURN IT ON IN SETTINGS
     public bool TwoFactorEnabled { get; set; }
 }

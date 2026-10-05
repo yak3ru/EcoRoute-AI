@@ -246,8 +246,8 @@
           ••••••••••••
         </span>
 
-        <span class="password-date">
-          Last changed: August 12, 2026
+        <span class="password-date" *ngIf="user">
+          Last changed: {{ user.passwordChangedAt | date: 'MMMM d, y' }}
         </span>
       </div>
 

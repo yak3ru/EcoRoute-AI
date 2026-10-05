@@ -325,6 +325,9 @@ public class EcoRouteDbContext : DbContext
 
             entity.Property(u => u.TwoFactorEnabled)
                 .HasColumnName("TwoFactorEnabled");
+
+            entity.Property(u => u.PasswordChangedAt)
+                .HasColumnName("PasswordChangedAt");
         });
 
         // USER SESSIONS

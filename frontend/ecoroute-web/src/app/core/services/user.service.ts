@@ -12,6 +12,7 @@ export interface UserProfile {
   createdAt: string;
   updatedAt: string;
   twoFactorEnabled: boolean;
+  passwordChangedAt: string;
 }
 
 export interface UpdateTwoFactorResponse {

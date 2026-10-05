@@ -363,6 +363,10 @@ namespace EcoRoute.API.Migrations
                         .HasColumnType("varchar(150)")
                         .HasColumnName("FullName");
 
+                    b.Property<DateTime?>("PasswordChangedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("PasswordChangedAt");
+
                     b.Property<string>("PasswordHash")
                         .IsRequired()
                         .HasMaxLength(255)

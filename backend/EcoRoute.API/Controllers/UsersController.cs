@@ -66,7 +66,10 @@ public class UsersController : ControllerBase
             role = user.Role,
             createdAt = user.CreatedAt,
             updatedAt = user.UpdatedAt,
-            twoFactorEnabled = user.TwoFactorEnabled
+            twoFactorEnabled = user.TwoFactorEnabled,
+            passwordChangedAt = DateTime.SpecifyKind(
+                user.PasswordChangedAt ?? user.CreatedAt,
+                DateTimeKind.Utc)
         });
     }
 
@@ -320,6 +323,7 @@ public class UsersController : ControllerBase
                 request.NewPassword);
 
         user.UpdatedAt = DateTime.UtcNow;
+        user.PasswordChangedAt = user.UpdatedAt;
 
         await _context.SaveChangesAsync();
 

@@ -805,6 +805,7 @@ public class AuthController : ControllerBase
                 request.NewPassword);
 
         user.UpdatedAt = DateTime.UtcNow;
+        user.PasswordChangedAt = user.UpdatedAt;
 
         // INVALIDATE RESET TOKEN
 
