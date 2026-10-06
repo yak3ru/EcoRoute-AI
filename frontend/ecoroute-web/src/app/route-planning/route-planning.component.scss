@@ -1911,3 +1911,765 @@ button:disabled {
   }
 
 }
+
+/* =========================================
+   TRUCK MANAGEMENT MODAL
+========================================= */
+
+.modify-info-modal {
+  width: 650px;
+  max-width: calc(100vw - 40px);
+  max-height: 84vh;
+
+  display: flex;
+  flex-direction: column;
+
+  background: #ffffff;
+  border-radius: 16px;
+  overflow: hidden;
+
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.18);
+}
+
+
+/* HEADER */
+
+.modify-info-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+
+  padding: 24px 26px 20px;
+
+  border-bottom: 1px solid #eeeeee;
+}
+
+.modify-info-header h2 {
+  margin: 0;
+
+  font-size: 20px;
+  font-weight: 700;
+  color: #242424;
+}
+
+.modify-info-header p {
+  margin: 6px 0 0;
+
+  font-size: 13px;
+  color: #777777;
+  line-height: 1.4;
+}
+
+
+/* HEADER CLOSE BUTTON */
+
+.modify-info-header .modal-close-button {
+  width: 34px;
+  height: 34px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 0;
+
+  border: 1px solid #dddddd;
+  border-radius: 8px;
+
+  background: #ffffff;
+  color: #555555;
+
+  font-size: 20px;
+  line-height: 1;
+
+  cursor: pointer;
+
+  transition: 0.15s ease;
+}
+
+.modify-info-header .modal-close-button:hover {
+  background: #f5f5f5;
+  border-color: #cccccc;
+}
+
+
+/* CONTENT */
+
+.modify-info-content {
+  padding: 24px 26px;
+
+  overflow-y: auto;
+}
+
+.modify-info-content h3 {
+  margin: 0;
+
+  font-size: 17px;
+  font-weight: 700;
+  color: #242424;
+}
+
+.modify-info-content > p {
+  margin: 6px 0 18px;
+
+  font-size: 13px;
+  color: #777777;
+}
+
+
+/* ADD BUTTON ROW */
+
+.truck-management-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 12px;
+}
+
+
+/* ADD TRUCK */
+
+.add-truck-button {
+  height: 38px;
+
+  margin-top: 10px;
+
+  padding: 0 16px;
+
+  border: none;
+  border-radius: 8px;
+
+  background: #4caf50;
+  color: #ffffff;
+
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition: 0.15s ease;
+}
+
+.add-truck-button:hover:not(:disabled) {
+  background: #429646;
+}
+
+.add-truck-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.truck-management-content {
+  padding: 0 40px;
+}
+
+.truck-management-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  width: 100%;
+  margin-bottom: 12px;
+}
+
+
+/* =========================================
+   TRUCK LIST
+========================================= */
+
+.truck-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* TRUCK CARD */
+
+.truck-item {
+  width: 100%;
+
+  box-sizing: border-box;
+
+  border: 1px solid #e2e2e2;
+  border-radius: 9px;
+
+  background: #ffffff;
+
+  overflow: hidden;
+
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+
+.truck-item:hover {
+  border-color: #c9c9c9;
+}
+
+.truck-item.selected {
+  border-color: #4caf50;
+  background: #ffffff;
+}
+
+.truck-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  width: 100%;
+  margin-bottom: 12px;
+}
+
+.truck-section-header h2 {
+  margin: 0 0 8px;
+}
+
+.truck-section-header p {
+  margin: 0;
+}
+
+
+/* =========================================
+   TRUCK BAR
+========================================= */
+
+.truck-bar {
+  min-height: 68px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  box-sizing: border-box;
+
+  padding: 12px 14px 12px 16px;
+
+  cursor: pointer;
+}
+
+
+/* =========================================
+   TRUCK INFO
+========================================= */
+
+.truck-info {
+  display: flex;
+  flex-direction: column;
+
+  min-width: 0;
+}
+
+.truck-name {
+  margin-bottom: 5px;
+
+  font-size: 14px;
+  font-weight: 700;
+
+  color: #242424;
+}
+
+.truck-details {
+  display: flex;
+  align-items: center;
+
+  gap: 10px;
+
+  font-size: 12px;
+  color: #777777;
+}
+
+.truck-details span {
+  white-space: nowrap;
+}
+
+.truck-details span + span {
+  position: relative;
+  padding-left: 10px;
+}
+
+.truck-details span + span::before {
+  content: '';
+
+  position: absolute;
+
+  left: 0;
+  top: 50%;
+
+  width: 3px;
+  height: 3px;
+
+  border-radius: 50%;
+
+  background: #aaaaaa;
+
+  transform: translateY(-50%);
+}
+
+
+/* =========================================
+   TRUCK ACTIONS
+========================================= */
+
+.truck-actions {
+  display: flex;
+  align-items: center;
+
+  gap: 7px;
+
+  margin-left: 20px;
+}
+
+
+/* EDIT */
+
+.edit-truck-button {
+  height: 32px;
+
+  padding: 0 13px;
+
+  border: 1px solid #d8d8d8;
+  border-radius: 7px;
+
+  background: #ffffff;
+  color: #444444;
+
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition: 0.15s ease;
+}
+
+.edit-truck-button:hover:not(:disabled) {
+  border-color: #4caf50;
+  background: #f6fbf6;
+  color: #39813d;
+}
+
+
+/* DELETE */
+
+.delete-truck-button {
+  height: 32px;
+
+  padding: 0 13px;
+
+  border: 1px solid #e5bebe;
+  border-radius: 7px;
+
+  background: #ffffff;
+  color: #d04c4c;
+
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition: 0.15s ease;
+}
+
+.delete-truck-button:hover:not(:disabled) {
+  border-color: #d97878;
+  background: #fff7f7;
+}
+
+.edit-truck-button:disabled,
+.delete-truck-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+
+/* =========================================
+   EXPANDED DETAILS
+========================================= */
+
+.truck-expanded-details {
+  padding: 4px 16px 15px;
+
+  border-top: 1px solid #eeeeee;
+
+  animation: truckDetailsOpen 0.16s ease-out;
+}
+
+
+/* DETAIL ROW */
+
+.truck-expanded-details .truck-detail-row {
+  min-height: 34px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  border-bottom: 1px solid #eeeeee;
+}
+
+.truck-expanded-details .truck-detail-row:last-child {
+  border-bottom: none;
+}
+
+.truck-expanded-details .truck-detail-row span {
+  font-size: 12px;
+  color: #777777;
+}
+
+.truck-expanded-details .truck-detail-row strong {
+  font-size: 12px;
+  font-weight: 600;
+  color: #333333;
+
+  text-align: right;
+}
+
+
+/* =========================================
+   EXPAND ANIMATION
+========================================= */
+
+@keyframes truckDetailsOpen {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+
+/* SELECTED ACTIONS */
+
+.selected-truck-actions {
+  display: flex;
+
+  gap: 8px;
+
+  margin-top: 15px;
+}
+
+.selected-truck-actions .edit-truck-button,
+.selected-truck-actions .delete-truck-button {
+  flex: 1;
+
+  height: 35px;
+}
+
+
+/* =========================================
+   LOCK MESSAGE
+========================================= */
+
+.truck-management-locked {
+  display: flex;
+  align-items: center;
+
+  margin-top: 12px;
+  padding: 10px 12px;
+
+  border: 1px solid #f0d8a8;
+  border-radius: 8px;
+
+  background: #fff9ed;
+
+  font-size: 12px;
+  color: #856b38;
+}
+
+
+/* =========================================
+   FOOTER
+========================================= */
+
+.modify-info-footer {
+  min-height: 64px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  box-sizing: border-box;
+
+  padding: 14px 26px;
+
+  border-top: 1px solid #eeeeee;
+
+  background: #fafafa;
+}
+
+.modify-info-footer span {
+  font-size: 11px;
+  color: #888888;
+}
+
+.modify-info-footer .modify-cancel-button {
+  height: 36px;
+
+  padding: 0 17px;
+
+  border: 1px solid #d8d8d8;
+  border-radius: 8px;
+
+  background: #ffffff;
+  color: #555555;
+
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition: 0.15s ease;
+}
+
+.modify-info-footer .modify-cancel-button:hover {
+  background: #f3f3f3;
+}
+
+
+/* =========================================
+   RESPONSIVE
+========================================= */
+
+@media (max-width: 700px) {
+
+  .modify-info-modal {
+    width: calc(100vw - 24px);
+    max-height: 90vh;
+  }
+
+  .modify-info-header,
+  .modify-info-content {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+
+  .modify-info-footer {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+
+  .truck-item {
+    align-items: flex-start;
+  }
+
+  .truck-actions {
+    flex-direction: column;
+    gap: 5px;
+  }
+}
+
+/* ================================
+   TRUCK FORM MODAL
+================================ */
+
+.truck-form-modal {
+  width: 520px;
+  max-width: calc(100vw - 40px);
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.18);
+  overflow: hidden;
+  animation: truckModalIn 0.2s ease-out;
+}
+
+.truck-form-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 24px 26px 20px;
+  border-bottom: 1px solid #eeeeee;
+}
+
+.truck-form-header h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: #202020;
+}
+
+.truck-form-header p {
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: #777777;
+}
+
+.modal-close-button {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  color: #777777;
+  font-size: 25px;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.truck-management-content {
+  padding: 0 20px;
+}
+
+.modal-close-button:hover {
+  background: #f3f3f3;
+  color: #222222;
+}
+
+.truck-form-body {
+  padding: 24px 26px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin-bottom: 18px;
+}
+
+.form-group label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #333333;
+}
+
+.form-group input,
+.form-group select {
+  width: 100%;
+  height: 42px;
+  padding: 0 12px;
+  border: 1px solid #d9d9d9;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #222222;
+  font-family: inherit;
+  font-size: 14px;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  border-color: #4caf50;
+  box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.10);
+}
+
+.form-group input::placeholder {
+  color: #aaaaaa;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.truck-form-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 18px 26px;
+  border-top: 1px solid #eeeeee;
+  background: #fafafa;
+}
+
+.modify-cancel-button,
+.save-truck-button {
+  height: 40px;
+  padding: 0 18px;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.15s ease;
+}
+
+.modify-cancel-button {
+  border: 1px solid #d8d8d8;
+  background: #ffffff;
+  color: #555555;
+}
+
+.modify-cancel-button:hover {
+  background: #f4f4f4;
+}
+
+.save-truck-button {
+  border: 1px solid #4caf50;
+  background: #4caf50;
+  color: #ffffff;
+}
+
+.save-truck-button:hover:not(:disabled) {
+  background: #429646;
+  border-color: #429646;
+}
+
+.save-truck-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+@keyframes truckModalIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Mobile */
+@media (max-width: 600px) {
+  .truck-form-modal {
+    width: calc(100vw - 24px);
+  }
+
+  .truck-form-header,
+  .truck-form-body,
+  .truck-form-footer {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+}
+
+.cancel-truck-button {
+  padding: 7px 12px;
+  border: none;
+  border-radius: 6px;
+  background: #dc2626;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.cancel-truck-button:hover:not(:disabled) {
+  background: #b91c1c;
+}
+
+.cancel-truck-button:disabled {
+  background: #e5e7eb;
+  color: #9ca3af;
+  cursor: not-allowed;
+  opacity: 1;
+}
+
+.route-action-buttons .cancel-truck-button {
+  margin-left: 8px;
+}

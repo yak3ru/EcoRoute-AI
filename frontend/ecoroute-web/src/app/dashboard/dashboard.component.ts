@@ -147,15 +147,25 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
           `${this.mlApiUrl}/routes/operation/status/${today}`
         )
         .subscribe({
-          next: () => {
+          next: response => {
 
-            // An operation exists for today.
+  if (response?.status === 'Cancelled') {
 
-            this.dashboardMode = 'current';
+    this.dashboardMode = 'previous';
 
-            this.loadCurrentOperation(today);
+    this.loadPreviousOperation();
 
-          },
+    this.loadPredictionForDate(today);
+
+    return;
+
+  }
+
+  this.dashboardMode = 'current';
+
+  this.loadCurrentOperation(today);
+
+},
 
           error: error => {
 

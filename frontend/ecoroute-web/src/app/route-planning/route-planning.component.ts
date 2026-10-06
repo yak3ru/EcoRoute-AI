@@ -74,7 +74,7 @@ interface Route {
   wasteLoad: string;
   stops: number;
   distance: string;
-  status: 'Active' | 'Pending' | 'Completed';
+  status: 'Active' | 'Pending' | 'Completed' | 'Cancelled';
   eta: string;
   estimatedTime: string;
   predictedWaste: string;
@@ -99,6 +99,17 @@ interface AreaApiResponse {
   areaName: string;
   latitude: number;
   longitude: number;
+}
+
+interface Vehicle {
+  vehicleId: number;
+  vehicleName: string;
+  capacityKg: number;
+  status: string;
+
+  maximumRouteDistanceKm: number;
+  collectionStartTime: string;
+  collectionEndTime: string;
 }
 
 @Component({
@@ -145,6 +156,10 @@ export class RoutePlanningComponent
 
   showFinishConfirmation = false;
   routePendingFinish: Route | null = null;
+
+  showCancelTruckConfirmation = false;
+  routePendingCancel: Route | null = null;
+
   showAllRoutesCompletedModal = false;
 
   showCancelConfirmation = false;
@@ -160,18 +175,34 @@ export class RoutePlanningComponent
   isHistoricalView = false;
   
 historicalOperationStatus:
-  'Active' | 'Paused' | 'Completed' | 'Cancelled' | null = null;
+  'Active' | 'Completed' | 'Cancelled' | null = null;
 
-  operationStatus:
+operationStatus:
   | 'NotStarted'
   | 'Active'
-  | 'Paused'
   | 'Completed'
   | 'Cancelled' = 'NotStarted';
 
   searchTerm = '';
 
   isModifyInfoOpen = false;
+
+  vehicles: Vehicle[] = [];
+
+isAddTruckOpen = false;
+isEditTruckOpen = false;
+isDeleteTruckOpen = false;
+
+selectedVehicle: Vehicle | null = null;
+
+truckName = '';
+truckCapacityKg: number | null = null;
+truckMaximumRouteDistanceKm: number | null = null;
+truckCollectionStartTime = '';
+truckCollectionEndTime = '';
+truckStatus = 'Available';
+
+isSavingTruck = false;
 
   routeMode = 'P90 Safety Planning';
 
@@ -249,10 +280,12 @@ historicalOperationStatus:
   }
 
   get vehiclesDeployed(): number {
-    return new Set(
-      this.routes.map(route => route.vehicleId)
-    ).size;
-  }
+  return new Set(
+    this.routes
+      .filter(route => route.status === 'Active')
+      .map(route => route.vehicleId)
+  ).size;
+}
 
   get totalDistance(): number {
     return this.routes.reduce(
@@ -429,15 +462,20 @@ private loadCurrentOperation(): void {
       next: result => {
         
     this.operationStatus =
-  result.status === 'Paused' || result.status === 'Cancelled'
-    ? 'Paused'
+  result.status === 'Cancelled'
+    ? 'NotStarted'
     : result.status === 'Completed'
       ? 'Completed'
       : 'Active';
 
 this.historicalOperationStatus = null;
 
-this.loadOperationRoutes(today, this.operationStatus);
+const routeStatus =
+  result.status === 'Cancelled'
+    ? 'Cancelled'
+    : this.operationStatus;
+
+this.loadOperationRoutes(today, routeStatus);
       },
       error: error => {
         if (error.status === 404) {
@@ -465,7 +503,6 @@ private loadOperationRoutes(
   status:
   | 'NotStarted'
   | 'Active'
-  | 'Paused'
   | 'Completed'
   | 'Cancelled'
 ): void {
@@ -488,11 +525,14 @@ private loadOperationRoutes(
         const mappedRoute = this.mapMlRoute(route, index);
 
         return {
-          ...mappedRoute,
-          status: status === 'Completed'
+        ...mappedRoute,
+        status:
+          status === 'Completed'
             ? 'Completed' as const
-            : mappedRoute.status
-        };
+            : status === 'Cancelled'
+              ? 'Cancelled' as const
+              : mappedRoute.status
+      };
       });
 
         this.selectedRouteId = this.routes[0]?.id ?? '';
@@ -566,7 +606,9 @@ private loadOperationRoutes(
         `${route.distance_km.toFixed(2)} km`,
 
       status:
-        route.status === 'Completed'
+      route.status === 'Cancelled'
+        ? 'Cancelled'
+        : route.status === 'Completed'
           ? 'Completed'
           : route.distance_exceeded
             ? 'Pending'
@@ -579,7 +621,12 @@ private loadOperationRoutes(
         `${this.formatTime(route.collection_start)} to ${this.formatTime(route.collection_end)}`,
 
       predictedWaste:
-        `${this.formatKg(route.load_kg)}`,
+        `${this.formatKg(
+          route.areas.reduce(
+            (total, area) => total + Number(area.p50_kg || 0),
+            0
+          )
+        )}`,
 
       sequence,
 
@@ -622,10 +669,291 @@ private loadOperationRoutes(
 
 openModifyInfo(): void {
   this.isModifyInfoOpen = true;
+  this.loadVehicles();
 }
 
 closeModifyInfo(): void {
   this.isModifyInfoOpen = false;
+}
+
+selectTruck(vehicle: Vehicle): void {
+  if (this.selectedVehicle?.vehicleId === vehicle.vehicleId) {
+    this.selectedVehicle = null;
+    return;
+  }
+
+  this.selectedVehicle = vehicle;
+}
+
+formatTruckTime(time: string): string {
+  if (!time) {
+    return '';
+  }
+
+  const [hours, minutes] = time.split(':').map(Number);
+
+  const date = new Date();
+  date.setHours(hours, minutes, 0, 0);
+
+  return date.toLocaleTimeString([], {
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+}
+
+openAddTruck(): void {
+  this.selectedVehicle = null;
+  this.truckName = '';
+  this.truckCapacityKg = null;
+  this.truckMaximumRouteDistanceKm = null;
+  this.truckCollectionStartTime = '';
+  this.truckCollectionEndTime = '';
+  this.truckStatus = 'Available';
+
+  this.isAddTruckOpen = true;
+}
+
+saveAddTruck(): void {
+  if (this.operationStatus === 'Active') {
+    return;
+  }
+
+  if (!this.truckName.trim()) {
+    alert('Please enter a truck name.');
+    return;
+  }
+
+  if (!this.truckCapacityKg || this.truckCapacityKg <= 0) {
+    alert('Please enter a valid truck capacity.');
+    return;
+  }
+
+  if (
+    !this.truckMaximumRouteDistanceKm ||
+    this.truckMaximumRouteDistanceKm <= 0
+  ) {
+    alert('Please enter a valid maximum route distance.');
+    return;
+  }
+
+  if (
+    !this.truckCollectionStartTime ||
+    !this.truckCollectionEndTime
+  ) {
+    alert('Please enter the collection start and end time.');
+    return;
+  }
+
+  if (
+    this.truckCollectionStartTime >=
+    this.truckCollectionEndTime
+  ) {
+    alert('Collection end time must be later than the start time.');
+    return;
+  }
+
+  this.isSavingTruck = true;
+
+  const request = {
+    vehicleName: this.truckName.trim(),
+    capacityKg: this.truckCapacityKg,
+    maximumRouteDistanceKm:
+      this.truckMaximumRouteDistanceKm,
+    collectionStartTime:
+      this.truckCollectionStartTime,
+    collectionEndTime:
+      this.truckCollectionEndTime,
+    status: this.truckStatus
+  };
+
+  this.subscriptions.add(
+    this.http
+      .post(
+        'http://localhost:5276/api/Vehicles/with-constraints',
+        request
+      )
+      .subscribe({
+        next: () => {
+          this.isSavingTruck = false;
+          this.isAddTruckOpen = false;
+
+          this.loadVehicles();
+
+          alert('Truck added successfully.');
+        },
+
+        error: error => {
+          console.error('Failed to add truck:', error);
+
+          this.isSavingTruck = false;
+
+          alert(
+            error.error?.message ||
+            'Failed to add truck. Please try again.'
+          );
+        }
+      })
+  );
+}
+
+closeAddTruck(): void {
+  this.isAddTruckOpen = false;
+}
+
+openEditTruck(vehicle: Vehicle): void {
+  this.selectedVehicle = vehicle;
+
+  this.truckName = vehicle.vehicleName;
+  this.truckCapacityKg = vehicle.capacityKg;
+  this.truckMaximumRouteDistanceKm = vehicle.maximumRouteDistanceKm;
+
+  this.truckCollectionStartTime =
+    vehicle.collectionStartTime.substring(0, 5);
+
+  this.truckCollectionEndTime =
+    vehicle.collectionEndTime.substring(0, 5);
+
+  this.truckStatus = vehicle.status;
+
+  this.isEditTruckOpen = true;
+}
+
+closeEditTruck(): void {
+  this.isEditTruckOpen = false;
+}
+
+saveEditTruck(): void {
+  if (!this.selectedVehicle) {
+    return;
+  }
+
+  if (!this.truckName.trim()) {
+    return;
+  }
+
+  if (!this.truckCapacityKg || this.truckCapacityKg <= 0) {
+    return;
+  }
+
+  if (
+    !this.truckMaximumRouteDistanceKm ||
+    this.truckMaximumRouteDistanceKm <= 0
+  ) {
+    return;
+  }
+
+  if (
+    !this.truckCollectionStartTime ||
+    !this.truckCollectionEndTime
+  ) {
+    return;
+  }
+
+  if (
+    this.truckCollectionStartTime >=
+    this.truckCollectionEndTime
+  ) {
+    return;
+  }
+
+  this.isSavingTruck = true;
+
+  const request = {
+    vehicleName: this.truckName.trim(),
+    capacityKg: this.truckCapacityKg,
+    maximumRouteDistanceKm:
+      this.truckMaximumRouteDistanceKm,
+    collectionStartTime:
+      this.truckCollectionStartTime,
+    collectionEndTime:
+      this.truckCollectionEndTime,
+    status: this.truckStatus
+  };
+
+  this.subscriptions.add(
+    this.http
+      .put(
+        `http://localhost:5276/api/Vehicles/${this.selectedVehicle.vehicleId}/with-constraints`,
+        request
+      )
+      .subscribe({
+        next: () => {
+          this.isSavingTruck = false;
+          this.isEditTruckOpen = false;
+          this.loadVehicles();
+        },
+        error: error => {
+          console.error('Failed to update truck:', error);
+          this.isSavingTruck = false;
+        }
+      })
+  );
+}
+
+openDeleteTruck(vehicle: Vehicle): void {
+  this.selectedVehicle = vehicle;
+  this.isDeleteTruckOpen = true;
+}
+
+closeDeleteTruck(): void {
+  this.isDeleteTruckOpen = false;
+}
+
+deleteTruck(): void {
+  if (this.operationStatus === 'Active') {
+    return;
+  }
+
+  if (!this.selectedVehicle) {
+    return;
+  }
+
+  this.isSavingTruck = true;
+
+  this.subscriptions.add(
+    this.http
+      .delete(
+        `http://localhost:5276/api/Vehicles/${this.selectedVehicle.vehicleId}`
+      )
+      .subscribe({
+        next: () => {
+          this.isSavingTruck = false;
+          this.isDeleteTruckOpen = false;
+          this.selectedVehicle = null;
+
+          this.loadVehicles();
+
+          alert('Truck deleted successfully.');
+        },
+
+        error: error => {
+          console.error('Failed to delete truck:', error);
+
+          this.isSavingTruck = false;
+
+          alert(
+            error.error?.message ||
+            'Failed to delete truck. Please try again.'
+          );
+        }
+      })
+  );
+}
+
+private loadVehicles(): void {
+  this.subscriptions.add(
+    this.http
+      .get<Vehicle[]>('http://localhost:5276/api/Vehicles')
+      .subscribe({
+        next: vehicles => {
+          this.vehicles = vehicles;
+        },
+        error: error => {
+          console.error('Failed to load vehicles:', error);
+          this.vehicles = [];
+        }
+      })
+  );
 }
 
 
@@ -689,17 +1017,21 @@ confirmCancelOperation(): void {
       {}
     ).subscribe({
       next: () => {
-        this.operationStatus = 'Paused';
+        this.operationStatus = 'NotStarted';
         this.showCancelConfirmation = false;
+
+        const today = this.toLocalDateString(new Date());
+
+        this.loadOperationRoutes(today, 'Cancelled');
       },
       error: error => {
-        console.error('Failed to pause operation:', error);
+        console.error('Failed to cancel operation:', error);
 
         this.showCancelConfirmation = false;
 
         alert(
           error.error?.message ||
-          'Could not pause the operation.'
+          'Could not cancel the operation.'
         );
       }
     })
@@ -721,39 +1053,6 @@ closeCancelConfirmation(): void {
   this.showCancelConfirmation = false;
 }
 
-resumeOperation(): void {
-  if (this.operationStatus !== 'Paused' || this.isHistoricalView) {
-    return;
-  }
-
-  this.subscriptions.add(
-    this.http.post<MlRoutesResponse>(
-      `${this.mlApiUrl}/routes/operation/resume`,
-      {}
-    ).subscribe({
-      next: response => {
-        this.currentRouteResponse = response;
-        this.operationStatus = 'Active';
-        this.routeMode = response.mode || 'P90 Safety Planning';
-        this.unassignedAreas = response.unassigned ?? [];
-
-        this.routes = response.routes.map(
-          (route, index) => this.mapMlRoute(route, index)
-        );
-
-        this.selectedRouteId = this.routes[0]?.id ?? '';
-        this.mapBoundsInitialized = false;
-        this.roadGeometry.clear();
-        this.loadRoadGeometry();
-      },
-      error: error => {
-        console.error('Failed to resume operation:', error);
-        alert(error.error?.message || 'Could not resume the operation.');
-      }
-    })
-  );
-}
-
 finishTruck(route: Route): void {
   if (
     this.operationStatus !== 'Active' ||
@@ -765,6 +1064,92 @@ finishTruck(route: Route): void {
 
   this.routePendingFinish = route;
   this.showFinishConfirmation = true;
+}
+
+cancelTruck(route: Route): void {
+  if (
+    this.operationStatus !== 'Active' ||
+    this.isHistoricalView ||
+    route.status !== 'Active'
+  ) {
+    return;
+  }
+
+  this.routePendingCancel = route;
+  this.showCancelTruckConfirmation = true;
+}
+
+confirmCancelTruck(): void {
+  const route = this.routePendingCancel;
+
+  if (!route) {
+    return;
+  }
+
+  this.showCancelTruckConfirmation = false;
+
+  this.subscriptions.add(
+    this.http
+      .post<{
+        message: string;
+        status: string;
+        routeData: MlRoutesResponse;
+      }>(
+        `${this.mlApiUrl}/routes/operation/cancel-truck`,
+        {
+          vehicleId: route.vehicleId
+        }
+      )
+      .subscribe({
+        next: response => {
+          this.currentRouteResponse = response.routeData;
+
+          this.operationStatus =
+            response.status === 'Completed'
+              ? 'Completed'
+              : 'Active';
+
+          this.routes = response.routeData.routes.map(
+            (mlRoute, index) =>
+              this.mapMlRoute(mlRoute, index)
+          );
+
+          this.selectedRouteId =
+            this.routes.find(
+              item => item.vehicleId === route.vehicleId
+            )?.id ?? this.routes[0]?.id ?? '';
+
+          this.mapBoundsInitialized = false;
+          this.roadGeometry.clear();
+
+          this.loadRoadGeometry();
+          this.loadAvailableOperationDates();
+
+          if (this.operationStatus === 'Completed') {
+            this.showAllRoutesCompletedModal = true;
+          }
+        },
+
+        error: error => {
+          console.error(
+            'Failed to cancel truck route:',
+            error
+          );
+
+          alert(
+            error.error?.message ||
+            'Could not cancel this truck route. Please try again.'
+          );
+        }
+      })
+  );
+
+  this.routePendingCancel = null;
+}
+
+closeCancelTruckConfirmation(): void {
+  this.showCancelTruckConfirmation = false;
+  this.routePendingCancel = null;
 }
 
 confirmFinishTruck(): void {
@@ -1262,11 +1647,9 @@ private loadHistoricalRoutes(date: string): void {
           this.operationStatus =
             savedStatus === 'Completed'
               ? 'Completed'
-              : savedStatus === 'Paused'
-                ? 'Paused'
-                : savedStatus === 'Active'
-                  ? 'Active'
-                  : 'Cancelled';
+              : savedStatus === 'Active'
+                ? 'Active'
+                : 'Cancelled';
 
           this.routeMode = 'Historical Operation';
           this.unassignedAreas = response.unassigned ?? [];

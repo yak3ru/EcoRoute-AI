@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using EcoRoute.API.Models;
 
 namespace EcoRoute.API.Controllers;
@@ -40,9 +42,13 @@ public class WasteController : ControllerBase
             .AsNoTracking()
             .Include(w => w.Area)
             .Where(w =>
-                w.Area != null &&
-                w.Area.UserId == userId &&
-                (w.Status == "Completed" || w.Status == "Failed"))
+    w.Area != null &&
+    w.Area.UserId == userId &&
+    (
+        w.Status == "Completed" ||
+        w.Status == "Failed" ||
+        w.Status == "Cancelled"
+    ))
             .AsQueryable();
 
         if (areaId.HasValue)
@@ -163,7 +169,6 @@ public async Task<IActionResult> ImportWasteRecords(
         return Unauthorized();
     }
 
-
     if (operationDate == default)
     {
         return BadRequest(new
@@ -173,20 +178,6 @@ public async Task<IActionResult> ImportWasteRecords(
     }
 
     var operationDay = operationDate.Date;
-
-    var alreadyUploaded = await _context.OperationReportUploads
-        .AnyAsync(r =>
-            r.UserId == userId &&
-            r.OperationDate == operationDay);
-
-    if (alreadyUploaded)
-    {
-        return Conflict(new
-        {
-            message = "A report has already been uploaded for this operation date."
-        });
-    }
-
 
     if (records == null || records.Count == 0)
     {
@@ -204,6 +195,141 @@ public async Task<IActionResult> ImportWasteRecords(
         });
     }
 
+    // ------------------------------------------------------------
+    // GET TODAY'S OPERATION
+    // ------------------------------------------------------------
+
+    var operation = await _context.OperationHistories
+        .Where(item =>
+            item.UserId == userId &&
+            item.OperationDate >= operationDay &&
+            item.OperationDate < operationDay.AddDays(1))
+        .OrderByDescending(item => item.CreatedAt)
+        .FirstOrDefaultAsync();
+
+    if (operation == null)
+    {
+        return BadRequest(new
+        {
+            message =
+                "No operation exists for the selected operation date."
+        });
+    }
+
+    // The operation must be completely finished
+    if (!string.Equals(
+        operation.Status,
+        "Completed",
+        StringComparison.OrdinalIgnoreCase))
+    {
+        return Conflict(new
+        {
+            message =
+                "The operation must be completed before uploading a report."
+        });
+    }
+
+    // ------------------------------------------------------------
+    // PREVENT DUPLICATE REPORT UPLOAD
+    // ------------------------------------------------------------
+
+    var alreadyUploaded = await _context.OperationReportUploads
+        .AnyAsync(r =>
+            r.UserId == userId &&
+            r.OperationDate == operationDay);
+
+    if (alreadyUploaded)
+    {
+        return Conflict(new
+        {
+            message =
+                "A report has already been uploaded for this operation date."
+        });
+    }
+
+    // ------------------------------------------------------------
+    // READ OPERATION ROUTES
+    // ------------------------------------------------------------
+
+    JsonNode? root;
+
+    try
+    {
+        root = JsonNode.Parse(operation.RouteData);
+    }
+    catch (JsonException)
+    {
+        return StatusCode(500, new
+        {
+            message =
+                "The saved operation route data is invalid."
+        });
+    }
+
+    var routes = root?["routes"]?.AsArray();
+
+    if (routes == null || routes.Count == 0)
+    {
+        return BadRequest(new
+        {
+            message =
+                "No routes were found for this operation."
+        });
+    }
+
+    var cancelledAreaIds = new HashSet<int>();
+    var operationAreaIds = new HashSet<int>();
+
+    foreach (var route in routes)
+    {
+        if (route == null)
+            continue;
+
+        var routeStatus =
+            route["status"]?.ToString();
+
+        var areas = route["areas"]?.AsArray();
+
+        if (areas == null)
+            continue;
+
+        foreach (var area in areas)
+        {
+            if (area == null)
+                continue;
+
+            var areaIdText =
+                area["area_id"]?.ToString() ??
+                area["areaId"]?.ToString();
+
+            if (
+                !int.TryParse(
+                    areaIdText,
+                    out var areaId) ||
+                areaId <= 0
+            )
+            {
+                continue;
+            }
+
+            // Every area in this operation
+            operationAreaIds.Add(areaId);
+
+            // Areas belonging to cancelled trucks
+            if (string.Equals(
+                routeStatus,
+                "Cancelled",
+                StringComparison.OrdinalIgnoreCase))
+            {
+                cancelledAreaIds.Add(areaId);
+            }
+        }
+    }
+
+    // ------------------------------------------------------------
+    // VALID CSV VALUES
+    // ------------------------------------------------------------
+
     var validWasteTypes = new[]
     {
         "Biodegradable",
@@ -213,10 +339,12 @@ public async Task<IActionResult> ImportWasteRecords(
     var validStatuses = new[]
     {
         "Completed",
-        "Failed",
+        "Failed"
     };
 
-    // Validate every record before saving anything.
+    // ------------------------------------------------------------
+    // VALIDATE EVERY CSV ROW
+    // ------------------------------------------------------------
 
     for (int i = 0; i < records.Count; i++)
     {
@@ -227,7 +355,8 @@ public async Task<IActionResult> ImportWasteRecords(
         {
             return BadRequest(new
             {
-                message = $"Row {rowNumber}: Invalid AreaId."
+                message =
+                    $"Row {rowNumber}: Invalid AreaId."
             });
         }
 
@@ -235,43 +364,92 @@ public async Task<IActionResult> ImportWasteRecords(
         {
             return BadRequest(new
             {
-                message = $"Row {rowNumber}: Invalid CollectionDate."
+                message =
+                    $"Row {rowNumber}: Invalid CollectionDate."
             });
         }
 
-        if (string.IsNullOrWhiteSpace(record.WasteType) ||
+        // CSV date must match operation date
+        if (record.CollectionDate.Date != operationDay)
+        {
+            return BadRequest(new
+            {
+                message =
+                    $"Row {rowNumber}: Collection date " +
+                    $"{record.CollectionDate:yyyy-MM-dd} " +
+                    $"does not match the operation date " +
+                    $"{operationDay:yyyy-MM-dd}."
+            });
+        }
+
+        // IMPORTANT:
+        // DO NOT FILTER THIS ROW OUT.
+        // REJECT THE ENTIRE CSV.
+        if (cancelledAreaIds.Contains(record.AreaId))
+        {
+            return BadRequest(new
+            {
+                message =
+                    $"Row {rowNumber}: AreaId {record.AreaId} " +
+                    "belongs to a cancelled truck route. " +
+                    "Remove this record from the CSV before uploading."
+            });
+        }
+
+        if (!operationAreaIds.Contains(record.AreaId))
+        {
+            return BadRequest(new
+            {
+                message =
+                    $"Row {rowNumber}: AreaId {record.AreaId} " +
+                    "does not belong to this operation."
+            });
+        }
+
+        if (
+            string.IsNullOrWhiteSpace(record.WasteType) ||
             !validWasteTypes.Contains(
                 record.WasteType.Trim(),
-                StringComparer.OrdinalIgnoreCase))
+                StringComparer.OrdinalIgnoreCase)
+        )
         {
             return BadRequest(new
             {
-                message = $"Row {rowNumber}: Invalid WasteType."
+                message =
+                    $"Row {rowNumber}: Invalid WasteType."
             });
         }
 
-        if (record.WeightKg < 0 ||
-            record.WeightKg > 99999999.99m)
+        if (
+            record.WeightKg < 0 ||
+            record.WeightKg > 99999999.99m
+        )
         {
             return BadRequest(new
             {
-                message = $"Row {rowNumber}: Invalid WeightKg."
+                message =
+                    $"Row {rowNumber}: Invalid WeightKg."
             });
         }
 
-        if (string.IsNullOrWhiteSpace(record.Status) ||
+        if (
+            string.IsNullOrWhiteSpace(record.Status) ||
             !validStatuses.Contains(
                 record.Status.Trim(),
-                StringComparer.OrdinalIgnoreCase))
+                StringComparer.OrdinalIgnoreCase)
+        )
         {
             return BadRequest(new
             {
-                message = $"Row {rowNumber}: Invalid Status."
+                message =
+                    $"Row {rowNumber}: Invalid Status."
             });
         }
     }
 
-    // Confirm all areas belong to the logged-in user.
+    // ------------------------------------------------------------
+    // CHECK THAT CSV AREAS BELONG TO USER
+    // ------------------------------------------------------------
 
     var requestedAreaIds = records
         .Select(r => r.AreaId)
@@ -299,35 +477,125 @@ public async Task<IActionResult> ImportWasteRecords(
         });
     }
 
-    // Prepare records for insertion.
+    // ------------------------------------------------------------
+    // CREATE REAL CSV RECORDS
+    // ------------------------------------------------------------
 
-    var wasteRecords = records.Select(r => new WasteRecord
-    {
-        AreaId = r.AreaId,
-        CollectionDate = r.CollectionDate,
-        WasteType = r.WasteType.Trim(),
-        WeightKg = r.WeightKg,
-        Status = r.Status.Trim(),
-        CreatedAt = DateTime.UtcNow
-    }).ToList();
-
-    
-    _context.WasteRecords.AddRange(wasteRecords);
-
-    _context.OperationReportUploads.Add(
-        new OperationReportUpload
+    var wasteRecords = records
+        .Select(r => new WasteRecord
         {
-            UserId = userId,
-            OperationDate = operationDay,
-            UploadedAt = DateTime.UtcNow
-        });
+            AreaId = r.AreaId,
+            CollectionDate = operationDay,
+            WasteType = r.WasteType.Trim(),
+            WeightKg = r.WeightKg,
+            Status = r.Status.Trim(),
+            CreatedAt = DateTime.UtcNow
+        })
+        .ToList();
 
-    await _context.SaveChangesAsync();
+    // ------------------------------------------------------------
+    // CREATE 0 KG RECORDS FOR CANCELLED AREAS
+    // ------------------------------------------------------------
+
+    var cancelledWasteRecords =
+        new List<WasteRecord>();
+
+    if (cancelledAreaIds.Count > 0)
+    {
+        var cancelledAreas = await _context.Areas
+            .Where(a =>
+                a.UserId == userId &&
+                cancelledAreaIds.Contains(a.AreaId))
+            .Select(a => a.AreaId)
+            .ToListAsync();
+
+        foreach (var areaId in cancelledAreas)
+        {
+            cancelledWasteRecords.Add(
+                new WasteRecord
+                {
+                    AreaId = areaId,
+                    CollectionDate = operationDay,
+                    WasteType = "Biodegradable",
+                    WeightKg = 0,
+                    Status = "Cancelled",
+                    CreatedAt = DateTime.UtcNow
+                });
+
+            cancelledWasteRecords.Add(
+                new WasteRecord
+                {
+                    AreaId = areaId,
+                    CollectionDate = operationDay,
+                    WasteType = "Non-biodegradable",
+                    WeightKg = 0,
+                    Status = "Cancelled",
+                    CreatedAt = DateTime.UtcNow
+                });
+        }
+    }
+
+    // ------------------------------------------------------------
+    // SAVE EVERYTHING AS ONE TRANSACTION
+    // ------------------------------------------------------------
+
+    using var transaction =
+        await _context.Database.BeginTransactionAsync();
+
+    try
+    {
+        // 1. Save actual CSV records FIRST
+        _context.WasteRecords.AddRange(wasteRecords);
+
+        await _context.SaveChangesAsync();
+
+        // 2. Save cancelled areas SECOND
+        if (cancelledWasteRecords.Count > 0)
+        {
+            _context.WasteRecords.AddRange(
+                cancelledWasteRecords);
+
+            await _context.SaveChangesAsync();
+        }
+
+        // 3. Mark report as uploaded
+        _context.OperationReportUploads.Add(
+            new OperationReportUpload
+            {
+                UserId = userId,
+                OperationDate = operationDay,
+                UploadedAt = DateTime.UtcNow
+            });
+
+        await _context.SaveChangesAsync();
+
+        await transaction.CommitAsync();
+    }
+    catch
+    {
+        await transaction.RollbackAsync();
+
+        return StatusCode(500, new
+        {
+            message =
+                "The report could not be saved. No waste records were imported."
+        });
+    }
 
     return Ok(new
     {
-        message = "Waste records imported successfully.",
-        importedCount = wasteRecords.Count
+        message =
+            "Waste records imported successfully.",
+
+        importedCount =
+            wasteRecords.Count +
+            cancelledWasteRecords.Count,
+
+        csvRecordsImported =
+            wasteRecords.Count,
+
+        cancelledRecordsCreated =
+            cancelledWasteRecords.Count
     });
 }
 

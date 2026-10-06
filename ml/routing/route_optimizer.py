@@ -254,7 +254,7 @@ def optimize_route_order(
 
         return best_order
 
-    # Fallback for larger routes.
+        # Fallback for larger routes.
     remaining = areas.copy()
 
     first_area = remaining.pop(0)
@@ -265,23 +265,39 @@ def optimize_route_order(
 
     while remaining:
 
-        next_area = min(
-            remaining,
-            key=lambda area:
-            distance_lookup.get(
+        reachable_areas = [
+            area
+            for area in remaining
+            if distance_lookup.get(
                 (
                     current_area,
                     area["area_id"]
-                ),
-                float("inf")
+                )
+            ) is not None
+        ]
+
+        if not reachable_areas:
+            raise ValueError(
+                f"No reachable area found from Area {current_area} "
+                "for the remaining route stops."
             )
+
+        next_area = min(
+            reachable_areas,
+            key=lambda area:
+            distance_lookup[
+                (
+                    current_area,
+                    area["area_id"]
+                )
+            ]
         )
 
         ordered.append(next_area)
 
         remaining.remove(next_area)
 
-        current_area = next_area
+        current_area = next_area["area_id"]
 
     return ordered
 

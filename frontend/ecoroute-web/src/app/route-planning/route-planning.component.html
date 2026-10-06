@@ -97,7 +97,7 @@
       <img
         src="assets/icons/tune.svg"
         alt="Route constraints">
-      <span>Modify Info</span>
+      <span>View Trucks</span>
 
     </button>
 
@@ -121,15 +121,6 @@
   *ngIf="operationStatus === 'Active' && !isHistoricalView"
   (click)="cancelOperation()">
   Cancel Operation
-</button>
-
-<!-- PAUSED OPERATION -->
-<button
-  class="operation-button resume"
-  type="button"
-  *ngIf="operationStatus === 'Paused' && !isHistoricalView"
-  (click)="resumeOperation()">
-  Resume Operation
 </button>
 
 
@@ -627,7 +618,7 @@
 
         <button
           type="button"
-          [disabled]="operationStatus !== 'Active' || isHistoricalView"
+
           class="light-button"
           (click)="viewRoute(selectedRoute)">
 
@@ -645,6 +636,8 @@
           [disabled]="
             operationStatus !== 'Active' ||
             isHistoricalView ||
+            selectedRoute?.status === 'Completed' ||
+            selectedRoute?.status === 'Cancelled' ||
             isOptimizing
           "
           (click)="reroute()">
@@ -655,7 +648,12 @@
 
         <button
           type="button"
-          [disabled]="operationStatus !== 'Active' || isHistoricalView"
+          [disabled]="
+            operationStatus !== 'Active' ||
+            isHistoricalView ||
+            selectedRoute?.status === 'Completed' ||
+            selectedRoute?.status === 'Cancelled'
+          "
           class="apply-button"
           (click)="applyChanges()">
 
@@ -725,7 +723,7 @@
             </th>
 
             <th>
-              Waste Load
+              Predicted Waste
             </th>
 
             <th>
@@ -786,7 +784,7 @@
 
             <td>
 
-              {{ route.wasteLoad }}
+              {{ route.predictedWaste }}
 
             </td>
 
@@ -843,11 +841,24 @@
     [disabled]="
       isHistoricalView ||
       operationStatus !== 'Active' ||
-      route.status === 'Completed'
+      route.status === 'Completed' ||
+      route.status === 'Cancelled'
     "
     (click)="finishTruck(route)">
     Finish
   </button>
+
+  <button
+  class="cancel-truck-button"
+  type="button"
+  [disabled]="
+    isHistoricalView ||
+    operationStatus !== 'Active' ||
+    route.status !== 'Active'
+  "
+  (click)="cancelTruck(route)">
+  Cancel
+</button>
 </td>
 
           </tr>
@@ -894,8 +905,8 @@
 
     <header class="modify-info-header">
       <div>
-        <h2 id="modifyInfoTitle">Route Constraints</h2>
-        <p>Review the constraints applied to the selected truck.</p>
+        <h2 id="modifyInfoTitle">Truck Management</h2>
+<p>Manage your available collection trucks and their constraints.</p>
       </div>
 
       <button
@@ -907,56 +918,132 @@
       </button>
     </header>
 
-    <div class="modify-info-content" *ngIf="selectedRoute as route">
-      <div class="constraint-detail">
-        <span>Selected Vehicle</span>
-        <strong>{{ route.vehicle }}</strong>
+    <div class="truck-management-content">
+
+  <div class="truck-management-header">
+    <div>
+      <h3>Collection Trucks</h3>
+      <p>Manage the trucks available for route planning.</p>
+    </div>
+
+    <button
+    class="add-truck-button"
+    type="button"
+    (click)="openAddTruck()"
+    [disabled]="operationStatus === 'Active'">
+    + Add Truck
+  </button>
+  </div>
+
+  <div class="truck-list">
+
+  <div
+    class="truck-item"
+    *ngFor="let vehicle of vehicles"
+    [class.selected]="selectedVehicle?.vehicleId === vehicle.vehicleId"
+    (click)="selectTruck(vehicle)">
+
+    <!-- TRUCK BAR -->
+    <div class="truck-bar">
+
+      <div class="truck-info">
+
+        <div class="truck-name">
+          {{ vehicle.vehicleName }}
+        </div>
+
+        <div class="truck-details">
+          <span>
+            {{ vehicle.capacityKg | number:'1.0-0' }} kg
+          </span>
+
+          <span>
+            {{ vehicle.status }}
+          </span>
+        </div>
+
       </div>
 
-      <div class="constraint-detail">
-        <span>Vehicle Capacity</span>
-        <strong>{{ route.capacityKg | number:'1.0-2' }} kg</strong>
+      <div
+        class="truck-actions"
+        (click)="$event.stopPropagation()">
+
+        <button
+          type="button"
+          class="edit-truck-button"
+          (click)="openEditTruck(vehicle)"
+          [disabled]="operationStatus === 'Active'">
+          Edit
+        </button>
+
+        <button
+          type="button"
+          class="delete-truck-button"
+          (click)="openDeleteTruck(vehicle)"
+          [disabled]="operationStatus === 'Active'">
+          Delete
+        </button>
+
       </div>
 
-      <div class="constraint-detail">
-        <span>Current Waste Load</span>
-        <strong>{{ route.wasteLoad }}</strong>
-      </div>
+    </div>
 
-      <div class="constraint-detail">
-        <span>Remaining Capacity</span>
-        <strong>{{ route.remainingCapacityKg | number:'1.0-2' }} kg</strong>
-      </div>
 
-      <div class="constraint-detail">
-        <span>Maximum Route Distance</span>
-        <strong>{{ route.maximumDistanceKm | number:'1.0-2' }} km</strong>
-      </div>
+    <!-- EXPANDED TRUCK DETAILS -->
+    <div
+      class="truck-expanded-details"
+      *ngIf="selectedVehicle?.vehicleId === vehicle.vehicleId">
 
-      <div class="constraint-detail">
-        <span>Collection Time Window</span>
+      <div class="truck-detail-row">
+        <span>Capacity</span>
         <strong>
-          {{ route.collectionStart }} – {{ route.collectionEnd }}
+          {{ vehicle.capacityKg | number:'1.0-0' }} kg
         </strong>
       </div>
 
-      <div class="constraint-detail">
-        <span>Road Accessibility</span>
-        <strong>{{ route.roadAccessibility || 'Not specified' }}</strong>
+      <div class="truck-detail-row">
+        <span>Maximum Route Distance</span>
+        <strong>
+          {{ vehicle.maximumRouteDistanceKm }} km
+        </strong>
       </div>
 
-      <div class="constraint-detail">
-        <span>Area Restrictions</span>
-        <strong>{{ route.areaRestrictions || 'None specified' }}</strong>
+      <div class="truck-detail-row">
+        <span>Collection Time</span>
+        <strong>
+          {{ formatTruckTime(vehicle.collectionStartTime) }}
+          –
+          {{ formatTruckTime(vehicle.collectionEndTime) }}
+        </strong>
       </div>
+
+      <div class="truck-detail-row">
+        <span>Status</span>
+        <strong>
+          {{ vehicle.status }}
+        </strong>
+      </div>
+
     </div>
 
-    <div class="modify-info-content" *ngIf="!selectedRoute">
-      <p>No route is currently selected.</p>
-    </div>
+  </div>
+
+</div>
+
+
+
+  <div
+    class="truck-management-locked"
+    *ngIf="operationStatus === 'Active'">
+
+    <span>Truck management is locked while an operation is active.</span>
+
+  </div>
+
+</div>
 
     <footer class="modify-info-footer">
-      <span>Constraints for the selected route.</span>
+      <span>Manage your collection trucks.</span>
 
       <button
         type="button"
@@ -969,7 +1056,316 @@
   </section>
 </div>
 
+<!-- ADD TRUCK MODAL -->
+<div
+  class="modal-backdrop"
+  *ngIf="isAddTruckOpen"
+  (click)="closeAddTruck()">
 
+  <section
+    class="truck-form-modal"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="addTruckTitle"
+    (click)="$event.stopPropagation()">
+
+    <header class="truck-form-header">
+      <div>
+        <h2 id="addTruckTitle">Add Truck</h2>
+        <p>Add a new collection truck and its routing constraints.</p>
+      </div>
+
+      <button
+        type="button"
+        class="modal-close"
+        (click)="closeAddTruck()"
+        aria-label="Close">
+        &times;
+      </button>
+    </header>
+
+    <div class="truck-form-body">
+
+      <div class="form-group">
+        <label for="addTruckName">Truck Name</label>
+
+        <input
+          id="addTruckName"
+          type="text"
+          [(ngModel)]="truckName"
+          placeholder="Enter truck name">
+      </div>
+
+      <div class="form-group">
+        <label for="addTruckCapacity">Capacity</label>
+
+        <input
+          id="addTruckCapacity"
+          type="number"
+          [(ngModel)]="truckCapacityKg"
+          min="1"
+          placeholder="Enter capacity in kg">
+      </div>
+
+      <div class="form-group">
+        <label for="addTruckDistance">
+          Maximum Route Distance
+        </label>
+
+        <input
+          id="addTruckDistance"
+          type="number"
+          [(ngModel)]="truckMaximumRouteDistanceKm"
+          min="1"
+          placeholder="Enter maximum distance in km">
+      </div>
+
+      <div class="form-row">
+
+        <div class="form-group">
+          <label for="addTruckStartTime">
+            Collection Start Time
+          </label>
+
+          <input
+            id="addTruckStartTime"
+            type="time"
+            [(ngModel)]="truckCollectionStartTime">
+        </div>
+
+        <div class="form-group">
+          <label for="addTruckEndTime">
+            Collection End Time
+          </label>
+
+          <input
+            id="addTruckEndTime"
+            type="time"
+            [(ngModel)]="truckCollectionEndTime">
+        </div>
+
+      </div>
+
+      <div class="form-group">
+        <label for="addTruckStatus">Status</label>
+
+        <select
+          id="addTruckStatus"
+          [(ngModel)]="truckStatus">
+
+          <option value="Available">Available</option>
+          <option value="Unavailable">Unavailable</option>
+
+        </select>
+      </div>
+
+    </div>
+
+    <footer class="truck-form-footer">
+
+      <button
+        type="button"
+        class="modify-cancel-button"
+        (click)="closeAddTruck()">
+        Cancel
+      </button>
+
+      <button
+        type="button"
+        class="save-truck-button"
+        (click)="saveAddTruck()"
+        [disabled]="isSavingTruck || operationStatus === 'Active'">
+
+        {{ isSavingTruck ? 'Saving...' : 'Add Truck' }}
+
+      </button>
+
+    </footer>
+
+  </section>
+
+</div>
+
+<!-- EDIT TRUCK MODAL -->
+<div
+  class="modal-backdrop"
+  *ngIf="isEditTruckOpen"
+  (click)="closeEditTruck()">
+
+  <section
+    class="truck-form-modal"
+    role="dialog"
+    aria-modal="true"
+    (click)="$event.stopPropagation()">
+
+    <header class="truck-form-header">
+      <div>
+        <h2>Edit Truck Information</h2>
+        <p>Update this truck's information and routing constraints.</p>
+      </div>
+
+      <button
+        type="button"
+        class="modal-close-button"
+        (click)="closeEditTruck()">
+        ×
+      </button>
+    </header>
+
+    <div class="truck-form-body">
+
+      <div class="form-group">
+        <label for="editTruckName">Truck Name</label>
+
+        <input
+          id="editTruckName"
+          type="text"
+          [(ngModel)]="truckName"
+          placeholder="Enter truck name">
+      </div>
+
+      <div class="form-group">
+        <label for="editTruckCapacity">Capacity</label>
+
+        <input
+          id="editTruckCapacity"
+          type="number"
+          [(ngModel)]="truckCapacityKg"
+          placeholder="Enter capacity">
+      </div>
+
+      <div class="form-group">
+        <label for="editTruckDistance">
+          Maximum Route Distance
+        </label>
+
+        <input
+          id="editTruckDistance"
+          type="number"
+          [(ngModel)]="truckMaximumRouteDistanceKm"
+          placeholder="Enter maximum distance">
+      </div>
+
+      <div class="form-row">
+
+        <div class="form-group">
+          <label for="editTruckStartTime">
+            Collection Start Time
+          </label>
+
+          <input
+            id="editTruckStartTime"
+            type="time"
+            [(ngModel)]="truckCollectionStartTime">
+        </div>
+
+        <div class="form-group">
+          <label for="editTruckEndTime">
+            Collection End Time
+          </label>
+
+          <input
+            id="editTruckEndTime"
+            type="time"
+            [(ngModel)]="truckCollectionEndTime">
+        </div>
+
+      </div>
+
+      <div class="form-group">
+        <label for="editTruckStatus">Status</label>
+
+        <select
+          id="editTruckStatus"
+          [(ngModel)]="truckStatus">
+
+          <option value="Available">
+            Available
+          </option>
+
+          <option value="Unavailable">
+            Unavailable
+          </option>
+
+        </select>
+      </div>
+
+    </div>
+
+    <footer class="truck-form-footer">
+
+      <button
+        type="button"
+        class="modify-cancel-button"
+        (click)="closeEditTruck()">
+        Cancel
+      </button>
+
+      <button
+        type="button"
+        class="save-truck-button"
+        (click)="saveEditTruck()"
+        [disabled]="isSavingTruck || operationStatus === 'Active'">
+
+        {{ isSavingTruck ? 'Saving...' : 'Save Changes' }}
+
+      </button>
+
+    </footer>
+
+  </section>
+</div>
+
+<!-- DELETE TRUCK MODAL -->
+<div
+  class="confirmation-backdrop"
+  *ngIf="isDeleteTruckOpen"
+  (click)="closeDeleteTruck()">
+
+  <div
+    class="confirmation-modal"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="deleteTruckTitle"
+    (click)="$event.stopPropagation()">
+
+    <h2 id="deleteTruckTitle">
+      Delete Truck?
+    </h2>
+
+    <p>
+      Are you sure you want to delete
+      <strong>{{ selectedVehicle?.vehicleName }}</strong>?
+    </p>
+
+    <p class="confirmation-note">
+      This truck will no longer be available for route planning.
+    </p>
+
+    <div class="confirmation-actions">
+
+      <button
+        type="button"
+        class="confirmation-cancel"
+        (click)="closeDeleteTruck()">
+        Cancel
+      </button>
+
+      <button
+        type="button"
+        class="confirmation-danger"
+        [disabled]="isSavingTruck || operationStatus === 'Active'"
+        (click)="deleteTruck()">
+
+        {{ isSavingTruck ? 'Deleting...' : 'Delete Truck' }}
+
+      </button>
+
+    </div>
+
+  </div>
+
+</div>
 
 <!-- ROUTE OPTIMIZATION LOADING WINDOW -->
 <div
@@ -1048,6 +1444,57 @@
   </div>
 </div>
 
+<!-- CANCEL TRUCK CONFIRMATION -->
+<div
+  class="confirmation-backdrop"
+  *ngIf="showCancelTruckConfirmation"
+  (click)="closeCancelTruckConfirmation()"
+>
+  <div
+    class="confirmation-modal"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="cancelTruckConfirmationTitle"
+    (click)="$event.stopPropagation()"
+  >
+
+    <h2 id="cancelTruckConfirmationTitle">
+      Cancel Truck Route?
+    </h2>
+
+    <p>
+      Are you sure you want to cancel the collection route for
+      <strong>{{ routePendingCancel?.vehicle }}</strong>?
+    </p>
+
+    <p class="confirmation-note">
+      The operation will continue, but the areas assigned to this
+      truck will be marked as cancelled.
+    </p>
+
+    <div class="confirmation-actions">
+
+      <button
+        type="button"
+        class="confirmation-cancel"
+        (click)="closeCancelTruckConfirmation()"
+      >
+        Keep Route
+      </button>
+
+      <button
+        type="button"
+        class="confirmation-danger"
+        (click)="confirmCancelTruck()"
+      >
+        Cancel Truck
+      </button>
+
+    </div>
+
+  </div>
+</div>
+
 <!-- CANCEL OPERATION CONFIRMATION -->
 <div
   class="confirmation-backdrop"
@@ -1069,9 +1516,9 @@
       Are you sure you want to cancel the current collection operation?
     </p>
 
-    <p class="confirmation-note">
-      The operation will be paused, and you can resume it later.
-    </p>
+   <p class="confirmation-note">
+  The operation will be cancelled and cannot be resumed.
+</p>
 
     <div class="confirmation-actions">
       <button
@@ -1112,11 +1559,11 @@
       alt="Success">
 
     <h2 id="allRoutesCompletedTitle">
-      All Routes Completed!
+      Operation Completed!
     </h2>
 
     <p>
-      All truck routes are completed.
+      All truck routes have been completed or cancelled.
       You can now upload the report.
     </p>
 
