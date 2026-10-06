@@ -41,7 +41,7 @@ export class MlService {
 
   private http = inject(HttpClient);
 
-  private apiUrl = 'https://ecoroute-api.runasp.net/api/ml';
+  private apiUrl = 'https://eco-route-ai-yuwx-zeta.vercel.app/api/ml';
 
   getP90Routes(): Observable<MlRoutesResponse> {
     return this.http.get<MlRoutesResponse>(
@@ -59,7 +59,7 @@ export class MlService {
     coordinates: string
     ) {
     return this.http.get<any>(
-        `https://ecoroute-api.runasp.net/api/map/route`,
+        `https://eco-route-ai-yuwx-zeta.vercel.app/api/map/route`,
         {
         params: {
             coordinates

@@ -26,7 +26,7 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
   private dashboardRoutes: any[] = [];
 
   private readonly areasApiUrl =
-    'https://ecoroute-api.runasp.net/api/areas';
+    'https://eco-route-ai-yuwx-zeta.vercel.app/api/areas';
 
   private readonly routeColors = [
     '#0a8f3d',
@@ -79,10 +79,10 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
   }[] = [];
 
   private readonly mlApiUrl =
-    'https://ecoroute-api.runasp.net/api/ml';
+    'https://eco-route-ai-yuwx-zeta.vercel.app/api/ml';
 
   private readonly wasteApiUrl =
-    'http://localhost:5276/api/Waste';
+    'https://eco-route-ai-yuwx-zeta.vercel.app/api/Waste';
 
   private http = inject(HttpClient);
 

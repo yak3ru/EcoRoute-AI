@@ -5,7 +5,7 @@ import { Injectable } from '@angular/core';
 })
 export class ApiService {
 
-  private readonly baseUrl = 'https://ecoroute-api.runasp.net/api';
+  private readonly baseUrl = 'https://eco-route-ai-yuwx-zeta.vercel.app/api';
 
   getBaseUrl(): string {
     return this.baseUrl;

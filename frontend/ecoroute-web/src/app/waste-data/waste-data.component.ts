@@ -97,7 +97,7 @@ export class WasteDataComponent implements OnInit {
 
   this.http
     .get<any[]>(
-      'https://ecoroute-api.runasp.net/api/Waste',
+      'https://eco-route-ai-yuwx-zeta.vercel.app/api/Waste',
       { params }
     )
     .subscribe({
@@ -150,7 +150,7 @@ export class WasteDataComponent implements OnInit {
 
   this.http
     .get<any[]>(
-      'https://ecoroute-api.runasp.net/api/Waste/area-parameters',
+      'https://eco-route-ai-yuwx-zeta.vercel.app/api/Waste/area-parameters',
       { params }
     )
     .subscribe({
@@ -187,7 +187,7 @@ loadWasteSummary(): void {
 
   this.http
     .get<any>(
-      'http://localhost:5276/api/Waste/summary',
+      'https://eco-route-ai-yuwx-zeta.vercel.app/api/Waste/summary',
       { params }
     )
     .subscribe({
@@ -236,7 +236,7 @@ loadAreaWasteSummary(): void {
 
   this.http
     .get<any[]>(
-      'http://localhost:5276/api/Waste/area-summary',
+      'https://eco-route-ai-yuwx-zeta.vercel.app/api/Waste/area-summary',
       { params }
     )
     .subscribe({

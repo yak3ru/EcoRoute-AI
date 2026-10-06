@@ -132,8 +132,8 @@ export class RoutePlanningComponent
 
   private http = inject(HttpClient);
 
-  private readonly mlApiUrl = 'https://ecoroute-api.runasp.net/api/ml';
-  private readonly areasApiUrl = 'https://ecoroute-api.runasp.net/api/areas';
+  private readonly mlApiUrl = 'https://eco-route-ai-yuwx-zeta.vercel.app/api/ml';
+  private readonly areasApiUrl = 'https://eco-route-ai-yuwx-zeta.vercel.app/api/areas';
 
   private subscriptions = new Subscription();
 
@@ -388,7 +388,7 @@ isSavingTruck = false;
 
   this.subscriptions.add(
     this.http.get<{ operationDate: string; uploaded: boolean }>(
-      `http://localhost:5276/api/Waste/report-upload-status`,
+      `https://eco-route-ai-yuwx-zeta.vercel.app/api/Waste/report-upload-status`,
       {
         params: { operationDate: date }
       }
@@ -772,7 +772,7 @@ saveAddTruck(): void {
   this.subscriptions.add(
     this.http
       .post(
-        'http://localhost:5276/api/Vehicles/with-constraints',
+        'https://eco-route-ai-yuwx-zeta.vercel.app/api/Vehicles/with-constraints',
         request
       )
       .subscribe({

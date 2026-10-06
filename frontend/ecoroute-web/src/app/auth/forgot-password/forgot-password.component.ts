@@ -20,7 +20,7 @@ export class ForgotPasswordComponent implements OnDestroy {
   resendCooldown = 0;
 
   private cooldownTimer?: ReturnType<typeof setInterval>;
-  private readonly apiUrl = 'https://ecoroute-api.runasp.net/api';
+  private readonly apiUrl = 'https://eco-route-ai-yuwx-zeta.vercel.app/api';
 
   constructor(
     private http: HttpClient

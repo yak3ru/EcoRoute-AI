@@ -36,7 +36,7 @@ export class ResetPasswordComponent implements OnInit {
   errorMessage = '';
   successMessage = '';
 
-  private readonly apiUrl = 'https://ecoroute-api.runasp.net/api';
+  private readonly apiUrl = 'https://eco-route-ai-yuwx-zeta.vercel.app/api';
 
   constructor(
     private route: ActivatedRoute,

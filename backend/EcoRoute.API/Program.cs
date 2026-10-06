@@ -205,7 +205,7 @@ builder.Services.AddCors(options =>
         policy
             .WithOrigins(
                 "http://localhost:4200",
-                "https://YOUR-FRONTEND.vercel.app",
+                "https://eco-route-ai-sooty.vercel.app",
                 "https://ecoroute-ai.pages.dev",
                 "https://ecorouteai.com",
                 "https://www.ecorouteai.com"
