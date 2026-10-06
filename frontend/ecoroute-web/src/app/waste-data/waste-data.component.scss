@@ -216,12 +216,11 @@
 }
 
 .bar-label {
-  min-width: 0;
+  width: 170px;
+  min-width: 170px;
   color: #17191c;
   font-size: clamp(14px, 0.85vw, 14px);
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .bar-container {
@@ -432,7 +431,7 @@
 
 .collections-table {
   width: 100%;
-  max-height: 267px;
+  max-height: 180px;
   overflow-y: auto;
   overflow-x: hidden;
 }

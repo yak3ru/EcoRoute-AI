@@ -39,7 +39,10 @@ public class WasteController : ControllerBase
         var query = _context.WasteRecords
             .AsNoTracking()
             .Include(w => w.Area)
-            .Where(w => w.Area != null && w.Area.UserId == userId)
+            .Where(w =>
+                w.Area != null &&
+                w.Area.UserId == userId &&
+                (w.Status == "Completed" || w.Status == "Failed"))
             .AsQueryable();
 
         if (areaId.HasValue)
@@ -211,7 +214,6 @@ public async Task<IActionResult> ImportWasteRecords(
     {
         "Completed",
         "Failed",
-        "Pending"
     };
 
     // Validate every record before saving anything.
@@ -327,5 +329,414 @@ public async Task<IActionResult> ImportWasteRecords(
         message = "Waste records imported successfully.",
         importedCount = wasteRecords.Count
     });
+}
+
+[HttpGet("summary")]
+public async Task<IActionResult> GetWasteSummary(
+    [FromQuery] DateTime? startDate,
+    [FromQuery] DateTime? endDate)
+{
+    var userIdValue = User.FindFirstValue(
+        ClaimTypes.NameIdentifier);
+
+    if (!int.TryParse(userIdValue, out var userId))
+    {
+        return Unauthorized();
+    }
+
+    // Get ALL completed records for comparison purposes.
+    var query = _context.WasteRecords
+        .AsNoTracking()
+        .Include(w => w.Area)
+        .Where(w =>
+            w.Area != null &&
+            w.Area.UserId == userId &&
+            w.Status == "Completed")
+        .AsQueryable();
+
+    var records = await query
+        .Select(w => new
+        {
+            w.AreaId,
+            AreaName = w.Area!.AreaName,
+            w.CollectionDate,
+            w.WeightKg
+        })
+        .ToListAsync();
+
+    // Filter records for the selected date range.
+    var selectedRecords = records.AsEnumerable();
+
+    if (startDate.HasValue)
+    {
+        selectedRecords = selectedRecords.Where(w =>
+            w.CollectionDate.Date >= startDate.Value.Date);
+    }
+
+    if (endDate.HasValue)
+    {
+        selectedRecords = selectedRecords.Where(w =>
+            w.CollectionDate.Date <= endDate.Value.Date);
+    }
+
+    var selectedRecordsList = selectedRecords.ToList();
+
+    var totalWaste = selectedRecordsList
+        .Sum(w => w.WeightKg);
+
+    // Compare the latest 7 days against the previous 7 days.
+    var totalWasteChangePercent = 0m;
+var averageDailyWasteChangePercent = 0m;
+
+if (startDate.HasValue && endDate.HasValue)
+{
+    var currentStart = startDate.Value.Date;
+    var currentEnd = endDate.Value.Date;
+
+    var periodDays =
+        (currentEnd - currentStart).Days + 1;
+
+    var previousEnd = currentStart.AddDays(-1);
+
+    var previousStart =
+        previousEnd.AddDays(-(periodDays - 1));
+
+    var currentPeriodWaste = records
+        .Where(w =>
+            w.CollectionDate.Date >= currentStart &&
+            w.CollectionDate.Date <= currentEnd)
+        .Sum(w => w.WeightKg);
+
+    var previousPeriodWaste = records
+        .Where(w =>
+            w.CollectionDate.Date >= previousStart &&
+            w.CollectionDate.Date <= previousEnd)
+        .Sum(w => w.WeightKg);
+
+    if (previousPeriodWaste > 0)
+    {
+        totalWasteChangePercent =
+            ((currentPeriodWaste - previousPeriodWaste)
+            / previousPeriodWaste) * 100;
+
+        var currentAverageDailyWaste =
+            currentPeriodWaste / periodDays;
+
+        var previousAverageDailyWaste =
+            previousPeriodWaste / periodDays;
+
+        averageDailyWasteChangePercent =
+            ((currentAverageDailyWaste -
+             previousAverageDailyWaste)
+            / previousAverageDailyWaste) * 100;
+    }
+}
+
+if (records.Count > 0)
+{
+    var latestDate = records
+        .Max(w => w.CollectionDate)
+        .Date;
+
+    // Determine the selected period length
+    var periodDays = 30;
+
+    if (startDate.HasValue && endDate.HasValue)
+    {
+        periodDays =
+            Math.Max(
+                1,
+                (endDate.Value.Date -
+                 startDate.Value.Date).Days + 1
+            );
+    }
+
+    // Current period
+    var currentPeriodEnd = latestDate;
+    var currentPeriodStart =
+        latestDate.AddDays(-(periodDays - 1));
+
+    // Previous period
+    var previousPeriodEnd =
+        currentPeriodStart.AddDays(-1);
+
+    var previousPeriodStart =
+        previousPeriodEnd.AddDays(-(periodDays - 1));
+
+    var currentPeriodWaste = records
+        .Where(w =>
+            w.CollectionDate.Date >= currentPeriodStart &&
+            w.CollectionDate.Date <= currentPeriodEnd)
+        .Sum(w => w.WeightKg);
+
+    var previousPeriodWaste = records
+        .Where(w =>
+            w.CollectionDate.Date >= previousPeriodStart &&
+            w.CollectionDate.Date <= previousPeriodEnd)
+        .Sum(w => w.WeightKg);
+
+    if (previousPeriodWaste > 0)
+    {
+        totalWasteChangePercent =
+            ((currentPeriodWaste - previousPeriodWaste)
+            / previousPeriodWaste) * 100;
+
+        var currentAverageDailyWaste =
+            currentPeriodWaste / periodDays;
+
+        var previousAverageDailyWaste =
+            previousPeriodWaste / periodDays;
+
+        averageDailyWasteChangePercent =
+            ((currentAverageDailyWaste -
+             previousAverageDailyWaste)
+            / previousAverageDailyWaste) * 100;
+    }
+}
+
+    // Calculate average based on selected date range.
+    var numberOfDays = 1;
+
+    if (startDate.HasValue && endDate.HasValue)
+    {
+        numberOfDays =
+            Math.Max(
+                1,
+                (endDate.Value.Date -
+                startDate.Value.Date).Days + 1
+            );
+    }
+    else if (selectedRecordsList.Count > 0)
+    {
+        var firstDate = selectedRecordsList
+            .Min(w => w.CollectionDate)
+            .Date;
+
+        var lastDate = selectedRecordsList
+            .Max(w => w.CollectionDate)
+            .Date;
+
+        numberOfDays =
+            Math.Max(
+                1,
+                (lastDate - firstDate).Days + 1
+            );
+    }
+
+    var averageDailyWaste =
+        totalWaste / numberOfDays;
+
+    // Find highest waste area within the selected range.
+    var highestWasteArea = selectedRecordsList
+        .GroupBy(w => new
+        {
+            w.AreaId,
+            w.AreaName
+        })
+        .Select(g => new
+        {
+            areaId = g.Key.AreaId,
+            areaName = g.Key.AreaName,
+            totalWaste = g.Sum(w => w.WeightKg)
+        })
+        .OrderByDescending(x => x.totalWaste)
+        .FirstOrDefault();
+
+    var collectionAreas = await _context.Areas
+        .CountAsync(a =>
+            a.UserId == userId &&
+            a.IsActive);
+
+    return Ok(new
+    {
+        totalWasteCollected = totalWaste,
+        averageDailyWaste,
+        totalWasteChangePercent,
+        averageDailyWasteChangePercent,
+        highestWasteArea = highestWasteArea?.areaName,
+        highestWasteAreaWeight =
+            highestWasteArea?.totalWaste ?? 0,
+        collectionAreas
+    });
+}
+[HttpGet("area-summary")]
+public async Task<IActionResult> GetAreaWasteSummary(
+    [FromQuery] DateTime? startDate,
+    [FromQuery] DateTime? endDate,
+    [FromQuery] bool allTime = false)
+{
+    var userIdValue = User.FindFirstValue(
+        ClaimTypes.NameIdentifier);
+
+    if (!int.TryParse(userIdValue, out var userId))
+    {
+        return Unauthorized();
+    }
+
+    // Temporary default:
+    // Last 30 days based on today.
+    var end = endDate?.Date ?? DateTime.Today;
+    var start = startDate?.Date ?? end.AddDays(-29);
+
+    var areaSummary = await _context.WasteRecords
+        .AsNoTracking()
+        .Include(w => w.Area)
+        .Where(w =>
+        w.Area != null &&
+        w.Area.UserId == userId &&
+        w.Status == "Completed" &&
+        (allTime ||
+        (w.CollectionDate.Date >= start &&
+        w.CollectionDate.Date <= end)))
+        .GroupBy(w => new
+        {
+            w.AreaId,
+            AreaName = w.Area!.AreaName
+        })
+        .Select(g => new
+        {
+            areaId = g.Key.AreaId,
+            areaName = g.Key.AreaName,
+            totalWaste = g.Sum(w => w.WeightKg)
+        })
+        .OrderByDescending(x => x.totalWaste)
+        .ToListAsync();
+
+    return Ok(areaSummary);
+}
+
+[HttpGet("area-parameters")]
+public async Task<IActionResult> GetAreaParameters(
+    [FromQuery] DateTime? startDate,
+    [FromQuery] DateTime? endDate)
+{
+    var userIdValue = User.FindFirstValue(
+        ClaimTypes.NameIdentifier);
+
+    if (!int.TryParse(userIdValue, out var userId))
+    {
+        return Unauthorized();
+    }
+
+    // Default to the last 30 days
+    var end = endDate?.Date ?? DateTime.Today;
+    var start = startDate?.Date ?? end.AddDays(-29);
+
+    // Get all active areas belonging to the user
+    var areas = await _context.Areas
+        .AsNoTracking()
+        .Where(a =>
+            a.UserId == userId &&
+            a.IsActive)
+        .Select(a => new
+        {
+            a.AreaId,
+            a.AreaName,
+            a.PopulationDensity
+        })
+        .ToListAsync();
+
+    // Get completed waste collected during the selected period
+    var wasteByArea = await _context.WasteRecords
+        .AsNoTracking()
+        .Where(w =>
+            w.Area != null &&
+            w.Area.UserId == userId &&
+            w.Status == "Completed" &&
+            w.CollectionDate.Date >= start &&
+            w.CollectionDate.Date <= end)
+        .GroupBy(w => w.AreaId)
+        .Select(g => new
+        {
+            AreaId = g.Key,
+            TotalWaste = g.Sum(w => w.WeightKg)
+        })
+        .ToListAsync();
+
+    var results = areas
+        .Select(area =>
+        {
+            var totalWaste = wasteByArea
+                .FirstOrDefault(w =>
+                    w.AreaId == area.AreaId)
+                ?.TotalWaste ?? 0;
+
+            return new
+            {
+                area.AreaId,
+                area.AreaName,
+                area.PopulationDensity,
+                TotalWaste = totalWaste,
+                AverageDailyWaste =
+                    totalWaste / 30m
+            };
+        })
+        .OrderByDescending(x => x.AverageDailyWaste)
+        .ToList();
+
+    // Determine activity based on ranking
+    var count = results.Count;
+
+    for (int i = 0; i < count; i++)
+    {
+        var activity = i < Math.Ceiling(count * 0.3)
+            ? "High"
+            : i < Math.Ceiling(count * 0.7)
+                ? "Medium"
+                : "Low";
+
+        results[i] = new
+        {
+            results[i].AreaId,
+            results[i].AreaName,
+            results[i].PopulationDensity,
+            results[i].TotalWaste,
+            results[i].AverageDailyWaste
+        };
+    }
+
+    var areaParameters = results
+        .Select((area, index) =>
+        {
+            var density =
+                area.PopulationDensity >= 6000
+                    ? "High"
+                    : area.PopulationDensity >= 4000
+                        ? "Medium"
+                        : "Low";
+
+            var activity =
+                index < Math.Ceiling(count * 0.3)
+                    ? "High"
+                    : index < Math.Ceiling(count * 0.7)
+                        ? "Medium"
+                        : "Low";
+
+            var frequency =
+                density == "High" && activity == "High"
+                    ? "Daily"
+                    : density == "High" && activity == "Medium"
+                        ? "Every 2 Days"
+                        : density == "Medium" && activity == "High"
+                            ? "Daily"
+                            : density == "Medium" && activity == "Medium"
+                                ? "Every 2 Days"
+                                : density == "Low" && activity == "High"
+                                    ? "Every 2 Days"
+                                    : "Every 3 Days";
+
+            return new
+            {
+                area = area.AreaName,
+                density,
+                activity,
+                frequency,
+                totalWaste = area.TotalWaste,
+                averageDailyWaste = area.AverageDailyWaste
+            };
+        })
+        .ToList();
+
+    return Ok(areaParameters);
 }
 }

@@ -8,21 +8,21 @@
     </div>
 
     <div class="header-actions">
-      <button class="area-button" type="button">
-        <span>All areas</span>
-        <img
-          src="assets/icons/drop-down.svg"
-          alt="">
-      </button>
 
-      <button class="filter-button">
+      <button
+      class="filter-button"
+      type="button"
+      (click)="toggleDateRange()">
         <svg viewBox="0 0 24 24">
           <path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.1 0-2 .9-2 2v13c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2Zm0 15H5V9h14v10Z"/>
         </svg>
-        <span>Last 30 Days</span>
+        <span>{{ selectedDateRange }}</span>
       </button>
 
-      <button class="export-button">
+      <button
+        class="export-button"
+        type="button"
+        (click)="exportCsv()">
         <svg viewBox="0 0 24 24">
           <path d="M5 20h14v-2H5v2ZM19 9h-4V3H9v6H5l7 7 7-7Z"/>
         </svg>
@@ -39,13 +39,30 @@
       </div>
 
       <div class="card-value">
-        45,820 kg
+        {{ totalWasteCollected | number:'1.0-0' }} kg
       </div>
 
-      <div class="card-change positive">
-        <span>↑</span>
-        12.4% <span class="muted">since last week</span>
-      </div>
+        @if (selectedDateRange === 'All Time') {
+  <div class="card-change positive">
+    All recorded data
+  </div>
+} @else {
+  <div
+    class="card-change"
+    [class.positive]="totalWasteChangePercent >= 0"
+    [class.danger]="totalWasteChangePercent < 0">
+
+    <span>
+      {{ totalWasteChangePercent >= 0 ? '↑' : '↓' }}
+    </span>
+
+    {{ totalWasteChangePercent | number:'1.1-1' }}%
+
+    <span class="muted">
+    vs previous {{ selectedDateRange === 'Last 7 Days' ? '7 days' : '30 days' }}
+  </span>
+  </div>
+}
     </div>
 
     <div class="summary-card">
@@ -54,13 +71,30 @@
       </div>
 
       <div class="card-value">
-        1,527 kg
+        {{ averageDailyWaste | number:'1.0-0' }} kg
       </div>
 
-      <div class="card-change positive">
-        <span>↑</span>
-        3.2% <span class="muted">since last week</span>
-      </div>
+      @if (selectedDateRange === 'All Time') {
+  <div class="card-change positive">
+    All recorded data
+  </div>
+} @else {
+  <div
+    class="card-change"
+    [class.positive]="averageDailyWasteChangePercent >= 0"
+    [class.danger]="averageDailyWasteChangePercent < 0">
+
+    <span>
+      {{ averageDailyWasteChangePercent >= 0 ? '↑' : '↓' }}
+    </span>
+
+    {{ averageDailyWasteChangePercent | number:'1.1-1' }}%
+
+    <span class="muted">
+    vs previous {{ selectedDateRange === 'Last 7 Days' ? '7 days' : '30 days' }}
+  </span>
+  </div>
+}
     </div>
 
     <div class="summary-card">
@@ -68,12 +102,12 @@
         HIGHEST WASTE AREA
       </div>
 
-      <div class="card-value">
-        Joseville
+     <div class="card-value">
+        {{ highestWasteArea }}
       </div>
 
       <div class="card-change danger">
-        87,002 kg
+        {{ highestWasteAreaWeight | number:'1.0-0' }} kg
       </div>
     </div>
 
@@ -83,7 +117,7 @@
       </div>
 
       <div class="card-value">
-        5
+        {{ collectionAreas }}
       </div>
 
       <div class="card-change positive">
@@ -229,7 +263,7 @@
 
       @for (
         collection of filteredCollections;
-        track collection.date + collection.area + collection.weight
+        track collection.id
       ) {
         <div class="collection-row">
           <span>
@@ -245,14 +279,17 @@
           </span>
 
           <span class="weight">
-            {{ collection.weight }}
+            @if (collection.status === 'Completed') {
+              {{ collection.weight | number:'1.0-2' }} kg
+            } @else {
+              —
+            }
           </span>
 
           <span>
             <span
               class="status"
               [class.completed]="collection.status === 'Completed'"
-              [class.pending]="collection.status === 'Pending'"
               [class.failed]="collection.status === 'Failed'">
               {{ collection.status }}
             </span>
