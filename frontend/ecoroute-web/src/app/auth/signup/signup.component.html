@@ -185,8 +185,11 @@
         <div
           class="signup-error"
           *ngIf="errorMessage"
+          role="alert"
         >
-          {{ errorMessage }}
+          <span class="error-icon">!</span>
+
+          <span>{{ errorMessage }}</span>
         </div>
 
         <div

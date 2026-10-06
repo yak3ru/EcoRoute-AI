@@ -114,11 +114,13 @@
           </div>
         </div>
 
-        <div
+            <div
           class="login-error"
           *ngIf="errorMessage"
+          role="alert"
         >
-          {{ errorMessage }}
+          <span>!</span>
+          <p>{{ errorMessage }}</p>
         </div>
 
         <!-- LOGIN BUTTON -->

@@ -139,6 +139,9 @@ export class RoutePlanningComponent
 
   private map!: L.Map;
 
+  showAlertModal = false;
+  alertMessage = '';
+
   private baseTileLayer?: L.TileLayer;
 
   private routeLayerGroup!: L.LayerGroup;
@@ -719,12 +722,12 @@ saveAddTruck(): void {
   }
 
   if (!this.truckName.trim()) {
-    alert('Please enter a truck name.');
+    this.showAlert('Please enter a truck name.');
     return;
   }
 
   if (!this.truckCapacityKg || this.truckCapacityKg <= 0) {
-    alert('Please enter a valid truck capacity.');
+    this.showAlert('Please enter a valid truck capacity.');
     return;
   }
 
@@ -732,7 +735,7 @@ saveAddTruck(): void {
     !this.truckMaximumRouteDistanceKm ||
     this.truckMaximumRouteDistanceKm <= 0
   ) {
-    alert('Please enter a valid maximum route distance.');
+    this.showAlert('Please enter a valid maximum route distance.');
     return;
   }
 
@@ -740,7 +743,7 @@ saveAddTruck(): void {
     !this.truckCollectionStartTime ||
     !this.truckCollectionEndTime
   ) {
-    alert('Please enter the collection start and end time.');
+    this.showAlert('Please enter the collection start and end time.');
     return;
   }
 
@@ -748,7 +751,7 @@ saveAddTruck(): void {
     this.truckCollectionStartTime >=
     this.truckCollectionEndTime
   ) {
-    alert('Collection end time must be later than the start time.');
+    this.showAlert('Collection end time must be later than the start time.');
     return;
   }
 
@@ -779,7 +782,7 @@ saveAddTruck(): void {
 
           this.loadVehicles();
 
-          alert('Truck added successfully.');
+          this.showAlert('Truck added successfully.');
         },
 
         error: error => {
@@ -787,7 +790,7 @@ saveAddTruck(): void {
 
           this.isSavingTruck = false;
 
-          alert(
+          this.showAlert(
             error.error?.message ||
             'Failed to add truck. Please try again.'
           );
@@ -923,7 +926,7 @@ deleteTruck(): void {
 
           this.loadVehicles();
 
-          alert('Truck deleted successfully.');
+          this.showAlert('Truck deleted successfully.');
         },
 
         error: error => {
@@ -931,7 +934,7 @@ deleteTruck(): void {
 
           this.isSavingTruck = false;
 
-          alert(
+          this.showAlert(
             error.error?.message ||
             'Failed to delete truck. Please try again.'
           );
@@ -999,7 +1002,7 @@ startOperation(): void {
         console.error('Failed to start operation:', error);
         this.isStartingOperation = false;
         this.isLoadingRoutes = false;
-        alert(error.error?.message || 'Could not start the operation.');
+        this.showAlert(error.error?.message || 'Could not start the operation.');
       }
     })
   );
@@ -1029,7 +1032,7 @@ confirmCancelOperation(): void {
 
         this.showCancelConfirmation = false;
 
-        alert(
+        this.showAlert(
           error.error?.message ||
           'Could not cancel the operation.'
         );
@@ -1136,7 +1139,7 @@ confirmCancelTruck(): void {
             error
           );
 
-          alert(
+          this.showAlert(
             error.error?.message ||
             'Could not cancel this truck route. Please try again.'
           );
@@ -1202,7 +1205,7 @@ confirmFinishTruck(): void {
         error: error => {
           console.error('Failed to finish truck route:', error);
 
-          alert(
+          this.showAlert(
             error.error?.message ||
             'Could not finish this truck route. Please try again.'
           );
@@ -1520,7 +1523,7 @@ private loadAvailableOperationDates(): void {
         },
         error: error => {
           console.error('Failed to load operation dates:', error);
-          alert('Could not load operation history dates.');
+          this.showAlert('Could not load operation history dates.');
         }
       })
   );
@@ -1681,7 +1684,7 @@ private loadHistoricalRoutes(date: string): void {
           );
 
           this.isLoadingRoutes = false;
-          alert('Could not load routes for this date.');
+          this.showAlert('Could not load routes for this date.');
         }
       })
   );
@@ -1724,19 +1727,19 @@ private loadHistoricalRoutes(date: string): void {
                 next: () => {
                   this.isOptimizing = false;
                   console.log('Optimized routes saved successfully.');
-                  alert('Routes optimized and saved successfully.');
+                  this.showAlert('Routes optimized and saved successfully.');
                 },
                 error: error => {
                   this.isOptimizing = false;
                   console.error('Failed to save optimized routes:', error);
-                  alert('Routes were generated, but saving failed.');
+                  this.showAlert('Routes were generated, but saving failed.');
                 }
               });
           },
           error: error => {
             this.isOptimizing = false;
             console.error('Route optimization failed:', error);
-            alert(
+            this.showAlert(
               'Route optimization failed. Please check that the backend and ML service are running.'
             );
           }
@@ -1812,11 +1815,11 @@ private loadHistoricalRoutes(date: string): void {
             this.loadRoadGeometry();
 
             if (response.alternative_route_found === false) {
-              alert(
+              this.showAlert(
                 'No alternative route was found for this truck. The current route is still displayed.'
               );
             } else {
-              alert(
+              this.showAlert(
                 'Reroute result loaded using the current P90 predictions, static road distances, and routing constraints.'
               );
             }
@@ -1831,7 +1834,7 @@ private loadHistoricalRoutes(date: string): void {
 
             this.isOptimizing = false;
 
-            alert(
+            this.showAlert(
               'Route recalculation failed. Please make sure the ML service and backend are running.'
             );
           }
@@ -1844,7 +1847,7 @@ private loadHistoricalRoutes(date: string): void {
     const route = this.selectedRoute;
 
     if (!route || !this.currentRouteResponse) {
-      alert('There is no route plan to save. Please optimize routes first.');
+      this.showAlert('There is no route plan to save. Please optimize routes first.');
       return;
     }
 
@@ -1856,7 +1859,7 @@ private loadHistoricalRoutes(date: string): void {
         )
         .subscribe({
           next: () => {
-            alert(
+            this.showAlert(
               `Route ${route.id} changes saved successfully.\n\n` +
               `Vehicle: ${route.vehicle}\n` +
               `Load: ${route.wasteLoad}\n` +
@@ -1865,7 +1868,7 @@ private loadHistoricalRoutes(date: string): void {
           },
           error: error => {
             console.error('Failed to save route plan:', error);
-            alert(
+            this.showAlert(
               'Could not save the route plan. Please check the backend and try again.'
             );
           }
@@ -2285,5 +2288,15 @@ private addBaseTiles(): void {
           })
       );
     });
+  }
+
+  showAlert(message: string): void {
+  this.alertMessage = message;
+  this.showAlertModal = true;
+  }
+
+  closeAlert(): void {
+    this.showAlertModal = false;
+    this.alertMessage = '';
   }
 }
