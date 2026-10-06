@@ -264,4 +264,28 @@ app.UseAuthorization();
 
 app.MapControllers();
 
+app.UseCors("AngularClient");
+
+app.UseRateLimiter();
+app.UseAuthentication();
+app.UseAuthorization();
+
+app.Use(async (context, next) =>
+{
+    try
+    {
+        await next();
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine("UNHANDLED ERROR:");
+        Console.WriteLine(ex.ToString());
+        throw;
+    }
+});
+
+app.MapControllers();
+
+app.Run();
+
 app.Run();
