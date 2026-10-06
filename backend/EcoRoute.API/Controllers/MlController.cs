@@ -747,7 +747,9 @@ public async Task<IActionResult> GetOperationStatus(string date)
         .FirstOrDefaultAsync();
 
     if (operation == null)
-        return NotFound(new { message = "No operation exists for this date." });
+{
+    return Ok(new { status = "None" });
+}
 
     return Ok(new { status = operation.Status });
 }
