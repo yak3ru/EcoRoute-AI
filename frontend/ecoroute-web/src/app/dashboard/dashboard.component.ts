@@ -26,7 +26,7 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
   private dashboardRoutes: any[] = [];
 
   private readonly areasApiUrl =
-    'http://localhost:5276/api/areas';
+    'https://ecoroute-api.runasp.net/api/areas';
 
   private readonly routeColors = [
     '#0a8f3d',
@@ -79,7 +79,7 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
   }[] = [];
 
   private readonly mlApiUrl =
-    'http://localhost:5276/api/ml';
+    'https://ecoroute-api.runasp.net/api/ml';
 
   private readonly wasteApiUrl =
     'http://localhost:5276/api/Waste';

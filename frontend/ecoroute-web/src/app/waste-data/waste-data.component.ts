@@ -97,7 +97,7 @@ export class WasteDataComponent implements OnInit {
 
   this.http
     .get<any[]>(
-      'http://localhost:5276/api/Waste',
+      'https://ecoroute-api.runasp.net/api/Waste',
       { params }
     )
     .subscribe({
@@ -150,7 +150,7 @@ export class WasteDataComponent implements OnInit {
 
   this.http
     .get<any[]>(
-      'http://localhost:5276/api/Waste/area-parameters',
+      'https://ecoroute-api.runasp.net/api/Waste/area-parameters',
       { params }
     )
     .subscribe({

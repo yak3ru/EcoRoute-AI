@@ -30,7 +30,7 @@ export class SignupComponent {
   errorMessage = '';
   successMessage = '';
 
-  private readonly apiUrl = 'http://localhost:5276/api';
+  private readonly apiUrl = 'https://ecoroute-api.runasp.net/api';
 
   constructor(
     private router: Router,

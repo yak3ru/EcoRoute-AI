@@ -5,7 +5,7 @@ import { Injectable } from '@angular/core';
 })
 export class ApiService {
 
-  private readonly baseUrl = 'http://localhost:5276/api';
+  private readonly baseUrl = 'https://ecoroute-api.runasp.net/api';
 
   getBaseUrl(): string {
     return this.baseUrl;

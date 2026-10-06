@@ -41,7 +41,7 @@ export class MlService {
 
   private http = inject(HttpClient);
 
-  private apiUrl = 'http://localhost:5276/api/ml';
+  private apiUrl = 'https://ecoroute-api.runasp.net/api/ml';
 
   getP90Routes(): Observable<MlRoutesResponse> {
     return this.http.get<MlRoutesResponse>(
@@ -59,7 +59,7 @@ export class MlService {
     coordinates: string
     ) {
     return this.http.get<any>(
-        `http://localhost:5276/api/map/route`,
+        `https://ecoroute-api.runasp.net/api/map/route`,
         {
         params: {
             coordinates

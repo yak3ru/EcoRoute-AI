@@ -20,7 +20,7 @@ export class ForgotPasswordComponent implements OnDestroy {
   resendCooldown = 0;
 
   private cooldownTimer?: ReturnType<typeof setInterval>;
-  private readonly apiUrl = 'http://localhost:5276/api';
+  private readonly apiUrl = 'https://ecoroute-api.runasp.net/api';
 
   constructor(
     private http: HttpClient

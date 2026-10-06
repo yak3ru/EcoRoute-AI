@@ -36,7 +36,7 @@ export class ResetPasswordComponent implements OnInit {
   errorMessage = '';
   successMessage = '';
 
-  private readonly apiUrl = 'http://localhost:5276/api';
+  private readonly apiUrl = 'https://ecoroute-api.runasp.net/api';
 
   constructor(
     private route: ActivatedRoute,

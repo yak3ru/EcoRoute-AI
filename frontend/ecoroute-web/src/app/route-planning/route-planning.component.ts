@@ -132,8 +132,8 @@ export class RoutePlanningComponent
 
   private http = inject(HttpClient);
 
-  private readonly mlApiUrl = 'http://localhost:5276/api/ml';
-  private readonly areasApiUrl = 'http://localhost:5276/api/areas';
+  private readonly mlApiUrl = 'https://ecoroute-api.runasp.net/api/ml';
+  private readonly areasApiUrl = 'https://ecoroute-api.runasp.net/api/areas';
 
   private subscriptions = new Subscription();
 
