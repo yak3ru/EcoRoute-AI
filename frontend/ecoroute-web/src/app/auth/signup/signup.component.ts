@@ -1,3 +1,4 @@
+import { environment } from '../../../environments/environment';
 import { Component } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -30,7 +31,7 @@ export class SignupComponent {
   errorMessage = '';
   successMessage = '';
 
-  private readonly apiUrl = 'http://localhost:5276/api';
+  private readonly apiUrl = `${environment.apiUrl}`;
 
   constructor(
     private router: Router,

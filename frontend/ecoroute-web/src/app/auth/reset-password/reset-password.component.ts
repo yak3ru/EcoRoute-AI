@@ -1,3 +1,4 @@
+import { environment } from '../../../environments/environment';
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -36,7 +37,7 @@ export class ResetPasswordComponent implements OnInit {
   errorMessage = '';
   successMessage = '';
 
-  private readonly apiUrl = 'http://localhost:5276/api';
+  private readonly apiUrl = `${environment.apiUrl}`;
 
   constructor(
     private route: ActivatedRoute,

@@ -1,3 +1,4 @@
+import { environment } from '../../environments/environment';
 import { Component, OnInit } from '@angular/core';
 import { HttpParams } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
@@ -97,7 +98,7 @@ export class WasteDataComponent implements OnInit {
 
   this.http
     .get<any[]>(
-      'http://localhost:5276/api/Waste',
+      `${environment.apiUrl}/Waste`,
       { params }
     )
     .subscribe({
@@ -150,7 +151,7 @@ export class WasteDataComponent implements OnInit {
 
   this.http
     .get<any[]>(
-      'http://localhost:5276/api/Waste/area-parameters',
+      `${environment.apiUrl}/Waste/area-parameters`,
       { params }
     )
     .subscribe({
@@ -187,7 +188,7 @@ loadWasteSummary(): void {
 
   this.http
     .get<any>(
-      'http://localhost:5276/api/Waste/summary',
+      `${environment.apiUrl}/Waste/summary`,
       { params }
     )
     .subscribe({
@@ -236,7 +237,7 @@ loadAreaWasteSummary(): void {
 
   this.http
     .get<any[]>(
-      'http://localhost:5276/api/Waste/area-summary',
+      `${environment.apiUrl}/Waste/area-summary`,
       { params }
     )
     .subscribe({

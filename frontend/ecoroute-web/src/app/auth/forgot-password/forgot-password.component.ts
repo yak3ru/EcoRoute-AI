@@ -1,3 +1,4 @@
+import { environment } from '../../../environments/environment';
 import { Component, OnDestroy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -20,7 +21,7 @@ export class ForgotPasswordComponent implements OnDestroy {
   resendCooldown = 0;
 
   private cooldownTimer?: ReturnType<typeof setInterval>;
-  private readonly apiUrl = 'http://localhost:5276/api';
+  private readonly apiUrl = `${environment.apiUrl}`;
 
   constructor(
     private http: HttpClient

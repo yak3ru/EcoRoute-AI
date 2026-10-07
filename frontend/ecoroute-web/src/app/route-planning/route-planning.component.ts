@@ -1,3 +1,4 @@
+import { environment } from '../../environments/environment';
 import {
   AfterViewInit,
   Component,
@@ -132,8 +133,9 @@ export class RoutePlanningComponent
 
   private http = inject(HttpClient);
 
-  private readonly mlApiUrl = 'http://localhost:5276/api/ml';
-  private readonly areasApiUrl = 'http://localhost:5276/api/areas';
+  private readonly mlApiUrl =
+  `${environment.apiUrl}/ml`;
+  private readonly areasApiUrl = `${environment.apiUrl}/areas`;
 
   private subscriptions = new Subscription();
 
@@ -388,7 +390,7 @@ isSavingTruck = false;
 
   this.subscriptions.add(
     this.http.get<{ operationDate: string; uploaded: boolean }>(
-      `http://localhost:5276/api/Waste/report-upload-status`,
+      `${environment.apiUrl}/Waste/report-upload-status`,
       {
         params: { operationDate: date }
       }
@@ -772,7 +774,7 @@ saveAddTruck(): void {
   this.subscriptions.add(
     this.http
       .post(
-        'http://localhost:5276/api/Vehicles/with-constraints',
+        `${environment.apiUrl}/Vehicles/with-constraints`,
         request
       )
       .subscribe({
@@ -876,7 +878,7 @@ saveEditTruck(): void {
   this.subscriptions.add(
     this.http
       .put(
-        `http://localhost:5276/api/Vehicles/${this.selectedVehicle.vehicleId}/with-constraints`,
+        `${environment.apiUrl}/Vehicles/${this.selectedVehicle.vehicleId}/with-constraints`,
         request
       )
       .subscribe({
@@ -916,7 +918,7 @@ deleteTruck(): void {
   this.subscriptions.add(
     this.http
       .delete(
-        `http://localhost:5276/api/Vehicles/${this.selectedVehicle.vehicleId}`
+        `${environment.apiUrl}/Vehicles/${this.selectedVehicle.vehicleId}`
       )
       .subscribe({
         next: () => {
@@ -946,7 +948,7 @@ deleteTruck(): void {
 private loadVehicles(): void {
   this.subscriptions.add(
     this.http
-      .get<Vehicle[]>('http://localhost:5276/api/Vehicles')
+      .get<Vehicle[]>(`${environment.apiUrl}/Vehicles`)
       .subscribe({
         next: vehicles => {
           this.vehicles = vehicles;
@@ -1407,7 +1409,7 @@ const result = await firstValueFrom(
     message: string;
     importedCount: number;
   }>(
-    `http://localhost:5276/api/Waste/import?operationDate=${operationDate}`,
+    `${environment.apiUrl}/Waste/import?operationDate=${operationDate}`,
     records
   )
 );

@@ -1,3 +1,4 @@
+import { environment } from '../../../environments/environment';
 import { Injectable } from '@angular/core';
 
 @Injectable({
@@ -5,7 +6,7 @@ import { Injectable } from '@angular/core';
 })
 export class ApiService {
 
-  private readonly baseUrl = 'http://localhost:5276/api';
+  private readonly baseUrl = environment.apiUrl;
 
   getBaseUrl(): string {
     return this.baseUrl;

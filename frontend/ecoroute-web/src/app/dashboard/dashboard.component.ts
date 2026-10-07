@@ -1,3 +1,4 @@
+import { environment } from '../../environments/environment';
 import {
   AfterViewInit,
   Component,
@@ -26,7 +27,7 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
   private dashboardRoutes: any[] = [];
 
   private readonly areasApiUrl =
-    'http://localhost:5276/api/areas';
+    `${environment.apiUrl}/areas`;
 
   private readonly routeColors = [
     '#0a8f3d',
@@ -79,10 +80,10 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
   }[] = [];
 
   private readonly mlApiUrl =
-    'http://localhost:5276/api/ml';
+    `${environment.apiUrl}/ml`;
 
   private readonly wasteApiUrl =
-    'http://localhost:5276/api/Waste';
+    `${environment.apiUrl}/Waste`;
 
   private http = inject(HttpClient);
 
