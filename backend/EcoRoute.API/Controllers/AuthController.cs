@@ -635,8 +635,18 @@ public class AuthController : ControllerBase
         // BUILD RESET URL
 
         var frontendUrl =
-            _configuration["FrontendUrl"]
-            ?? "http://localhost:4200";
+            _configuration["FrontendUrl"];
+
+        if (string.IsNullOrWhiteSpace(frontendUrl))
+        {
+            return StatusCode(
+                500,
+                new
+                {
+                    message = "FrontendUrl is not configured."
+                }
+            );
+        }
 
         var encodedToken =
             Uri.EscapeDataString(resetToken);

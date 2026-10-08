@@ -7,10 +7,14 @@ namespace EcoRoute.API.Controllers;
 public class MapController : ControllerBase
 {
     private readonly HttpClient _httpClient;
+    private readonly IConfiguration _configuration;
 
-    public MapController(IHttpClientFactory httpClientFactory)
+    public MapController(
+        IHttpClientFactory httpClientFactory,
+        IConfiguration configuration)
     {
         _httpClient = httpClientFactory.CreateClient();
+        _configuration = configuration;
 
         _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd(
             "EcoRouteAI/1.0"
@@ -31,8 +35,22 @@ public class MapController : ControllerBase
             );
         }
 
+        var osrmBaseUrl =
+            _configuration["Routing:OsrmBaseUrl"];
+
+        if (string.IsNullOrWhiteSpace(osrmBaseUrl))
+        {
+            return StatusCode(
+                500,
+                new
+                {
+                    message = "Routing:OsrmBaseUrl is not configured."
+                }
+            );
+        }
+
         var url =
-            "http://router.project-osrm.org/route/v1/driving/" +
+            $"{osrmBaseUrl}/route/v1/driving/" +
             $"{coordinates}" +
             "?overview=full&geometries=geojson";
 
