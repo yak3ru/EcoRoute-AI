@@ -108,9 +108,6 @@ public class EcoRouteDbContext : DbContext
                 .HasMaxLength(100)
                 .IsRequired();
 
-            entity.HasIndex(v => new { v.UserId, v.VehicleName })
-                .IsUnique();
-
             entity.Property(v => v.CapacityKg)
                 .HasColumnName("CapacityKg")
                 .HasPrecision(10, 2);
@@ -192,7 +189,7 @@ public class EcoRouteDbContext : DbContext
             entity.HasOne(r => r.Vehicle)
                 .WithMany()
                 .HasForeignKey(r => r.VehicleId)
-                .OnDelete(DeleteBehavior.Restrict);
+                .OnDelete(DeleteBehavior.Cascade);
 
             entity.HasIndex(r => r.VehicleId)
                 .IsUnique();

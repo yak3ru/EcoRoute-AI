@@ -263,6 +263,20 @@ public async Task<IActionResult> StartOperation()
 
     var operationDate = GetPhilippineOperationDate();
 
+    var availableVehicleCount = await _context.Vehicles
+    .CountAsync(vehicle =>
+        vehicle.UserId == userId &&
+        vehicle.IsActive &&
+        vehicle.Status == "Available");
+
+if (availableVehicleCount == 0)
+{
+    return BadRequest(new
+    {
+        message = "No available trucks are currently configured. Add or enable at least one available truck before starting an operation."
+    });
+}
+
     var existing = await _context.OperationHistories
         .Where(item =>
             item.UserId == userId &&

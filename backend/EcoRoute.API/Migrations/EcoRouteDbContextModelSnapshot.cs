@@ -146,6 +146,25 @@ namespace EcoRoute.API.Migrations
                     b.ToTable("operation_history", (string)null);
                 });
 
+            modelBuilder.Entity("EcoRoute.API.Models.OperationReportUpload", b =>
+                {
+                    b.Property<int>("UserId")
+                        .HasColumnType("int")
+                        .HasColumnName("UserId");
+
+                    b.Property<DateTime>("OperationDate")
+                        .HasColumnType("date")
+                        .HasColumnName("OperationDate");
+
+                    b.Property<DateTime>("UploadedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("UploadedAt");
+
+                    b.HasKey("UserId", "OperationDate");
+
+                    b.ToTable("operation_report_uploads", (string)null);
+                });
+
             modelBuilder.Entity("EcoRoute.API.Models.RoutingConstraint", b =>
                 {
                     b.Property<int>("ConstraintId")
@@ -523,8 +542,7 @@ namespace EcoRoute.API.Migrations
 
                     b.HasKey("VehicleId");
 
-                    b.HasIndex("UserId", "VehicleName")
-                        .IsUnique();
+                    b.HasIndex("UserId");
 
                     b.ToTable("vehicles", (string)null);
                 });
@@ -616,7 +634,7 @@ namespace EcoRoute.API.Migrations
                     b.HasOne("EcoRoute.API.Models.Vehicle", "Vehicle")
                         .WithMany()
                         .HasForeignKey("VehicleId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Vehicle");

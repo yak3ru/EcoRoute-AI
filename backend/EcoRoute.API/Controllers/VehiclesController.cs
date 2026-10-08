@@ -326,11 +326,9 @@ public async Task<IActionResult> UpdateVehicleWithConstraints(
             });
         }
 
-        vehicle.IsActive = false;
-        vehicle.Status = "Inactive";
+       _context.Vehicles.Remove(vehicle);
 
         await _context.SaveChangesAsync();
-
         return Ok(new
         {
             message = "Vehicle deleted successfully."

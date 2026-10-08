@@ -423,6 +423,11 @@ def optimize_routes(user_id: int, use_p90=False):
 
     constraints = load_constraints(user_id=user_id)
 
+    if vehicles.empty:
+        raise ValueError(
+            "No available vehicles are configured for this user."
+        )
+
     distances = load_distance_matrix(user_id=user_id)
 
     distance_lookup = create_distance_lookup(
