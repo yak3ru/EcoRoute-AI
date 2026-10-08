@@ -18,6 +18,12 @@ load_dotenv(BASE_DIR / ".env")
 
 
 DB_HOST = os.getenv("DB_HOST", "localhost")
+OSRM_BASE_URL = os.getenv("OSRM_BASE_URL")
+
+if not OSRM_BASE_URL:
+    raise RuntimeError("OSRM_BASE_URL is not configured.")
+
+OSRM_BASE_URL = OSRM_BASE_URL.rstrip("/")
 DB_PORT = int(os.getenv("DB_PORT", "3306"))
 DB_NAME = os.getenv("DB_NAME")
 DB_USER = os.getenv("DB_USER")
@@ -137,7 +143,7 @@ encoded_coordinates = quote(
 )
 
 url = (
-    "http://router.project-osrm.org/"
+    f"{OSRM_BASE_URL}/"
     "table/v1/driving/"
     f"{encoded_coordinates}"
     "?annotations=distance,duration"
@@ -284,7 +290,7 @@ encoded_srp_coordinates = quote(
 )
 
 srp_url = (
-    "http://router.project-osrm.org/"
+    f"{OSRM_BASE_URL}/"
     "table/v1/driving/"
     f"{encoded_srp_coordinates}"
     "?annotations=distance,duration"
