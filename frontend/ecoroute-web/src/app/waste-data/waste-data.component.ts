@@ -1,9 +1,11 @@
 import { environment } from '../../environments/environment';
+
 import { Component, OnInit } from '@angular/core';
 import { HttpParams } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
+
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { HttpClient } from '@angular/common/http';
 
 @Component({
   selector: 'app-waste-data',
@@ -12,7 +14,9 @@ import { HttpClient } from '@angular/common/http';
   templateUrl: './waste-data.component.html',
   styleUrl: './waste-data.component.scss'
 })
-export class WasteDataComponent implements OnInit { 
+export class WasteDataComponent implements OnInit {
+
+  // SUMMARY DATA
 
   totalWasteCollected = 0;
   averageDailyWaste = 0;
@@ -22,6 +26,8 @@ export class WasteDataComponent implements OnInit {
   totalWasteChangePercent = 0;
   averageDailyWasteChangePercent = 0;
 
+  // DATE RANGE
+
   dateRangeOptions = [
     'Last 30 Days',
     'Last 7 Days',
@@ -30,7 +36,7 @@ export class WasteDataComponent implements OnInit {
 
   selectedDateRange = 'Last 30 Days';
 
-  constructor(private http: HttpClient) {}
+  // WASTE AREA DATA
 
   wasteAreas: {
     name: string;
@@ -51,12 +57,16 @@ export class WasteDataComponent implements OnInit {
     '#06b6d4'
   ];
 
+  // AREA PARAMETERS
+
   areaParameters: {
     area: string;
     density: string;
     activity: string;
     frequency: string;
   }[] = [];
+
+  // RECENT COLLECTIONS
 
   recentCollections: {
     id: number;
@@ -70,12 +80,47 @@ export class WasteDataComponent implements OnInit {
   searchTerm = '';
   wasteTypeFilter = 'All';
 
+  // CONSTRUCTOR
+
+  constructor(private http: HttpClient) {}
+
+  // GETTERS
+
+  // Returns the highest waste value among all collection areas.
   get maxWaste(): number {
     return Math.max(
-      ...this.wasteAreas.map(area => area.value)
+      ...this.wasteAreas.map(
+        area => area.value
+      )
     );
   }
 
+  // Returns the collections filtered by search term and waste type.
+  get filteredCollections() {
+    const search =
+      this.searchTerm
+        .toLowerCase()
+        .trim();
+
+    return this.recentCollections.filter(
+      collection => {
+        const areaMatch =
+          collection.area
+            .toLowerCase()
+            .includes(search);
+
+        const typeMatch =
+          this.wasteTypeFilter === 'All' ||
+          collection.type === this.wasteTypeFilter;
+
+        return areaMatch && typeMatch;
+      }
+    );
+  }
+
+  // LIFECYCLE
+
+  // Loads the waste data when the component initializes.
   ngOnInit(): void {
     this.loadWasteSummary();
     this.loadAreaWasteSummary();
@@ -83,313 +128,395 @@ export class WasteDataComponent implements OnInit {
     this.loadRecentCollections();
   }
 
+  // DATA LOADING
+
+  // Loads the recent waste collection records based on the selected date range.
   loadRecentCollections(): void {
-  const range = this.getDateRange();
+    const range =
+      this.getDateRange();
 
-  let params = new HttpParams();
+    let params =
+      new HttpParams();
 
-  if (range.startDate) {
-    params = params.set('startDate', range.startDate);
+    if (range.startDate) {
+      params = params.set(
+        'startDate',
+        range.startDate
+      );
+    }
+
+    if (range.endDate) {
+      params = params.set(
+        'endDate',
+        range.endDate
+      );
+    }
+
+    this.http
+      .get<any[]>(
+        `${environment.apiUrl}/Waste`,
+        { params }
+      )
+      .subscribe({
+        next: data => {
+          this.recentCollections =
+            data.map(record => ({
+              id: record.wasteRecordId,
+
+              date: new Date(
+                record.collectionDate
+              ).toLocaleDateString(
+                'en-US',
+                {
+                  month: 'short',
+                  day: 'numeric',
+                  year: 'numeric'
+                }
+              ),
+
+              area: record.areaName,
+              type: record.wasteType,
+              weight: record.weightKg,
+              status: record.status
+            }));
+        },
+
+        error: error => {
+          console.error(
+            'Failed to load recent waste collections:',
+            error
+          );
+        }
+      });
   }
 
-  if (range.endDate) {
-    params = params.set('endDate', range.endDate);
-  }
-
-  this.http
-    .get<any[]>(
-      `${environment.apiUrl}/Waste`,
-      { params }
-    )
-    .subscribe({
-      next: (data) => {
-        this.recentCollections =
-          data.map(record => ({
-            id: record.wasteRecordId,
-
-            date: new Date(
-              record.collectionDate
-            ).toLocaleDateString(
-              'en-US',
-              {
-                month: 'short',
-                day: 'numeric',
-                year: 'numeric'
-              }
-            ),
-
-            area: record.areaName,
-
-            type: record.wasteType,
-
-            weight: record.weightKg,
-
-            status: record.status
-          }));
-      },
-      error: (error) => {
-        console.error(
-          'Failed to load recent waste collections:',
-          error
-        );
-      }
-    });
-}
-
+  // Loads the waste collection parameters for each area.
   loadAreaParameters(): void {
-  const range = this.getDateRange();
+    const range =
+      this.getDateRange();
 
-  let params = new HttpParams();
+    let params =
+      new HttpParams();
 
-  if (range.startDate) {
-    params = params.set('startDate', range.startDate);
+    if (range.startDate) {
+      params = params.set(
+        'startDate',
+        range.startDate
+      );
+    }
+
+    if (range.endDate) {
+      params = params.set(
+        'endDate',
+        range.endDate
+      );
+    }
+
+    this.http
+      .get<any[]>(
+        `${environment.apiUrl}/Waste/area-parameters`,
+        { params }
+      )
+      .subscribe({
+        next: data => {
+          this.areaParameters =
+            data.map(parameter => ({
+              area: parameter.area,
+              density: parameter.density,
+              activity: parameter.activity,
+              frequency: parameter.frequency
+            }));
+        },
+
+        error: error => {
+          console.error(
+            'Failed to load area parameters:',
+            error
+          );
+        }
+      });
   }
 
-  if (range.endDate) {
-    params = params.set('endDate', range.endDate);
+  // Loads the overall waste collection summary.
+  loadWasteSummary(): void {
+    const range =
+      this.getDateRange();
+
+    let params =
+      new HttpParams();
+
+    if (range.startDate) {
+      params = params.set(
+        'startDate',
+        range.startDate
+      );
+    }
+
+    if (range.endDate) {
+      params = params.set(
+        'endDate',
+        range.endDate
+      );
+    }
+
+    this.http
+      .get<any>(
+        `${environment.apiUrl}/Waste/summary`,
+        { params }
+      )
+      .subscribe({
+        next: data => {
+          this.totalWasteCollected =
+            data.totalWasteCollected;
+
+          this.averageDailyWaste =
+            data.averageDailyWaste;
+
+          this.totalWasteChangePercent =
+            data.totalWasteChangePercent;
+
+          this.averageDailyWasteChangePercent =
+            data.averageDailyWasteChangePercent;
+
+          this.highestWasteArea =
+            data.highestWasteArea;
+
+          this.highestWasteAreaWeight =
+            data.highestWasteAreaWeight;
+
+          this.collectionAreas =
+            data.collectionAreas;
+        },
+
+        error: error => {
+          console.error(
+            'Failed to load waste summary:',
+            error
+          );
+        }
+      });
   }
 
-  this.http
-    .get<any[]>(
-      `${environment.apiUrl}/Waste/area-parameters`,
-      { params }
-    )
-    .subscribe({
-      next: (data) => {
-        this.areaParameters =
-          data.map(parameter => ({
-            area: parameter.area,
-            density: parameter.density,
-            activity: parameter.activity,
-            frequency: parameter.frequency
-          }));
-      },
-      error: (error) => {
-        console.error(
-          'Failed to load area parameters:',
-          error
-        );
-      }
-    });
-}
+  // Loads the total waste collected by area.
+  loadAreaWasteSummary(): void {
+    const range =
+      this.getDateRange();
 
-loadWasteSummary(): void {
-  const range = this.getDateRange();
+    let params =
+      new HttpParams();
 
-  let params = new HttpParams();
+    if (
+      this.selectedDateRange ===
+      'All Time'
+    ) {
+      params = params.set(
+        'allTime',
+        'true'
+      );
+    } else {
+      params = params.set(
+        'startDate',
+        range.startDate!
+      );
 
-  if (range.startDate) {
-    params = params.set('startDate', range.startDate);
+      params = params.set(
+        'endDate',
+        range.endDate!
+      );
+    }
+
+    this.http
+      .get<any[]>(
+        `${environment.apiUrl}/Waste/area-summary`,
+        { params }
+      )
+      .subscribe({
+        next: data => {
+          this.wasteAreas =
+            data.map(
+              (area, index) => ({
+                name: area.areaName,
+                value: area.totalWaste,
+
+                color:
+                  this.wasteAreaColors[
+                    index %
+                    this.wasteAreaColors.length
+                  ]
+              })
+            );
+        },
+
+        error: error => {
+          console.error(
+            'Failed to load area waste summary:',
+            error
+          );
+        }
+      });
   }
 
-  if (range.endDate) {
-    params = params.set('endDate', range.endDate);
+  // DISPLAY HELPERS
+
+  // Calculates the percentage width of an area bar based on the maximum waste value.
+  getBarWidth(
+    value: number
+  ): number {
+    return (
+      value /
+      this.maxWaste
+    ) * 100;
   }
 
-  this.http
-    .get<any>(
-      `${environment.apiUrl}/Waste/summary`,
-      { params }
-    )
-    .subscribe({
-      next: (data) => {
-        this.totalWasteCollected =
-          data.totalWasteCollected;
+  // Calculates the selected date range for API requests.
+  getDateRange(): {
+    startDate: string | null;
+    endDate: string | null;
+  } {
+    const endDate =
+      new Date();
 
-        this.averageDailyWaste =
-          data.averageDailyWaste;
+    if (
+      this.selectedDateRange ===
+      'All Time'
+    ) {
+      return {
+        startDate: null,
+        endDate: null
+      };
+    }
 
-        this.totalWasteChangePercent =
-          data.totalWasteChangePercent;
+    const days =
+      this.selectedDateRange ===
+      'Last 7 Days'
+        ? 6
+        : 29;
 
-        this.averageDailyWasteChangePercent =
-          data.averageDailyWasteChangePercent;
+    const startDate =
+      new Date(endDate);
 
-        this.highestWasteArea =
-          data.highestWasteArea;
+    startDate.setDate(
+      endDate.getDate() -
+      days
+    );
 
-        this.highestWasteAreaWeight =
-          data.highestWasteAreaWeight;
+    const formatDate =
+      (date: Date): string => {
+        return date
+          .toISOString()
+          .split('T')[0];
+      };
 
-        this.collectionAreas =
-          data.collectionAreas;
-      },
-      error: (error) => {
-        console.error(
-          'Failed to load waste summary:',
-          error
-        );
-      }
-    });
-}
-
-loadAreaWasteSummary(): void {
-  const range = this.getDateRange();
-
-  let params = new HttpParams();
-
-  if (this.selectedDateRange === 'All Time') {
-    params = params.set('allTime', 'true');
-  } else {
-    params = params.set('startDate', range.startDate!);
-    params = params.set('endDate', range.endDate!);
-  }
-
-  this.http
-    .get<any[]>(
-      `${environment.apiUrl}/Waste/area-summary`,
-      { params }
-    )
-    .subscribe({
-      next: (data) => {
-        this.wasteAreas = data.map(
-          (area, index) => ({
-            name: area.areaName,
-            value: area.totalWaste,
-            color:
-              this.wasteAreaColors[
-                index %
-                this.wasteAreaColors.length
-              ]
-          })
-        );
-      },
-      error: (error) => {
-        console.error(
-          'Failed to load area waste summary:',
-          error
-        );
-      }
-    });
-}
-
-  getBarWidth(value: number): number {
-    return (value / this.maxWaste) * 100;
-  }
-
-  get filteredCollections() {
-    const search = this.searchTerm
-      .toLowerCase()
-      .trim();
-
-    return this.recentCollections.filter(collection => {
-      const areaMatch =
-        collection.area
-          .toLowerCase()
-          .includes(search);
-
-      const typeMatch =
-        this.wasteTypeFilter === 'All' ||
-        collection.type === this.wasteTypeFilter;
-
-      return areaMatch && typeMatch;
-    });
-  }
-
-  toggleDateRange(): void {
-  const currentIndex =
-    this.dateRangeOptions.indexOf(this.selectedDateRange);
-
-  const nextIndex =
-    (currentIndex + 1) % this.dateRangeOptions.length;
-
-  this.selectedDateRange =
-    this.dateRangeOptions[nextIndex];
-
-  this.loadWasteSummary();
-  this.loadAreaWasteSummary();
-  this.loadAreaParameters();
-  this.loadRecentCollections();
-}
-
-getDateRange(): {
-  startDate: string | null;
-  endDate: string | null;
-} {
-  const endDate = new Date();
-
-  if (this.selectedDateRange === 'All Time') {
     return {
-      startDate: null,
-      endDate: null
+      startDate:
+        formatDate(startDate),
+
+      endDate:
+        formatDate(endDate)
     };
   }
 
-  const days =
-    this.selectedDateRange === 'Last 7 Days'
-      ? 6
-      : 29;
+  // DATE RANGE
 
-  const startDate = new Date(endDate);
+  // Cycles through the available date range options and reloads the data.
+  toggleDateRange(): void {
+    const currentIndex =
+      this.dateRangeOptions.indexOf(
+        this.selectedDateRange
+      );
 
-  startDate.setDate(
-    endDate.getDate() - days
-  );
+    const nextIndex =
+      (currentIndex + 1) %
+      this.dateRangeOptions.length;
 
-  const formatDate = (date: Date): string => {
-    return date.toISOString().split('T')[0];
-  };
+    this.selectedDateRange =
+      this.dateRangeOptions[
+        nextIndex
+      ];
 
-  return {
-    startDate: formatDate(startDate),
-    endDate: formatDate(endDate)
-  };
-}
-
-exportCsv(): void {
-  if (this.recentCollections.length === 0) {
-    return;
+    this.loadWasteSummary();
+    this.loadAreaWasteSummary();
+    this.loadAreaParameters();
+    this.loadRecentCollections();
   }
 
-  const headers = [
-    'Date',
-    'Collection Area',
-    'Waste Type',
-    'Weight (kg)',
-    'Status'
-  ];
+  // CSV EXPORT
 
-  const rows = this.recentCollections.map(collection => [
-    collection.date,
-    collection.area,
-    collection.type,
-    collection.status === 'Completed'
-      ? collection.weight
-      : '',
-    collection.status
-  ]);
+  // Exports the currently loaded waste collection records as a CSV file.
+  exportCsv(): void {
+    if (
+      this.recentCollections.length ===
+      0
+    ) {
+      return;
+    }
 
-  const csvContent = [
-    headers,
-    ...rows
-  ]
-    .map(row =>
-      row
-        .map(value =>
-          `"${String(value).replace(/"/g, '""')}"`
-        )
-        .join(',')
-    )
-    .join('\n');
+    const headers = [
+      'Date',
+      'Collection Area',
+      'Waste Type',
+      'Weight (kg)',
+      'Status'
+    ];
 
-  const blob = new Blob(
-    [csvContent],
-    { type: 'text/csv;charset=utf-8;' }
-  );
+    const rows =
+      this.recentCollections.map(
+        collection => [
+          collection.date,
+          collection.area,
+          collection.type,
 
-  const url = URL.createObjectURL(blob);
+          collection.status ===
+          'Completed'
+            ? collection.weight
+            : '',
 
-  const link = document.createElement('a');
+          collection.status
+        ]
+      );
 
-  link.href = url;
+    const csvContent = [
+      headers,
+      ...rows
+    ]
+      .map(
+        row =>
+          row
+            .map(
+              value =>
+                `"${String(value).replace(
+                  /"/g,
+                  '""'
+                )}"`
+            )
+            .join(',')
+      )
+      .join('\n');
 
-  link.download =
-    `ecoroute-waste-data-${this.selectedDateRange
-      .toLowerCase()
-      .replace(/ /g, '-')}.csv`;
+    const blob =
+      new Blob(
+        [csvContent],
+        {
+          type:
+            'text/csv;charset=utf-8;'
+        }
+      );
 
-  link.click();
+    const url =
+      URL.createObjectURL(blob);
 
-  URL.revokeObjectURL(url);
-}
+    const link =
+      document.createElement('a');
+
+    link.href = url;
+
+    link.download =
+      `ecoroute-waste-data-${this.selectedDateRange
+        .toLowerCase()
+        .replace(/ /g, '-')}.csv`;
+
+    link.click();
+
+    URL.revokeObjectURL(url);
+  }
 }

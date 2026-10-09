@@ -1,11 +1,5 @@
 import { environment } from '../../environments/environment';
-import {
-  AfterViewInit,
-  Component,
-  OnDestroy,
-  inject
-} from '@angular/core';
-
+import { AfterViewInit, Component, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { Subscription } from 'rxjs';
@@ -20,9 +14,15 @@ import * as L from 'leaflet';
 })
 export class DashboardComponent implements AfterViewInit, OnDestroy {
 
+  // ============================================================
+  // BASIC DATA
+  // ============================================================
+
   currentDate = '';
 
+  // ============================================================
   // DASHBOARD MAP ROUTES
+  // ============================================================
 
   private dashboardRoutes: any[] = [];
 
@@ -55,6 +55,10 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
     [number, number][]
   >();
 
+  // ============================================================
+  // AI PREDICTION DATA
+  // ============================================================
+
   predictionLevel = '';
 
   predictionInsight = '';
@@ -69,6 +73,10 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
 
   aiPredictionChange = 0;
 
+  // ============================================================
+  // CHART DATA
+  // ============================================================
+
   chartStartDate = this.getStartOfChartPeriod();
 
   chartDays: {
@@ -78,6 +86,10 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
     wasteKg: number | null;
     status: string;
   }[] = [];
+
+  // ============================================================
+  // API AND SERVICES
+  // ============================================================
 
   private readonly mlApiUrl =
     `${environment.apiUrl}/ml`;
@@ -89,13 +101,19 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
 
   private subscriptions = new Subscription();
 
+  // ============================================================
+  // VIEW REFERENCES
+  // ============================================================
+
   private wasteChart?: Chart;
 
   private map?: L.Map;
 
   private routeLayer?: L.LayerGroup;
 
+  // ============================================================
   // DASHBOARD SUMMARY DATA
+  // ============================================================
 
   dashboardMode: 'current' | 'previous' = 'previous';
 
@@ -121,26 +139,50 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
 
   isMapExpanded = false;
 
-  ngOnInit(): void {
+  // ============================================================
+  // LIFECYCLE METHODS
+  // ============================================================
 
-    this.currentDate = new Date().toLocaleDateString('en-US', {
-      month: 'long',
-      day: 'numeric',
-      year: 'numeric'
-    });
+  // Initializes the dashboard and starts loading its data.
+  ngOnInit(): void {
+    this.currentDate =
+      new Date().toLocaleDateString('en-US', {
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric'
+      });
 
     this.loadAreaLocations();
     this.loadDashboardData();
+  }
 
+  // Initializes the chart and map after the dashboard view is ready.
+  ngAfterViewInit(): void {
+    this.createWasteChart();
+    this.createCollectionMap();
+
+    if (this.mapOperationDate) {
+      this.updateCollectionMap();
+    }
+
+    this.loadCollectionHistory();
+  }
+
+  // Cleans up subscriptions, the chart, and the map when the component is destroyed.
+  ngOnDestroy(): void {
+    this.subscriptions.unsubscribe();
+    this.wasteChart?.destroy();
+    this.map?.remove();
   }
 
   // ============================================================
   // DASHBOARD DATA
   // ============================================================
 
+  // Checks the current operation status and loads the correct dashboard data.
   private loadDashboardData(): void {
-
-    const today = this.toLocalDateString(new Date());
+    const today =
+      this.toLocalDateString(new Date());
 
     this.subscriptions.add(
       this.http
@@ -149,37 +191,23 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
         )
         .subscribe({
           next: response => {
+            if (response?.status === 'Cancelled') {
+              this.dashboardMode = 'previous';
+              this.loadPreviousOperation();
+              this.loadPredictionForDate(today);
+              return;
+            }
 
-  if (response?.status === 'Cancelled') {
-
-    this.dashboardMode = 'previous';
-
-    this.loadPreviousOperation();
-
-    this.loadPredictionForDate(today);
-
-    return;
-
-  }
-
-  this.dashboardMode = 'current';
-
-  this.loadCurrentOperation(today);
-
-},
+            this.dashboardMode = 'current';
+            this.loadCurrentOperation(today);
+          },
 
           error: error => {
-
             if (error.status === 404) {
-
               this.dashboardMode = 'previous';
-
               this.loadPreviousOperation();
-
               this.loadPredictionForDate(today);
-
               return;
-
             }
 
             console.error(
@@ -188,21 +216,17 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
             );
 
             this.dashboardMode = 'previous';
-
             this.loadPreviousOperation();
-
             this.loadPredictionForDate(today);
-
           }
-
         })
-
     );
-
   }
 
-  private loadPredictionForDate(targetDate: string): void {
-
+  // Loads the AI waste prediction for the selected date.
+  private loadPredictionForDate(
+    targetDate: string
+  ): void {
     this.subscriptions.add(
       this.http
         .get<any>(
@@ -210,9 +234,9 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
         )
         .subscribe({
           next: response => {
-
             this.predictionTarget =
-              targetDate === this.toLocalDateString(new Date())
+              targetDate ===
+              this.toLocalDateString(new Date())
                 ? 'today'
                 : 'tomorrow';
 
@@ -221,9 +245,14 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
 
             this.aiPredictedWaste =
               predictions.reduce(
-                (total: number, prediction: any) =>
+                (
+                  total: number,
+                  prediction: any
+                ) =>
                   total +
-                  Number(prediction.P50Kg || 0),
+                  Number(
+                    prediction.P50Kg || 0
+                  ),
                 0
               );
 
@@ -243,48 +272,46 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
             );
 
             this.loadNormalWasteBaseline();
-
           },
 
           error: error => {
-
             console.error(
               'Failed to load prediction:',
               error
             );
 
             this.aiPredictedWaste = 0;
-
             this.aiNormalWaste = 0;
-
             this.aiPredictionChange = 0;
-
             this.predictionLevel = '';
-
             this.predictionInsight = '';
-
             this.predictionAction = '';
-
           }
-
         })
     );
-
   }
 
+  // Loads recent waste records to calculate the normal waste baseline.
   private loadNormalWasteBaseline(): void {
+    const today =
+      this.toLocalDateString(new Date());
 
-    const today = this.toLocalDateString(new Date());
+    console.log(
+      'Starting normal waste baseline...'
+    );
 
-    console.log('Starting normal waste baseline...');
-
-    console.log('Today:', today);
+    console.log(
+      'Today:',
+      today
+    );
 
     // Look back 30 days for actual waste records
 
     const startDate = new Date();
 
-    startDate.setDate(startDate.getDate() - 30);
+    startDate.setDate(
+      startDate.getDate() - 30
+    );
 
     const startDateString =
       this.toLocalDateString(startDate);
@@ -296,54 +323,57 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
         )
         .subscribe({
           next: records => {
-
             console.log(
               'Historical waste records:',
               records
             );
 
-            if (!records || records.length === 0) {
-
+            if (
+              !records ||
+              records.length === 0
+            ) {
               console.log(
                 'No historical waste records found.'
               );
 
               this.aiNormalWaste = 0;
-
               this.calculatePredictionInsight();
 
               return;
-
             }
 
             // Group waste by collection date
 
-            const dailyWaste = new Map<string, number>();
+            const dailyWaste =
+              new Map<string, number>();
 
             records.forEach(record => {
-
               const recordDate =
-                new Date(record.collectionDate);
+                new Date(
+                  record.collectionDate
+                );
 
               const date =
-                this.toLocalDateString(recordDate);
+                this.toLocalDateString(
+                  recordDate
+                );
 
               // Do not include today
 
               if (date >= today) {
-
                 return;
-
               }
 
               const weight =
-                Number(record.weightKg || 0);
+                Number(
+                  record.weightKg || 0
+                );
 
               dailyWaste.set(
                 date,
-                (dailyWaste.get(date) || 0) + weight
+                (dailyWaste.get(date) || 0) +
+                weight
               );
-
             });
 
             console.log(
@@ -355,9 +385,12 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
             // that actually have waste records
 
             const validDays =
-              Array.from(dailyWaste.entries())
-                .sort((a, b) =>
-                  b[0].localeCompare(a[0])
+              Array.from(
+                dailyWaste.entries()
+              )
+                .sort(
+                  (a, b) =>
+                    b[0].localeCompare(a[0])
                 )
                 .slice(0, 7);
 
@@ -366,12 +399,11 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
               validDays
             );
 
-            if (validDays.length === 0) {
-
+            if (
+              validDays.length === 0
+            ) {
               this.aiNormalWaste = 0;
-
             } else {
-
               const totalWaste =
                 validDays.reduce(
                   (total, [, waste]) =>
@@ -380,8 +412,8 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
                 );
 
               this.aiNormalWaste =
-                totalWaste / validDays.length;
-
+                totalWaste /
+                validDays.length;
             }
 
             this.aiNormalWaste =
@@ -395,11 +427,9 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
             );
 
             this.calculatePredictionInsight();
-
           },
 
           error: error => {
-
             console.error(
               'Historical waste request failed:',
               error
@@ -408,33 +438,28 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
             this.aiNormalWaste = 0;
 
             this.calculatePredictionInsight();
-
           }
-
         })
     );
-
   }
 
+  // Calculates the prediction change and determines the dashboard insight.
   private calculatePredictionInsight(): void {
-
     if (this.aiNormalWaste <= 0) {
-
       this.aiPredictionChange = 0;
-
       this.predictionLevel = '';
-
       this.predictionInsight = '';
-
       this.predictionAction = '';
 
       return;
-
     }
 
     this.aiPredictionChange =
       (
-        (this.aiPredictedWaste - this.aiNormalWaste) /
+        (
+          this.aiPredictedWaste -
+          this.aiNormalWaste
+        ) /
         this.aiNormalWaste
       ) *
       100;
@@ -444,8 +469,9 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
         this.aiPredictionChange * 100
       ) / 100;
 
-    if (this.aiPredictionChange >= 20) {
-
+    if (
+      this.aiPredictionChange >= 20
+    ) {
       this.predictionLevel =
         'Much higher than normal';
 
@@ -454,9 +480,9 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
 
       this.predictionAction =
         'Prepare additional collection capacity';
-
-    } else if (this.aiPredictionChange >= 5) {
-
+    } else if (
+      this.aiPredictionChange >= 5
+    ) {
       this.predictionLevel =
         'Slightly higher';
 
@@ -465,9 +491,9 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
 
       this.predictionAction =
         'Prepare for increased waste volume';
-
-    } else if (this.aiPredictionChange >= -5) {
-
+    } else if (
+      this.aiPredictionChange >= -5
+    ) {
       this.predictionLevel =
         'Around normal';
 
@@ -476,9 +502,7 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
 
       this.predictionAction =
         'Proceed with the planned collection capacity';
-
     } else {
-
       this.predictionLevel =
         'Lower than normal';
 
@@ -487,13 +511,13 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
 
       this.predictionAction =
         'Adjust collection capacity accordingly';
-
     }
-
   }
 
-  private loadCurrentOperation(date: string): void {
-
+  // Loads the current operation and updates the dashboard route information.
+  private loadCurrentOperation(
+    date: string
+  ): void {
     this.subscriptions.add(
       this.http
         .get<any>(
@@ -501,8 +525,9 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
         )
         .subscribe({
           next: response => {
-
-            this.applyOperationData(response);
+            this.applyOperationData(
+              response
+            );
 
             this.dashboardRoutes =
               response?.routes ?? [];
@@ -512,25 +537,20 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
             this.loadActualWaste(date);
 
             this.updateCollectionMap();
-
           },
 
           error: error => {
-
             console.error(
               'Failed to load current operation:',
               error
             );
-
           }
-
         })
     );
-
   }
 
+  // Loads the most recent completed operation for the dashboard.
   private loadPreviousOperation(): void {
-
     this.subscriptions.add(
       this.http
         .get<string[]>(
@@ -538,21 +558,22 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
         )
         .subscribe({
           next: dates => {
-
             const today =
-              this.toLocalDateString(new Date());
+              this.toLocalDateString(
+                new Date()
+              );
 
-            const previousDate = dates
-              .filter(date => date !== today)
-              .sort()
-              .reverse()[0];
+            const previousDate =
+              dates
+                .filter(
+                  date => date !== today
+                )
+                .sort()
+                .reverse()[0];
 
             if (!previousDate) {
-
               this.clearDashboardData();
-
               return;
-
             }
 
             this.previousOperationDate =
@@ -568,52 +589,49 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
                 )
                 .subscribe({
                   next: response => {
-
-                    this.applyOperationData(response);
+                    this.applyOperationData(
+                      response
+                    );
 
                     this.dashboardRoutes =
                       response?.routes ?? [];
 
-                    this.loadActualWaste(previousDate, false);
+                    this.loadActualWaste(
+                      previousDate,
+                      false
+                    );
 
                     this.updateCollectionMap();
-
                   },
 
                   error: error => {
-
                     console.error(
                       'Failed to load previous operation:',
                       error
                     );
 
                     this.clearDashboardData();
-
                   }
-
                 })
             );
-
           },
 
           error: error => {
-
             console.error(
               'Failed to load operation history dates:',
               error
             );
 
             this.clearDashboardData();
-
           }
-
         })
     );
-
   }
 
-  private applyOperationData(response: any): void {
-
+  // Applies operation data to the dashboard summary values.
+  private applyOperationData(
+    response: any
+  ): void {
     const routes =
       response?.routes ?? [];
 
@@ -623,7 +641,10 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
     this.vehicleCount =
       new Set(
         routes
-          .map((route: any) => route.vehicle_id)
+          .map(
+            (route: any) =>
+              route.vehicle_id
+          )
           .filter(
             (vehicleId: any) =>
               vehicleId !== null &&
@@ -633,9 +654,14 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
 
     this.predictedWasteValue =
       routes.reduce(
-        (total: number, route: any) =>
+        (
+          total: number,
+          route: any
+        ) =>
           total +
-          Number(route.load_kg || 0),
+          Number(
+            route.load_kg || 0
+          ),
         0
       );
 
@@ -643,158 +669,141 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
       Math.round(
         this.predictedWasteValue * 100
       ) / 100;
-
   }
 
+  // Loads the actual collected waste for the selected operation date.
   private loadActualWaste(
-  date: string,
-  predictNextDay: boolean = true
-): void {
-
-  this.subscriptions.add(
-    this.http
-      .get<any[]>(
-        `${this.wasteApiUrl}?startDate=${date}&endDate=${date}`
-      )
-      .subscribe({
-        next: records => {
-
-          this.wasteValue =
-            records.reduce(
-              (total, record) =>
-                total +
-                Number(record.weightKg || 0),
-              0
-            );
-
-          this.wasteValue =
-            Math.round(
-              this.wasteValue * 100
-            ) / 100;
-
-          this.hasWasteData =
-            records.length > 0;
-
-          /*
-           * Only determine the next prediction
-           * when this is the CURRENT operation.
-           *
-           * Previous operation:
-           * → do NOT change today's prediction
-           *
-           * Current operation with CSV:
-           * → predict tomorrow
-           *
-           * Current operation without CSV:
-           * → predict today
-           */
-
-          if (!predictNextDay) {
-
-            return;
-
-          }
-
-          if (this.hasWasteData) {
-
-            const tomorrow =
-              new Date();
-
-            tomorrow.setDate(
-              tomorrow.getDate() + 1
-            );
-
-            const tomorrowString =
-              this.toLocalDateString(
-                tomorrow
+    date: string,
+    predictNextDay: boolean = true
+  ): void {
+    this.subscriptions.add(
+      this.http
+        .get<any[]>(
+          `${this.wasteApiUrl}?startDate=${date}&endDate=${date}`
+        )
+        .subscribe({
+          next: records => {
+            this.wasteValue =
+              records.reduce(
+                (total, record) =>
+                  total +
+                  Number(
+                    record.weightKg || 0
+                  ),
+                0
               );
 
-            console.log(
-              'CSV uploaded.'
+            this.wasteValue =
+              Math.round(
+                this.wasteValue * 100
+              ) / 100;
+
+            this.hasWasteData =
+              records.length > 0;
+
+            /*
+             * Only determine the next prediction
+             * when this is the CURRENT operation.
+             *
+             * Previous operation:
+             * → do NOT change today's prediction
+             *
+             * Current operation with CSV:
+             * → predict tomorrow
+             *
+             * Current operation without CSV:
+             * → predict today
+             */
+
+            if (!predictNextDay) {
+              return;
+            }
+
+            if (this.hasWasteData) {
+              const tomorrow =
+                new Date();
+
+              tomorrow.setDate(
+                tomorrow.getDate() + 1
+              );
+
+              const tomorrowString =
+                this.toLocalDateString(
+                  tomorrow
+                );
+
+              console.log(
+                'CSV uploaded.'
+              );
+
+              console.log(
+                'Predicting tomorrow:',
+                tomorrowString
+              );
+
+              this.loadPredictionForDate(
+                tomorrowString
+              );
+            } else {
+              console.log(
+                'No CSV uploaded.'
+              );
+
+              console.log(
+                'Predicting today:',
+                date
+              );
+
+              this.loadPredictionForDate(
+                date
+              );
+            }
+          },
+
+          error: error => {
+            console.error(
+              'Failed to load actual waste:',
+              error
             );
 
-            console.log(
-              'Predicting tomorrow:',
-              tomorrowString
-            );
+            this.wasteValue = 0;
+
+            this.hasWasteData = false;
+
+            /*
+             * Only load a prediction if this is
+             * the current operation.
+             */
+
+            if (!predictNextDay) {
+              return;
+            }
+
+            // No CSV means we are still
+            // predicting today's waste.
 
             this.loadPredictionForDate(
-              tomorrowString
-            );
-
-          } else {
-
-            console.log(
-              'No CSV uploaded.'
-            );
-
-            console.log(
-              'Predicting today:',
               date
             );
-
-            this.loadPredictionForDate(
-              date
-            );
-
           }
-
-        },
-
-        error: error => {
-
-          console.error(
-            'Failed to load actual waste:',
-            error
-          );
-
-          this.wasteValue = 0;
-
-          this.hasWasteData = false;
-
-          /*
-           * Only load a prediction if this is
-           * the current operation.
-           */
-
-          if (!predictNextDay) {
-
-            return;
-
-          }
-
-          // No CSV means we are still
-          // predicting today's waste.
-
-          this.loadPredictionForDate(
-            date
-          );
-
-        }
-
-      })
-  );
-
-}
-
-  private clearDashboardData(): void {
-
-    this.wasteValue = 0;
-
-    this.predictedWasteValue = 0;
-
-    this.routeCount = 0;
-
-    this.vehicleCount = 0;
-
-    this.totalVehicles = 0;
-
-    this.hasWasteData = false;
-
+        })
+    );
   }
 
-  private toLocalDateString(date: Date): string {
+  // Clears the dashboard summary values when no operation is available.
+  private clearDashboardData(): void {
+    this.wasteValue = 0;
+    this.predictedWasteValue = 0;
+    this.routeCount = 0;
+    this.vehicleCount = 0;
+    this.totalVehicles = 0;
+    this.hasWasteData = false;
+  }
 
+  // Converts a Date value into the local YYYY-MM-DD format.
+  private toLocalDateString(
+    date: Date
+  ): string {
     const year =
       date.getFullYear();
 
@@ -809,69 +818,49 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
       ).padStart(2, '0');
 
     return `${year}-${month}-${day}`;
-
   }
 
+  // Formats the actual waste value for display.
   get wasteDisplay(): string {
-
     return `${(
       this.wasteValue / 1000
     ).toFixed(1)} tons`;
-
   }
 
+  // Formats the predicted waste value for display.
   get predictedWasteDisplay(): string {
-
     return `${(
       this.predictedWasteValue / 1000
     ).toFixed(1)} tons`;
-
   }
 
+  // ============================================================
   // MAP SIZE
+  // ============================================================
 
+  // Toggles the dashboard map between its normal and expanded sizes.
   toggleMapSize(): void {
-
     this.isMapExpanded =
       !this.isMapExpanded;
 
     setTimeout(() => {
-
       this.map?.invalidateSize();
-
     }, 500);
-
   }
 
-  ngAfterViewInit(): void {
-
-    this.createWasteChart();
-
-    this.createCollectionMap();
-
-    if (this.mapOperationDate) {
-
-      this.updateCollectionMap();
-
-    }
-
-    this.loadCollectionHistory();
-
-  }
-
+  // ============================================================
   // WASTE CHART
+  // ============================================================
 
+  // Creates the waste collection chart.
   private createWasteChart(): void {
-
     const canvas =
       document.getElementById(
         'wasteChart'
       ) as HTMLCanvasElement | null;
 
     if (!canvas) {
-
       return;
-
     }
 
     this.wasteChart =
@@ -886,28 +875,19 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
             datasets: [
               {
                 data: [],
-
                 backgroundColor: '#0b9435',
-
                 borderColor: '#0b9435',
-
                 borderWidth: 0,
-
                 borderRadius: 7,
-
                 borderSkipped: false,
-
                 barPercentage: 0.55,
-
                 categoryPercentage: 0.7
               }
             ]
           },
 
           options: {
-
             responsive: true,
-
             maintainAspectRatio: false,
 
             // NO ANIMATION
@@ -917,17 +897,13 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
             },
 
             plugins: {
-
               legend: {
                 display: false
               },
 
               tooltip: {
-
                 callbacks: {
-
-                  label: (context) => {
-
+                  label: context => {
                     const day =
                       this.chartDays[
                         context.dataIndex
@@ -937,87 +913,58 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
                       !day ||
                       day.wasteKg === null
                     ) {
-
                       return (
                         day?.status ||
                         'No operation'
                       );
-
                     }
 
                     return `${day.wasteKg.toLocaleString()} kg`;
-
                   }
-
                 }
-
               }
-
             },
 
             scales: {
-
               y: {
-
                 beginAtZero: true,
-
                 max: 15000,
 
                 ticks: {
-
                   stepSize: 5000,
 
-                  callback: (value) => {
-
+                  callback: value => {
                     return `${Number(value) / 1000}k`;
-
                   }
-
                 },
 
                 title: {
-
                   display: true,
-
                   text: 'KG'
-
                 },
 
                 grid: {
-
                   color: '#e5e7eb'
-
                 }
-
               },
 
               x: {
-
                 grid: {
-
                   color: '#e5e7eb'
-
                 },
 
                 ticks: {
-
                   padding: 6
-
                 }
-
               }
-
             }
-
           }
-
         }
       );
-
   }
 
+  // Loads the operation dates needed for the collection history chart.
   private loadCollectionHistory(): void {
-
     const startDate =
       new Date(this.chartStartDate);
 
@@ -1035,41 +982,36 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
         )
         .subscribe({
           next: operationDates => {
-
             this.loadCollectionHistoryData(
               startDate,
               endDate,
               operationDates
             );
-
           },
 
           error: (error: any) => {
-
             console.error(
               'Failed to load operation history dates:',
               error
             );
 
-            this.buildEmptyChart(startDate);
-
+            this.buildEmptyChart(
+              startDate
+            );
           }
-
         })
     );
-
   }
 
+  // Loads waste records and builds the collection history chart data.
   private loadCollectionHistoryData(
     startDate: Date,
     endDate: Date,
     operationDates: string[]
   ): void {
-
     const dates: Date[] = [];
 
     for (let i = 0; i < 7; i++) {
-
       const date =
         new Date(startDate);
 
@@ -1078,11 +1020,12 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
       );
 
       dates.push(date);
-
     }
 
     const startDateString =
-      this.toLocalDateString(startDate);
+      this.toLocalDateString(
+        startDate
+      );
 
     const endDateWithTime =
       new Date(endDate);
@@ -1106,12 +1049,12 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
         )
         .subscribe({
           next: wasteRecords => {
-
             this.chartDays =
               dates.map(date => {
-
                 const dateString =
-                  this.toLocalDateString(date);
+                  this.toLocalDateString(
+                    date
+                  );
 
                 const hasOperation =
                   operationDates.includes(
@@ -1121,7 +1064,6 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
                 const recordsForDay =
                   wasteRecords.filter(
                     record => {
-
                       const recordDate =
                         new Date(
                           record.collectionDate
@@ -1132,7 +1074,6 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
                           recordDate
                         ) === dateString
                       );
-
                     }
                   );
 
@@ -1145,7 +1086,8 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
                         ) =>
                           total +
                           Number(
-                            record.weightKg || 0
+                            record.weightKg ||
+                            0
                           ),
                         0
                       )
@@ -1158,20 +1100,16 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
                   hasOperation &&
                   wasteKg !== null
                 ) {
-
                   status =
                     'Waste collected';
-
-                }
-                else if (hasOperation) {
-
+                } else if (
+                  hasOperation
+                ) {
                   status =
                     'Operation active or report pending';
-
                 }
 
                 return {
-
                   date,
 
                   label:
@@ -1194,37 +1132,30 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
                   wasteKg,
 
                   status
-
                 };
-
               });
 
             this.updateWasteChart();
-
           },
 
           error: (error: any) => {
-
             console.error(
               'Failed to load waste collection history:',
               error
             );
 
-            this.buildEmptyChart(startDate);
-
+            this.buildEmptyChart(
+              startDate
+            );
           }
-
         })
     );
-
   }
 
+  // Updates the waste chart with the current chart data.
   private updateWasteChart(): void {
-
     if (!this.wasteChart) {
-
       return;
-
     }
 
     this.wasteChart.data.labels =
@@ -1239,17 +1170,15 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
       );
 
     this.wasteChart.update();
-
   }
 
+  // Builds an empty seven day chart when collection data is unavailable.
   private buildEmptyChart(
     startDate: Date
   ): void {
-
     const dates: Date[] = [];
 
     for (let i = 0; i < 7; i++) {
-
       const date =
         new Date(startDate);
 
@@ -1258,13 +1187,11 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
       );
 
       dates.push(date);
-
     }
 
     this.chartDays =
       dates.map(
         date => ({
-
           date,
 
           label:
@@ -1287,31 +1214,32 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
           wasteKg: null,
 
           status: 'No operation'
-
         })
       );
 
     this.updateWasteChart();
-
   }
 
+  // Moves the collection history chart to the previous seven day period.
   previousChartPeriod(): void {
-
     this.chartStartDate =
-      new Date(this.chartStartDate);
+      new Date(
+        this.chartStartDate
+      );
 
     this.chartStartDate.setDate(
       this.chartStartDate.getDate() - 7
     );
 
     this.loadCollectionHistory();
-
   }
 
+  // Moves the collection history chart to the next seven day period.
   nextChartPeriod(): void {
-
     const nextStartDate =
-      new Date(this.chartStartDate);
+      new Date(
+        this.chartStartDate
+      );
 
     nextStartDate.setDate(
       nextStartDate.getDate() + 7
@@ -1335,22 +1263,19 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
     );
 
     if (nextEndDate > today) {
-
       return;
-
     }
 
     this.chartStartDate =
       nextStartDate;
 
     this.loadCollectionHistory();
-
   }
 
+  // Converts a Date value into the local date and time format.
   private toLocalDateTimeString(
     date: Date
   ): string {
-
     const year =
       date.getFullYear();
 
@@ -1380,11 +1305,10 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
       ).padStart(2, '0');
 
     return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
-
   }
 
+  // Gets the starting date for the current seven day chart period.
   private getStartOfChartPeriod(): Date {
-
     const today =
       new Date();
 
@@ -1403,24 +1327,24 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
     );
 
     return start;
-
   }
 
+  // ============================================================
   // COLLECTION MAP
+  // ============================================================
 
+  // Loads area coordinates used by the collection map.
   private loadAreaLocations(): void {
-
     this.subscriptions.add(
       this.http
-        .get<any[]>(this.areasApiUrl)
+        .get<any[]>(
+          this.areasApiUrl
+        )
         .subscribe({
-
           next: areas => {
-
             this.areaLocations.clear();
 
             areas.forEach(area => {
-
               const areaId =
                 Number(
                   area?.areaId ??
@@ -1444,7 +1368,6 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
                 Number.isFinite(latitude) &&
                 Number.isFinite(longitude)
               ) {
-
                 this.areaLocations.set(
                   areaId,
                   {
@@ -1452,47 +1375,36 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
                     longitude
                   }
                 );
-
               }
-
             });
 
             if (
               this.map &&
               this.dashboardRoutes.length
             ) {
-
               this.updateCollectionMap();
-
             }
-
           },
 
           error: error => {
-
             console.error(
               'Failed to load area coordinates:',
               error
             );
-
           }
-
         })
     );
-
   }
 
+  // Creates and initializes the dashboard collection map.
   private createCollectionMap(): void {
-
     const mapElement =
       document.getElementById(
         'collectionMap'
       );
 
     if (!mapElement) {
-
       return;
-
     }
 
     this.map =
@@ -1511,16 +1423,15 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
     }).addTo(this.map);
 
     this.routeLayer =
-      L.layerGroup().addTo(this.map);
+      L.layerGroup().addTo(
+        this.map
+      );
 
     this.addBaseTiles();
 
     setTimeout(() => {
-
       if (!this.map) {
-
         return;
-
       }
 
       this.map.invalidateSize({
@@ -1531,21 +1442,15 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
         this.dashboardRoutes.length &&
         this.areaLocations.size
       ) {
-
         this.updateCollectionMap();
-
       }
-
     }, 150);
-
   }
 
+  // Adds the OpenStreetMap tile layer to the dashboard map.
   private addBaseTiles(): void {
-
     if (!this.map) {
-
       return;
-
     }
 
     L.tileLayer(
@@ -1559,33 +1464,32 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
           '&copy; OpenStreetMap contributors'
       }
     ).addTo(this.map);
-
   }
 
+  // Updates the map with the current collection routes and stops.
   private updateCollectionMap(): void {
-
-    if (!this.map || !this.routeLayer) {
-
+    if (
+      !this.map ||
+      !this.routeLayer
+    ) {
       return;
-
     }
 
     this.routeLayer.clearLayers();
-
     this.roadGeometry.clear();
 
     if (!this.dashboardRoutes.length) {
-
       return;
-
     }
 
     const allCoordinates:
       [number, number][] = [];
 
     this.dashboardRoutes.forEach(
-      (route: any, routeIndex: number) => {
-
+      (
+        route: any,
+        routeIndex: number
+      ) => {
         const areas =
           route?.areas ?? [];
 
@@ -1596,7 +1500,6 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
               (
                 area: any
               ): [number, number] | null => {
-
                 const areaId =
                   Number(
                     area?.area_id ??
@@ -1609,30 +1512,28 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
                   );
 
                 if (!location) {
-
                   return null;
-
                 }
 
                 return [
                   location.latitude,
                   location.longitude
                 ];
-
               }
             )
             .filter(
               (
                 coordinate:
                   [number, number] | null
-              ): coordinate is [number, number] =>
+              ): coordinate is [
+                number,
+                number
+              ] =>
                 coordinate !== null
             );
 
         if (!coordinates.length) {
-
           return;
-
         }
 
         allCoordinates.push(
@@ -1651,7 +1552,6 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
           coordinates,
           color
         );
-
       }
     );
 
@@ -1663,7 +1563,6 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
     );
 
     if (allCoordinates.length) {
-
       this.map.fitBounds(
         L.latLngBounds(
           allCoordinates
@@ -1673,30 +1572,25 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
           animate: false
         }
       );
-
     }
 
     this.loadRoadGeometry();
-
   }
 
+  // Draws a dashboard route and its numbered collection markers.
   private drawDashboardRoute(
     route: any,
     routeIndex: number,
     coordinates: [number, number][],
     color: string
   ): void {
-
     if (!this.routeLayer) {
-
       return;
-
     }
 
     // Draw a fallback line immediately while the road geometry loads.
 
     if (coordinates.length >= 2) {
-
       const polyline =
         L.polyline(
           coordinates,
@@ -1717,7 +1611,6 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
       this.routeLayer.addLayer(
         polyline
       );
-
     }
 
     // Use the same numbered circular markers as Route Planning.
@@ -1727,7 +1620,6 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
         coordinate: [number, number],
         index: number
       ) => {
-
         const area =
           route?.areas?.[index];
 
@@ -1753,21 +1645,17 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
         this.routeLayer!.addLayer(
           marker
         );
-
       }
     );
-
   }
 
+  // Loads road geometry for each dashboard route.
   private loadRoadGeometry(): void {
-
     if (
       !this.map ||
       !this.dashboardRoutes.length
     ) {
-
       return;
-
     }
 
     this.dashboardRoutes.forEach(
@@ -1775,7 +1663,6 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
         route: any,
         routeIndex: number
       ) => {
-
         const coordinates:
           [number, number][] =
           (route?.areas ?? [])
@@ -1783,7 +1670,6 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
               (
                 area: any
               ): [number, number] | null => {
-
                 const areaId =
                   Number(
                     area?.area_id ??
@@ -1796,37 +1682,35 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
                   );
 
                 if (!location) {
-
                   return null;
-
                 }
 
                 return [
                   location.latitude,
                   location.longitude
                 ];
-
               }
             )
             .filter(
               (
                 coordinate:
                   [number, number] | null
-              ): coordinate is [number, number] =>
+              ): coordinate is [
+                number,
+                number
+              ] =>
                 coordinate !== null
             );
 
         if (coordinates.length < 2) {
-
           return;
-
         }
 
         const routeCoordinates:
           [number, number][] = [
             ...coordinates,
             this.srpCoordinates
-          ];
+        ];
 
         const coordinateString =
           routeCoordinates
@@ -1853,9 +1737,7 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
               }
             )
             .subscribe({
-
               next: response => {
-
                 const geometry =
                   response
                     ?.routes?.[0]
@@ -1866,7 +1748,6 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
                   response?.code === 'Ok' &&
                   geometry?.length
                 ) {
-
                   const leafletCoordinates:
                     [number, number][] =
                     geometry.map(
@@ -1875,33 +1756,27 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
                           longitude,
                           latitude
                         ]: [number, number]
-                      ) =>
-                        [
-                          latitude,
-                          longitude
-                        ]
+                      ) => [
+                        latitude,
+                        longitude
+                      ]
                     );
 
                   this.roadGeometry.set(
                     routeIndex,
                     leafletCoordinates
                   );
-
                 } else {
-
                   this.roadGeometry.set(
                     routeIndex,
                     routeCoordinates
                   );
-
                 }
 
                 this.redrawRoadGeometry();
-
               },
 
               error: error => {
-
                 console.error(
                   `Road routing failed for route #${String(routeIndex + 1).padStart(2, '0')}:`,
                   error
@@ -1913,25 +1788,19 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
                 );
 
                 this.redrawRoadGeometry();
-
               }
-
             })
         );
-
       }
     );
 
     this.addDisposalMarker();
-
   }
 
+  // Replaces temporary route lines with the loaded road geometry.
   private redrawRoadGeometry(): void {
-
     if (!this.routeLayer) {
-
       return;
-
     }
 
     // Keep the markers, but replace the temporary straight lines
@@ -1939,17 +1808,13 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
 
     this.routeLayer.eachLayer(
       layer => {
-
         if (
           layer instanceof L.Polyline
         ) {
-
           this.routeLayer!.removeLayer(
             layer
           );
-
         }
-
       }
     );
 
@@ -1958,7 +1823,6 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
         route: any,
         routeIndex: number
       ) => {
-
         const geometry =
           this.roadGeometry.get(
             routeIndex
@@ -1968,9 +1832,7 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
           !geometry ||
           geometry.length < 2
         ) {
-
           return;
-
         }
 
         const color =
@@ -1999,18 +1861,14 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
         this.routeLayer!.addLayer(
           polyline
         );
-
       }
     );
-
   }
 
+  // Adds the SRP disposal destination marker to the map.
   private addDisposalMarker(): void {
-
     if (!this.routeLayer) {
-
       return;
-
     }
 
     const marker =
@@ -2057,16 +1915,14 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
     this.routeLayer.addLayer(
       marker
     );
-
   }
 
+  // Creates the numbered map icon used for route stops.
   private createRouteNumberIcon(
     color: string,
     number: number
   ): L.DivIcon {
-
     return L.divIcon({
-
       className:
         'route-number-marker',
 
@@ -2092,19 +1948,6 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
       iconSize: [24, 24],
 
       iconAnchor: [12, 12]
-
     });
-
   }
-
-  ngOnDestroy(): void {
-
-    this.subscriptions.unsubscribe();
-
-    this.wasteChart?.destroy();
-
-    this.map?.remove();
-
-  }
-
 }
