@@ -1,4 +1,3 @@
-
 using EcoRoute.API.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -71,6 +70,7 @@ public class AreasController : ControllerBase
         return Ok(area);
     }
 
+    // Gets the logged-in user's ID from the authentication claims.
     private bool TryGetUserId(out int userId)
     {
         var userIdValue = User.FindFirstValue(

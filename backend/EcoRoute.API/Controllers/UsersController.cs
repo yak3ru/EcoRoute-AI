@@ -22,7 +22,6 @@ public class UsersController : ControllerBase
     }
 
     // GET CURRENT USER
-
     [HttpGet("me")]
     public async Task<IActionResult> GetCurrentUser()
     {
@@ -74,7 +73,6 @@ public class UsersController : ControllerBase
     }
 
     // UPDATE ACCOUNT
-
     [HttpPut("account")]
     public async Task<IActionResult> UpdateAccount(
         UpdateAccountRequest request)
@@ -99,7 +97,6 @@ public class UsersController : ControllerBase
         }
 
         // VALIDATE FIELDS
-
         if (string.IsNullOrWhiteSpace(request.FullName) ||
             string.IsNullOrWhiteSpace(request.Email) ||
             string.IsNullOrWhiteSpace(request.Username))
@@ -111,7 +108,6 @@ public class UsersController : ControllerBase
         }
 
         // FIND USER
-
         var user = await _context.Users
             .FirstOrDefaultAsync(u => u.UserId == userId);
 
@@ -128,7 +124,6 @@ public class UsersController : ControllerBase
         var username = request.Username.Trim();
 
         // CHECK EMAIL
-
         var emailExists = await _context.Users
             .AnyAsync(u =>
                 u.Email == email &&
@@ -143,7 +138,6 @@ public class UsersController : ControllerBase
         }
 
         // CHECK USERNAME
-
         var usernameExists = await _context.Users
             .AnyAsync(u =>
                 u.Username == username &&
@@ -158,7 +152,6 @@ public class UsersController : ControllerBase
         }
 
         // UPDATE ACCOUNT
-
         user.FullName = fullName;
         user.Email = email;
         user.Username = username;
@@ -179,7 +172,6 @@ public class UsersController : ControllerBase
     }
 
     // CHANGE PASSWORD
-
     [HttpPut("password")]
     public async Task<IActionResult> ChangePassword(
         ChangePasswordRequest request)
@@ -204,7 +196,6 @@ public class UsersController : ControllerBase
         }
 
         // VALIDATE FIELDS
-
         if (string.IsNullOrWhiteSpace(request.CurrentPassword) ||
             string.IsNullOrWhiteSpace(request.NewPassword) ||
             string.IsNullOrWhiteSpace(request.ConfirmNewPassword))
@@ -216,7 +207,6 @@ public class UsersController : ControllerBase
         }
 
         // CONFIRM PASSWORD
-
         if (request.NewPassword != request.ConfirmNewPassword)
         {
             return BadRequest(new
@@ -226,7 +216,6 @@ public class UsersController : ControllerBase
         }
 
         // PASSWORD LENGTH
-
         if (request.NewPassword.Length < 8)
         {
             return BadRequest(new
@@ -236,7 +225,6 @@ public class UsersController : ControllerBase
         }
 
         // UPPERCASE
-
         if (!request.NewPassword.Any(char.IsUpper))
         {
             return BadRequest(new
@@ -246,7 +234,6 @@ public class UsersController : ControllerBase
         }
 
         // LOWERCASE
-
         if (!request.NewPassword.Any(char.IsLower))
         {
             return BadRequest(new
@@ -256,7 +243,6 @@ public class UsersController : ControllerBase
         }
 
         // NUMBER
-
         if (!request.NewPassword.Any(char.IsDigit))
         {
             return BadRequest(new
@@ -266,7 +252,6 @@ public class UsersController : ControllerBase
         }
 
         // SPECIAL CHARACTER
-
         if (!request.NewPassword.Any(
             ch => !char.IsLetterOrDigit(ch)))
         {
@@ -277,7 +262,6 @@ public class UsersController : ControllerBase
         }
 
         // FIND USER
-
         var user = await _context.Users
             .FirstOrDefaultAsync(u => u.UserId == userId);
 
@@ -290,7 +274,6 @@ public class UsersController : ControllerBase
         }
 
         // VERIFY PASSWORD
-
         var currentPasswordValid =
             BCrypt.Net.BCrypt.Verify(
                 request.CurrentPassword,
@@ -305,7 +288,6 @@ public class UsersController : ControllerBase
         }
 
         // PREVENT PASSWORD REUSE
-
         if (BCrypt.Net.BCrypt.Verify(
             request.NewPassword,
             user.PasswordHash))
@@ -317,7 +299,6 @@ public class UsersController : ControllerBase
         }
 
         // UPDATE PASSWORD
-
         user.PasswordHash =
             BCrypt.Net.BCrypt.HashPassword(
                 request.NewPassword);
@@ -334,7 +315,6 @@ public class UsersController : ControllerBase
     }
 
     // TWO-FACTOR SETTING
-
     [HttpPut("two-factor")]
     [EnableRateLimiting("auth")]
     public async Task<IActionResult> UpdateTwoFactor(
@@ -363,7 +343,6 @@ public class UsersController : ControllerBase
         }
 
         // TURNING OFF NEEDS THE PASSWORD (400, NOT 401, SO THE USER STAYS LOGGED IN)
-
         if (!request.Enabled && user.TwoFactorEnabled)
         {
             if (string.IsNullOrEmpty(request.CurrentPassword))
@@ -374,7 +353,9 @@ public class UsersController : ControllerBase
                 });
             }
 
-            if (!BCrypt.Net.BCrypt.Verify(request.CurrentPassword, user.PasswordHash))
+            if (!BCrypt.Net.BCrypt.Verify(
+                request.CurrentPassword,
+                user.PasswordHash))
             {
                 return BadRequest(new
                 {
@@ -387,7 +368,6 @@ public class UsersController : ControllerBase
         user.UpdatedAt = DateTime.UtcNow;
 
         // TURNING ON: EVERY DEVICE HAS TO VERIFY AGAIN
-
         if (request.Enabled)
         {
             await _context.TrustedDevices
@@ -395,7 +375,9 @@ public class UsersController : ControllerBase
                     d.UserId == userId &&
                     d.RevokedAt == null)
                 .ExecuteUpdateAsync(s => s
-                    .SetProperty(d => d.RevokedAt, (DateTime?)DateTime.UtcNow));
+                    .SetProperty(
+                        d => d.RevokedAt,
+                        (DateTime?)DateTime.UtcNow));
         }
 
         await _context.SaveChangesAsync();
@@ -410,13 +392,11 @@ public class UsersController : ControllerBase
     }
 
     // DELETE ACCOUNT
-
     [HttpDelete("account")]
     public async Task<IActionResult> DeleteAccount(
         [FromBody] DeleteAccountRequest request)
     {
         // VALIDATE PASSWORD
-
         if (request == null ||
             string.IsNullOrWhiteSpace(request.Password))
         {
@@ -427,7 +407,6 @@ public class UsersController : ControllerBase
         }
 
         // GET USER ID
-
         var userIdClaim = User.FindFirstValue(
             ClaimTypes.NameIdentifier);
 
@@ -448,7 +427,6 @@ public class UsersController : ControllerBase
         }
 
         // FIND USER
-
         var user = await _context.Users
             .FirstOrDefaultAsync(u => u.UserId == userId);
 
@@ -461,7 +439,6 @@ public class UsersController : ControllerBase
         }
 
         // VERIFY PASSWORD
-
         var passwordValid = BCrypt.Net.BCrypt.Verify(
             request.Password,
             user.PasswordHash);
@@ -475,7 +452,6 @@ public class UsersController : ControllerBase
         }
 
         // INVALIDATE SESSIONS
-
         var activeSessions = await _context.UserSessions
             .Where(s =>
                 s.UserId == user.UserId &&
@@ -488,7 +464,6 @@ public class UsersController : ControllerBase
         }
 
         // DELETE ACCOUNT
-
         _context.Users.Remove(user);
 
         await _context.SaveChangesAsync();
@@ -500,12 +475,10 @@ public class UsersController : ControllerBase
     }
 
     // LOGIN HISTORY LIMITS
-
     private const int SessionHistoryDays = 30;
     private const int SessionHistoryLimit = 20;
 
     // GET SESSIONS
-
     [HttpGet("sessions")]
     public async Task<IActionResult> GetSessions()
     {
@@ -533,7 +506,6 @@ public class UsersController : ControllerBase
         var historyStart = now.AddDays(-SessionHistoryDays);
 
         // ACTIVE SESSIONS + LAST 30 DAYS
-
         var sessions = await _context.UserSessions
             .AsNoTracking()
             .Where(s =>
@@ -543,14 +515,12 @@ public class UsersController : ControllerBase
             .ToListAsync();
 
         // MAP TO RESPONSE (NO TOKEN)
-
         var items = sessions
             .Select(s =>
             {
                 var isActive = s.IsActive && s.ExpiresAt > now;
 
                 // STILL ACTIVE BUT PAST EXPIRY = EXPIRED
-
                 var status = isActive
                     ? "Active"
                     : s.IsActive ? "Expired" : "LoggedOut";
@@ -569,8 +539,11 @@ public class UsersController : ControllerBase
                     browser = s.Browser,
                     ipAddress = s.IpAddress,
                     createdAt = AsUtc(s.CreatedAt),
-                    lastActiveAt = AsUtc(s.LastActiveAt ?? s.CreatedAt),
-                    endedAt = endedAt.HasValue ? AsUtc(endedAt.Value) : (DateTime?)null,
+                    lastActiveAt = AsUtc(
+                        s.LastActiveAt ?? s.CreatedAt),
+                    endedAt = endedAt.HasValue
+                        ? AsUtc(endedAt.Value)
+                        : (DateTime?)null,
                     status,
                     logoutReason = s.LogoutReason,
                     isCurrent = s.Token == currentToken
@@ -579,14 +552,12 @@ public class UsersController : ControllerBase
             .ToList();
 
         // CURRENT DEVICE FIRST
-
         var active = items
             .Where(s => s.status == "Active")
             .OrderByDescending(s => s.isCurrent)
             .ThenByDescending(s => s.lastActiveAt);
 
         // NEWEST FIRST
-
         var history = items
             .Where(s => s.status != "Active")
             .OrderByDescending(s => s.endedAt ?? s.createdAt)
@@ -596,7 +567,6 @@ public class UsersController : ControllerBase
     }
 
     // LOG OUT ONE SESSION
-
     [HttpPost("sessions/{sessionId:int}/logout")]
     public async Task<IActionResult> LogoutSession(int sessionId)
     {
@@ -620,7 +590,6 @@ public class UsersController : ControllerBase
         }
 
         // MUST BELONG TO THIS USER
-
         var session = await _context.UserSessions
             .FirstOrDefaultAsync(s =>
                 s.SessionId == sessionId &&
@@ -636,7 +605,6 @@ public class UsersController : ControllerBase
         }
 
         // BLOCK CURRENT SESSION
-
         if (session.Token == GetCurrentToken())
         {
             return BadRequest(new
@@ -648,6 +616,7 @@ public class UsersController : ControllerBase
         session.IsActive = false;
         session.LoggedOutAt = DateTime.UtcNow;
         session.LogoutReason = SessionLogoutReasons.LoggedOutRemotely;
+
         await _context.SaveChangesAsync();
 
         return Ok(new
@@ -657,7 +626,6 @@ public class UsersController : ControllerBase
     }
 
     // LOG OUT OTHER SESSIONS
-
     [HttpPost("sessions/logout-others")]
     public async Task<IActionResult> LogoutOtherSessions()
     {
@@ -681,7 +649,6 @@ public class UsersController : ControllerBase
         }
 
         // EVERY ACTIVE SESSION EXCEPT THIS ONE
-
         var currentToken = GetCurrentToken();
 
         var otherSessions = await _context.UserSessions
@@ -712,14 +679,12 @@ public class UsersController : ControllerBase
     }
 
     // MARK DB DATES AS UTC
-
     private static DateTime AsUtc(DateTime value)
     {
         return DateTime.SpecifyKind(value, DateTimeKind.Utc);
     }
 
     // GET CURRENT TOKEN
-
     private string GetCurrentToken()
     {
         const string bearerPrefix = "Bearer ";

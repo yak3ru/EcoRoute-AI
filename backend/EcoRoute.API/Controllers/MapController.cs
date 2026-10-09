@@ -56,6 +56,7 @@ public class MapController : ControllerBase
 
         try
         {
+            // Requests the road route from the configured routing service.
             var response =
                 await _httpClient.GetAsync(url);
 

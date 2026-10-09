@@ -1,4 +1,3 @@
-
 using EcoRoute.API.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -22,6 +21,7 @@ public class DistanceController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetDistanceMatrix()
     {
+        // Gets the logged-in user's ID to return only their distance data.
         var userIdValue = User.FindFirstValue(
             ClaimTypes.NameIdentifier);
 

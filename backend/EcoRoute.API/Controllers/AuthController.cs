@@ -24,7 +24,6 @@ public class AuthController : ControllerBase
     private readonly IConfiguration _configuration;
 
     // 2FA SETTINGS
-
     private const string TrustedDeviceCookieName = "ecoroute_trusted_device";
     private const int CodeExpiryMinutes = 5;
     private const int MaxVerifyAttempts = 5;
@@ -46,7 +45,6 @@ public class AuthController : ControllerBase
     }
 
     // REGISTER
-
     [HttpPost("register")]
     public async Task<IActionResult> Register(RegisterRequest request)
     {
@@ -78,7 +76,6 @@ public class AuthController : ControllerBase
         }
 
         // PASSWORD REQUIREMENTS
-
         if (request.Password.Length < 8)
         {
             return BadRequest(new
@@ -163,7 +160,6 @@ public class AuthController : ControllerBase
     }
 
     // LOGIN
-
     [HttpPost("login")]
     [EnableRateLimiting("auth")]
     public async Task<IActionResult> Login(LoginRequest request)
@@ -197,7 +193,6 @@ public class AuthController : ControllerBase
         }
 
         // TRUSTED DEVICE: SKIP 2FA
-
         var trustedDevice = await FindTrustedDeviceAsync(user.UserId);
 
         if (trustedDevice != null)
@@ -209,7 +204,6 @@ public class AuthController : ControllerBase
         var now = DateTime.UtcNow;
 
         // REUSE A CODE SENT IN THE LAST 60s
-
         var recentChallenge = await _context.TwoFactorChallenges
             .Where(c =>
                 c.UserId == user.UserId &&
@@ -228,7 +222,6 @@ public class AuthController : ControllerBase
         }
 
         // NEW CODE: CANCEL OLDER ONES
-
         await _context.TwoFactorChallenges
             .Where(c =>
                 c.UserId == user.UserId &&
@@ -251,7 +244,6 @@ public class AuthController : ControllerBase
         };
 
         // SEND FIRST, SAVE AFTER
-
         try
         {
             await _emailService.SendTwoFactorCodeEmailAsync(
@@ -273,16 +265,15 @@ public class AuthController : ControllerBase
         await _context.SaveChangesAsync();
 
         // NO JWT UNTIL THE CODE IS VERIFIED
-
         return Ok(BuildTwoFactorResponse(challenge, user, now));
     }
 
     // VERIFY 2FA CODE
-
     [HttpPost("verify-two-factor")]
     [EnableRateLimiting("auth")]
     public async Task<IActionResult> VerifyTwoFactor(VerifyTwoFactorRequest request)
     {
+        // Validates the 2FA challenge before creating an authenticated session.
         if (string.IsNullOrWhiteSpace(request.ChallengeId))
         {
             return TwoFactorError(
@@ -338,7 +329,6 @@ public class AuthController : ControllerBase
         }
 
         // COUNT THE ATTEMPT IN THE DB FIRST (BLOCKS PARALLEL GUESSES)
-
         var reserved = await _context.TwoFactorChallenges
             .Where(c =>
                 c.TwoFactorChallengeId == challenge.TwoFactorChallengeId &&
@@ -355,7 +345,6 @@ public class AuthController : ControllerBase
         }
 
         // WRONG CODE
-
         if (!BCrypt.Net.BCrypt.Verify(code, challenge.CodeHash))
         {
             var attemptsRemaining =
@@ -382,7 +371,6 @@ public class AuthController : ControllerBase
         }
 
         // CORRECT CODE: MARK AS USED AND GIVE THE ATTEMPT BACK
-
         var verified = await _context.TwoFactorChallenges
             .Where(c =>
                 c.TwoFactorChallengeId == challenge.TwoFactorChallengeId &&
@@ -400,7 +388,6 @@ public class AuthController : ControllerBase
         }
 
         // ONLY TRUST THE DEVICE WHEN REMEMBER ME IS CHECKED
-
         if (challenge.RememberMe)
         {
             IssueTrustedDevice(challenge.UserId, now);
@@ -410,7 +397,6 @@ public class AuthController : ControllerBase
     }
 
     // RESEND 2FA CODE
-
     [HttpPost("resend-two-factor-code")]
     [EnableRateLimiting("auth")]
     public async Task<IActionResult> ResendTwoFactorCode(
@@ -445,7 +431,6 @@ public class AuthController : ControllerBase
         }
 
         // 60 SECOND COOLDOWN
-
         var secondsSinceLastSend = (now - challenge.LastSentAt).TotalSeconds;
 
         if (secondsSinceLastSend < ResendCooldownSeconds)
@@ -494,7 +479,6 @@ public class AuthController : ControllerBase
         }
 
         // FAILED ATTEMPTS ARE NOT RESET
-
         challenge.CodeHash = BCrypt.Net.BCrypt.HashPassword(code);
         challenge.ExpiresAt = now.AddMinutes(CodeExpiryMinutes);
         challenge.LastSentAt = now;
@@ -511,7 +495,6 @@ public class AuthController : ControllerBase
     }
 
     // LOGOUT
-
     [HttpPost("logout")]
     public async Task<IActionResult> Logout()
     {
@@ -554,6 +537,7 @@ public class AuthController : ControllerBase
         session.IsActive = false;
         session.LoggedOutAt = DateTime.UtcNow;
         session.LogoutReason = SessionLogoutReasons.SignedOut;
+
         await _context.SaveChangesAsync();
 
         return Ok(new
@@ -563,7 +547,6 @@ public class AuthController : ControllerBase
     }
 
     // FORGOT PASSWORD
-
     [HttpPost("forgot-password")]
     public async Task<IActionResult> ForgotPassword(
         ForgotPasswordRequest request)
@@ -593,7 +576,6 @@ public class AuthController : ControllerBase
         }
 
         // RESEND COOLDOWN
-
         if (user.PasswordResetLastSentAt.HasValue)
         {
             var secondsSinceLastEmail =
@@ -617,7 +599,6 @@ public class AuthController : ControllerBase
         }
 
         // GENERATE RESET TOKEN
-
         var resetToken = Convert.ToHexString(
             System.Security.Cryptography.RandomNumberGenerator
                 .GetBytes(32));
@@ -633,7 +614,6 @@ public class AuthController : ControllerBase
         await _context.SaveChangesAsync();
 
         // BUILD RESET URL
-
         var frontendUrl =
             _configuration["FrontendUrl"];
 
@@ -655,7 +635,6 @@ public class AuthController : ControllerBase
             $"{frontendUrl}/reset-password?token={encodedToken}";
 
         // SEND EMAIL
-
         try
         {
             await _emailService.SendPasswordResetEmailAsync(
@@ -690,14 +669,12 @@ public class AuthController : ControllerBase
     }
 
     // RESET PASSWORD
-
     [HttpPost("reset-password")]
     [AllowAnonymous]
     public async Task<IActionResult> ResetPassword(
         [FromBody] ResetPasswordRequest request)
     {
         // VALIDATE TOKEN
-
         if (string.IsNullOrWhiteSpace(request.Token))
         {
             return BadRequest(new
@@ -719,7 +696,6 @@ public class AuthController : ControllerBase
         }
 
         // CHECK EXPIRATION
-
         if (!user.PasswordResetTokenExpiresAt.HasValue ||
             user.PasswordResetTokenExpiresAt.Value <= DateTime.UtcNow)
         {
@@ -730,7 +706,6 @@ public class AuthController : ControllerBase
         }
 
         // PASSWORD VALIDATION
-
         if (string.IsNullOrWhiteSpace(request.NewPassword))
         {
             return BadRequest(new
@@ -797,7 +772,6 @@ public class AuthController : ControllerBase
         }
 
         // PREVENT PASSWORD REUSE
-
         if (BCrypt.Net.BCrypt.Verify(
             request.NewPassword,
             user.PasswordHash))
@@ -809,7 +783,6 @@ public class AuthController : ControllerBase
         }
 
         // UPDATE PASSWORD
-
         user.PasswordHash =
             BCrypt.Net.BCrypt.HashPassword(
                 request.NewPassword);
@@ -818,13 +791,11 @@ public class AuthController : ControllerBase
         user.PasswordChangedAt = user.UpdatedAt;
 
         // INVALIDATE RESET TOKEN
-
         user.PasswordResetToken = null;
         user.PasswordResetTokenExpiresAt = null;
         user.PasswordResetLastSentAt = null;
 
         // INVALIDATE SESSIONS
-
         var activeSessions = await _context.UserSessions
             .Where(s =>
                 s.UserId == user.UserId &&
@@ -841,7 +812,6 @@ public class AuthController : ControllerBase
         }
 
         // REVOKE TRUSTED DEVICES
-
         await _context.TrustedDevices
             .Where(d =>
                 d.UserId == user.UserId &&
@@ -850,7 +820,6 @@ public class AuthController : ControllerBase
                 .SetProperty(d => d.RevokedAt, (DateTime?)loggedOutAt));
 
         // SAVE
-
         await _context.SaveChangesAsync();
 
         return Ok(new
@@ -860,7 +829,6 @@ public class AuthController : ControllerBase
     }
 
     // HELPERS
-
     private async Task<AuthResponse> CreateSessionAsync(User user, bool rememberMe)
     {
         var token = _jwtService.GenerateToken(user, rememberMe);
@@ -909,7 +877,6 @@ public class AuthController : ControllerBase
         var now = DateTime.UtcNow;
 
         // ONLY THE COOKIE DECIDES TRUST, NOT IP OR BROWSER
-
         return await _context.TrustedDevices
             .FirstOrDefaultAsync(d =>
                 d.UserId == userId &&
@@ -984,7 +951,6 @@ public class AuthController : ControllerBase
     }
 
     // r••••••@gmail.com
-
     private static string MaskEmail(string email)
     {
         var at = email.IndexOf('@');

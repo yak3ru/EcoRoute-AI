@@ -242,6 +242,7 @@ public class RoutingConstraintsController : ControllerBase
         });
     }
 
+    // Gets the logged-in user's ID from the authentication claims.
     private int? GetUserId()
     {
         var userIdValue = User.FindFirstValue(

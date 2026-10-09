@@ -1,4 +1,3 @@
-
 using EcoRoute.API.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -426,23 +425,22 @@ public class EcoRouteDbContext : DbContext
         // OPERATIONS HISTORY
 
         modelBuilder.Entity<OperationHistory>(entity =>
-{
-    entity.ToTable("operation_history");
+        {
+            entity.ToTable("operation_history");
 
-    entity.HasKey(e => e.OperationHistoryId);
+            entity.HasKey(e => e.OperationHistoryId);
 
-    entity.Property(e => e.RouteData)
-        .HasColumnType("longtext")
-        .IsRequired();
+            entity.Property(e => e.RouteData)
+                .HasColumnType("longtext")
+                .IsRequired();
 
-    entity.HasIndex(e => new { e.UserId, e.OperationDate });
+            entity.HasIndex(e => new { e.UserId, e.OperationDate });
 
-    entity.HasOne<User>()
-        .WithMany()
-        .HasForeignKey(e => e.UserId)
-        .OnDelete(DeleteBehavior.Cascade);
-});
-
+            entity.HasOne<User>()
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
 
         // OPERATION REPORT UPLOADS
 
@@ -466,7 +464,6 @@ public class EcoRouteDbContext : DbContext
             entity.Property(e => e.UploadedAt)
                 .HasColumnName("UploadedAt");
         });
-
 
         // TWO-FACTOR CHALLENGES
 
