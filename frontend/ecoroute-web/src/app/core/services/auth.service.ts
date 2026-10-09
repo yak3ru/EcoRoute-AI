@@ -156,7 +156,6 @@ export class AuthService {
   }
 
   private saveSession(response: AuthResponse): void {
-    localStorage.setItem(this.tokenKey, response.token);
 
     localStorage.setItem(
       this.userKey,
