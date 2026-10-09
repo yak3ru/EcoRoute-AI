@@ -687,18 +687,6 @@ public class UsersController : ControllerBase
     // GET CURRENT TOKEN
     private string GetCurrentToken()
     {
-        const string bearerPrefix = "Bearer ";
-
-        var authorizationHeader =
-            Request.Headers.Authorization.ToString();
-
-        if (!authorizationHeader.StartsWith(
-                bearerPrefix,
-                StringComparison.OrdinalIgnoreCase))
-        {
-            return string.Empty;
-        }
-
-        return authorizationHeader[bearerPrefix.Length..].Trim();
+       return Request.Cookies["ecoroute_auth"] ?? string.Empty;
     }
 }

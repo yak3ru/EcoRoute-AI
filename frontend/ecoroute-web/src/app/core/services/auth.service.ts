@@ -11,7 +11,6 @@ export interface LoginRequest {
 
 export interface AuthResponse {
   requiresTwoFactor?: false;
-  token: string;
   userId: number;
   fullName: string;
   email: string;
@@ -186,9 +185,6 @@ export class AuthService {
     localStorage.removeItem(this.userKey);
   }
 
-  getToken(): string | null {
-    return localStorage.getItem(this.tokenKey);
-  }
 
   getUser(): any {
     const user = localStorage.getItem(this.userKey);
@@ -205,6 +201,6 @@ export class AuthService {
   }
 
   isLoggedIn(): boolean {
-    return !!this.getToken();
+    return !!this.getUser();
   }
 }

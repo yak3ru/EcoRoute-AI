@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Cryptography;
 using System.Text;
+using Microsoft.AspNetCore.CookiePolicy;
 
 namespace EcoRoute.API.Controllers;
 
@@ -498,20 +499,9 @@ public class AuthController : ControllerBase
     [HttpPost("logout")]
     public async Task<IActionResult> Logout()
     {
-        if (!Request.Headers.TryGetValue(
-            "Authorization",
-            out var authorizationHeader))
-        {
-            return Unauthorized(new
-            {
-                message = "Authorization token is required."
-            });
-        }
-
-        var token = authorizationHeader
-            .ToString()
-            .Replace("Bearer ", "", StringComparison.OrdinalIgnoreCase)
-            .Trim();
+        var token = Request.Cookies["ecoroute_auth"];
+        if(string.IsNullOrWhiteSpace(token))
+            return Unauthorized (new { message = "Authorization token is required"});
 
         if (string.IsNullOrWhiteSpace(token))
         {
@@ -540,6 +530,8 @@ public class AuthController : ControllerBase
 
         await _context.SaveChangesAsync();
 
+        Response.Cookies.Delete("ecoroute_auth", new CookieOptions { Path = "/api", Secure = true, SameSite = SameSiteMode.Lax});
+        
         return Ok(new
         {
             message = "Logged out successfully."
@@ -853,16 +845,30 @@ public class AuthController : ControllerBase
         });
 
         await _context.SaveChangesAsync();
+        
+        //set the cookie when a session is created
+        Response.Cookies.Append("ecoroute_auth", token, new CookieOptions
+        {
+            HttpOnly=true,
+            Secure=true,
+            SameSite = SameSiteMode.Lax,
+            Path="/api",
+            Expires=rememberMe ? expiration : null, // null = cookie ends when browser closes
+            IsEssential = true
 
+        });
+        
         return new AuthResponse
         {
-            Token = token,
             UserId = user.UserId,
             FullName = user.FullName,
             Email = user.Email,
             Username = user.Username,
             Role = user.Role
         };
+
+    
+       
     }
 
     private async Task<TrustedDevice?> FindTrustedDeviceAsync(int userId)

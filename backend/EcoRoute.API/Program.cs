@@ -89,33 +89,20 @@ builder.Services.AddAuthentication(
 
         options.Events = new JwtBearerEvents
         {
+            OnMessageReceived = context =>
+                {
+                    context.Token = context.Request.Cookies["ecoroute_auth"];
+                    return Task.CompletedTask;
+                },
+
             OnTokenValidated = async context =>
             {
                 var dbContext =
                     context.HttpContext.RequestServices
                         .GetRequiredService<EcoRouteDbContext>();
 
-                var authorizationHeader =
-                    context.HttpContext.Request.Headers.Authorization.ToString();
-
-                if (string.IsNullOrWhiteSpace(authorizationHeader))
-                {
-                    context.Fail("Authorization header is missing.");
-                    return;
-                }
-
-                const string bearerPrefix = "Bearer ";
-
-                if (!authorizationHeader.StartsWith(
-                        bearerPrefix,
-                        StringComparison.OrdinalIgnoreCase))
-                {
-                    context.Fail("Invalid authorization header.");
-                    return;
-                }
-
                 var token =
-                    authorizationHeader[bearerPrefix.Length..].Trim();
+                    context.Request.Cookies["ecoroute_auth"];
 
                 if (string.IsNullOrWhiteSpace(token))
                 {

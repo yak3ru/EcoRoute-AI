@@ -5,35 +5,22 @@ import { catchError, throwError } from 'rxjs';
 import { AuthService } from './auth.service';
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
-
   const authService = inject(AuthService);
   const router = inject(Router);
-  const token = authService.getToken();
 
-  if (!token) {
-    return next(req);
-  }
-
-  const authenticatedRequest = req.clone({
-    setHeaders: {
-      Authorization: `Bearer ${token}`
-    }
+  const authReq = req.clone({
+    withCredentials: true,
+    setHeaders: { 'X-Requested-With': 'EcoRoute' }
   });
 
-  return next(authenticatedRequest).pipe(
+  return next(authReq).pipe(
     catchError((error: HttpErrorResponse) => {
-
-      // SESSION WAS LOGGED OUT OR EXPIRED
-
-      if (
-        error.status === 401 &&
-        authService.getToken() === token
-      ) {
+      if (error.status === 401 && authService.isLoggedIn()) {
         authService.clearSession();
         router.navigate(['/login']);
       }
-
       return throwError(() => error);
     })
   );
 };
+
