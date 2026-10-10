@@ -19,6 +19,7 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
   // ============================================================
 
   currentDate = '';
+  systemDate = '';
 
   // ============================================================
   // DASHBOARD MAP ROUTES
@@ -144,17 +145,45 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
   // ============================================================
 
   // Initializes the dashboard and starts loading its data.
-  ngOnInit(): void {
-    this.currentDate =
-      new Date().toLocaleDateString('en-US', {
-        month: 'long',
-        day: 'numeric',
-        year: 'numeric'
-      });
+  
+ngOnInit(): void {
+  this.subscriptions.add(
+    this.http
+      .get<{
+        timeZone: string;
+        currentDate: string;
+        currentDateTime: string;
+      }>(`${environment.apiUrl}/system/time`)
+      .subscribe({
+        next: response => {
+          this.systemDate = response.currentDate;
 
-    this.loadAreaLocations();
-    this.loadDashboardData();
-  }
+          const [year, month, day] =
+            response.currentDate.split('-').map(Number);
+
+          this.currentDate = new Date(
+            year,
+            month - 1,
+            day
+          ).toLocaleDateString('en-US', {
+            month: 'long',
+            day: 'numeric',
+            year: 'numeric'
+          });
+
+          this.loadAreaLocations();
+          this.loadDashboardData();
+        },
+        error: error => {
+          console.error(
+            'Failed to get Philippine system date:',
+            error
+          );
+        }
+      })
+  );
+}
+
 
   // Initializes the chart and map after the dashboard view is ready.
   ngAfterViewInit(): void {
@@ -182,7 +211,7 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
   // Checks the current operation status and loads the correct dashboard data.
   
 private loadDashboardData(): void {
-  const today = this.toLocalDateString(new Date());
+  const today = this.systemDate;
 
   this.subscriptions.add(
     this.http
@@ -243,7 +272,7 @@ private loadPredictionForDate(
         next: response => {
           this.predictionTarget =
             targetDate ===
-            this.toLocalDateString(new Date())
+            this.systemDate
               ? 'today'
               : 'tomorrow';
 
@@ -296,25 +325,38 @@ private loadPredictionForDate(
 
   // Loads recent waste records to calculate the normal waste baseline.
   private loadNormalWasteBaseline(): void {
-    const today =
-      this.toLocalDateString(new Date());
+    const [year, month, day] =
+  this.systemDate.split('-').map(Number);
 
-    console.log(
-      'Starting normal waste baseline...'
-    );
+const todayDate = new Date(
+  year,
+  month - 1,
+  day
+);
 
-    console.log(
-      'Today:',
-      today
-    );
+const today =
+  this.systemDate;
 
-    // Look back 30 days for actual waste records
+console.log(
+  'Starting normal waste baseline...'
+);
 
-    const startDate = new Date();
+console.log(
+  'Today:',
+  today
+);
 
-    startDate.setDate(
-      startDate.getDate() - 30
-    );
+// Look back 30 days for actual waste records
+
+const startDate = new Date(
+  year,
+  month - 1,
+  day
+);
+
+startDate.setDate(
+  startDate.getDate() - 30
+);
 
     const startDateString =
       this.toLocalDateString(startDate);
@@ -562,10 +604,7 @@ private loadPredictionForDate(
         )
         .subscribe({
           next: dates => {
-            const today =
-              this.toLocalDateString(
-                new Date()
-              );
+            const today = this.systemDate;
 
             const previousDate =
               dates
@@ -724,17 +763,23 @@ private loadPredictionForDate(
             }
 
             if (this.hasWasteData) {
-              const tomorrow =
-                new Date();
+              const [year, month, day] =
+                this.systemDate.split('-').map(Number);
 
-              tomorrow.setDate(
-                tomorrow.getDate() + 1
+              const tomorrow = new Date(
+                year,
+                month - 1,
+                day
               );
 
+              tomorrow.setDate(tomorrow.getDate() + 1);
+
               const tomorrowString =
-                this.toLocalDateString(
-                  tomorrow
-                );
+                `${tomorrow.getFullYear()}-${String(
+                  tomorrow.getMonth() + 1
+                ).padStart(2, '0')}-${String(
+                  tomorrow.getDate()
+                ).padStart(2, '0')}`;
 
               console.log(
                 'CSV uploaded.'
@@ -1254,8 +1299,11 @@ private loadPredictionForDate(
       nextStartDate.getDate() + 7
     );
 
+    const [year, month, day] =
+      this.systemDate.split('-').map(Number);
+
     const today =
-      new Date();
+      new Date(year, month - 1, day);
 
     today.setHours(
       23,
@@ -1317,26 +1365,30 @@ private loadPredictionForDate(
   }
 
   // Gets the starting date for the current seven day chart period.
-  private getStartOfChartPeriod(): Date {
-    const today =
-      new Date();
+  // Gets the starting date for the current seven day chart period.
+private getStartOfChartPeriod(): Date {
+  const [year, month, day] =
+    this.systemDate.split('-').map(Number);
 
-    today.setHours(
-      0,
-      0,
-      0,
-      0
-    );
+  const today =
+    new Date(year, month - 1, day);
 
-    const start =
-      new Date(today);
+  today.setHours(
+    0,
+    0,
+    0,
+    0
+  );
 
-    start.setDate(
-      today.getDate() - 6
-    );
+  const start =
+    new Date(today);
 
-    return start;
-  }
+  start.setDate(
+    today.getDate() - 6
+  );
+
+  return start;
+}
 
   // ============================================================
   // COLLECTION MAP

@@ -22,7 +22,8 @@ public class VehiclesController : ControllerBase
     // Checks if the user currently has an active collection operation.
     private async Task<bool> HasActiveOperationAsync(int userId)
     {
-        var operationDate = DateTime.UtcNow.AddHours(8).Date;
+        var manilaTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Asia/Manila");
+        var operationDate = TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, manilaTimeZone).Date;
 
         return await _context.OperationHistories
             .AnyAsync(operation =>
@@ -31,6 +32,7 @@ public class VehiclesController : ControllerBase
                 operation.OperationDate < operationDate.AddDays(1) &&
                 operation.Status == "Active");
     }
+
 
     // GET: api/Vehicles
     [HttpGet]

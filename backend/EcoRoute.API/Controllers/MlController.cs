@@ -307,7 +307,9 @@ public async Task<IActionResult> GetPredictionInsight(
 
     private DateTime GetPhilippineOperationDate()
     {
-        return DateTime.UtcNow.AddHours(8).Date;
+        var manilaTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Asia/Manila");
+
+        return TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, manilaTimeZone).Date;
     }
 
     [HttpPost("routes/operation/start")]

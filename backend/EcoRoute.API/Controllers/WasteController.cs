@@ -868,9 +868,11 @@ public class WasteController : ControllerBase
 
         // Temporary default:
         // Last 30 days based on today.
-        var end = endDate?.Date ?? DateTime.Today;
-        var start = startDate?.Date ?? end.AddDays(-29);
+        var manilaTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Asia/Manila");
+        var manilaToday = TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, manilaTimeZone).Date;
 
+        var end = endDate?.Date ?? manilaToday;
+        var start = startDate?.Date ?? end.AddDays(-29);
         var areaSummary = await _context.WasteRecords
             .AsNoTracking()
             .Include(w => w.Area)
@@ -912,7 +914,10 @@ public class WasteController : ControllerBase
         }
 
         // Default to the last 30 days
-        var end = endDate?.Date ?? DateTime.Today;
+        var manilaTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Asia/Manila");
+        var manilaToday = TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, manilaTimeZone).Date;
+
+        var end = endDate?.Date ?? manilaToday;
         var start = startDate?.Date ?? end.AddDays(-29);
 
         // Get all active areas belonging to the user

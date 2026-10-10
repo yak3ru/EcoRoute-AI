@@ -126,6 +126,8 @@ interface Vehicle {
 export class RoutePlanningComponent
   implements OnInit, AfterViewInit, OnDestroy {
 
+  systemDate = '';
+
   private roadGeometry = new Map<
     string,
     [number, number][]
@@ -213,12 +215,12 @@ isSavingTruck = false;
 
   routes: Route[] = [];
   private currentRouteResponse: MlRoutesResponse | null = null;
-  selectedDate: Date = new Date();
+  selectedDate: Date = new Date(0);
   isCalendarOpen = false;
 
   availableOperationDates: string[] = [];
 
-  calendarMonth: Date = new Date();
+  calendarMonth: Date = new Date(0);
 
   calendarDays: {
     date: Date;
@@ -239,8 +241,34 @@ isSavingTruck = false;
     '#65a30d'
   ];
 
+  
   ngOnInit(): void {
-    this.loadAreasAndRoutes();
+    this.http
+      .get<{ currentDate: string }>(
+        `${environment.apiUrl}/system/time`
+      )
+      .subscribe({
+        next: (response) => {
+          this.systemDate = response.currentDate;
+
+          const [year, month, day] =
+            this.systemDate.split('-').map(Number);
+
+          const backendDate =
+            new Date(year, month - 1, day);
+
+          this.selectedDate = new Date(backendDate);
+          this.calendarMonth = new Date(backendDate);
+
+          this.loadAreasAndRoutes();
+        },
+        error: (error) => {
+          console.error(
+            'Failed to fetch system date:',
+            error
+          );
+        }
+      });
   }
 
   ngAfterViewInit(): void {
@@ -453,9 +481,10 @@ isSavingTruck = false;
   
 
 private loadCurrentOperation(): void {
-  const today = this.toLocalDateString(new Date());
+  const today = this.systemDate;
 
-  this.selectedDate = new Date();
+  const [year, month, day] = today.split('-').map(Number);
+  this.selectedDate = new Date(year, month - 1, day);
   this.isHistoricalView = false;
 
   this.loadReportUploadStatus(today);
@@ -1025,7 +1054,7 @@ confirmCancelOperation(): void {
         this.operationStatus = 'NotStarted';
         this.showCancelConfirmation = false;
 
-        const today = this.toLocalDateString(new Date());
+        const today = this.systemDate;
 
         this.loadOperationRoutes(today, 'Cancelled');
       },
@@ -1542,7 +1571,7 @@ generateCalendarDays(): void {
 
   this.calendarDays = [];
 
-  const today = this.toLocalDateString(new Date());
+  const today = this.systemDate;
 
   for (let i = 0; i < 42; i++) {
     const date = new Date(gridStart);
@@ -1584,7 +1613,7 @@ nextCalendarMonth(): void {
 
 selectOperationDate(date: Date): void {
   const dateString = this.toLocalDateString(date);
-  const todayString = this.toLocalDateString(new Date());
+  const todayString = this.systemDate;
 
   if (
     dateString !== todayString &&

@@ -60,8 +60,10 @@ public class PredictionInsightService
         predictedWaste = Math.Round(predictedWaste, 2);
 
         // Use the Philippine operation date.
-        var today = DateTime.UtcNow.AddHours(8).Date;
+        var manilaTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Asia/Manila");
+        var today = TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, manilaTimeZone).Date;
         var startDate = today.AddDays(-30);
+
 
         // Only use areas belonging to this user.
         var ownedAreaIds = await _context.Areas

@@ -16,6 +16,8 @@ import { FormsModule } from '@angular/forms';
 })
 export class WasteDataComponent implements OnInit {
 
+  systemDate = '';
+
   // SUMMARY DATA
 
   totalWasteCollected = 0;
@@ -122,11 +124,27 @@ export class WasteDataComponent implements OnInit {
 
   // Loads the waste data when the component initializes.
   ngOnInit(): void {
-    this.loadWasteSummary();
-    this.loadAreaWasteSummary();
-    this.loadAreaParameters();
-    this.loadRecentCollections();
-  }
+  this.http
+    .get<{ currentDate: string }>(
+      `${environment.apiUrl}/system/time`
+    )
+    .subscribe({
+      next: (response) => {
+        this.systemDate = response.currentDate;
+
+        this.loadWasteSummary();
+        this.loadAreaWasteSummary();
+        this.loadAreaParameters();
+        this.loadRecentCollections();
+      },
+      error: (error) => {
+        console.error(
+          'Failed to fetch system date:',
+          error
+        );
+      }
+    });
+}
 
   // DATA LOADING
 
@@ -369,52 +387,61 @@ export class WasteDataComponent implements OnInit {
   }
 
   // Calculates the selected date range for API requests.
-  getDateRange(): {
-    startDate: string | null;
-    endDate: string | null;
-  } {
-    const endDate =
-      new Date();
-
-    if (
-      this.selectedDateRange ===
-      'All Time'
-    ) {
-      return {
-        startDate: null,
-        endDate: null
-      };
-    }
-
-    const days =
-      this.selectedDateRange ===
-      'Last 7 Days'
-        ? 6
-        : 29;
-
-    const startDate =
-      new Date(endDate);
-
-    startDate.setDate(
-      endDate.getDate() -
-      days
-    );
-
-    const formatDate =
-      (date: Date): string => {
-        return date
-          .toISOString()
-          .split('T')[0];
-      };
-
+  
+getDateRange(): {
+  startDate: string | null;
+  endDate: string | null;
+} {
+  if (
+    this.selectedDateRange ===
+    'All Time'
+  ) {
     return {
-      startDate:
-        formatDate(startDate),
-
-      endDate:
-        formatDate(endDate)
+      startDate: null,
+      endDate: null
     };
   }
+
+  const [year, month, day] =
+    this.systemDate.split('-').map(Number);
+
+  const endDate =
+    new Date(year, month - 1, day);
+
+  const days =
+    this.selectedDateRange ===
+    'Last 7 Days'
+      ? 6
+      : 29;
+
+  const startDate =
+    new Date(endDate);
+
+  startDate.setDate(
+    endDate.getDate() - days
+  );
+
+  const formatDate =
+    (date: Date): string => {
+      const year = date.getFullYear();
+
+      const month = String(
+        date.getMonth() + 1
+      ).padStart(2, '0');
+
+      const day = String(
+        date.getDate()
+      ).padStart(2, '0');
+
+      return `${year}-${month}-${day}`;
+    };
+
+  return {
+    startDate: formatDate(startDate),
+    endDate: formatDate(endDate)
+  };
+}
+
 
   // DATE RANGE
 
