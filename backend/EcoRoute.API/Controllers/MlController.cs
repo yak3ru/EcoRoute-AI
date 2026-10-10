@@ -61,6 +61,64 @@ public class MlController : ControllerBase
         }
     }
 
+
+[HttpGet("insights")]
+public async Task<IActionResult> GetPredictionInsight(
+    [FromQuery] string? targetDate = null)
+{
+    if (!TryGetUserId(out var userId))
+        return Unauthorized();
+
+    var target = GetPhilippineOperationDate();
+
+    if (!string.IsNullOrWhiteSpace(targetDate))
+    {
+        if (!DateTime.TryParseExact(
+            targetDate,
+            "yyyy-MM-dd",
+            System.Globalization.CultureInfo.InvariantCulture,
+            System.Globalization.DateTimeStyles.None,
+            out var parsedDate))
+        {
+            return BadRequest(new
+            {
+                message = "targetDate must use yyyy-MM-dd format."
+            });
+        }
+
+        target = parsedDate.Date;
+    }
+
+    var insight = await _context.AiPredictionInsights
+        .AsNoTracking()
+        .Where(item =>
+            item.UserId == userId &&
+            item.TargetDate == target)
+        .OrderByDescending(item => item.GeneratedAt)
+        .Select(item => new
+        {
+            item.TargetDate,
+            item.PredictedWasteKg,
+            item.NormalWasteKg,
+            item.PredictionChangePercent,
+            item.PredictionLevel,
+            item.InsightMessage,
+            item.SuggestedAction
+        })
+        .FirstOrDefaultAsync();
+
+    if (insight == null)
+    {
+        return NotFound(new
+        {
+            message = "No saved prediction insight exists for this date."
+        });
+    }
+
+    return Ok(insight);
+}
+
+
     [HttpGet("routes")]
     public async Task<IActionResult> GetRoutes()
     {
@@ -726,45 +784,66 @@ public class MlController : ControllerBase
         });
     }
 
-    [HttpGet("routes/operation/status/{date}")]
-    public async Task<IActionResult> GetOperationStatus(string date)
+    
+[HttpGet("routes/operation/status/{date}")]
+public async Task<IActionResult> GetOperationStatus(string date)
+{
+    if (!TryGetUserId(out var userId))
+        return Unauthorized();
+
+    if (!DateTime.TryParseExact(
+        date,
+        "yyyy-MM-dd",
+        System.Globalization.CultureInfo.InvariantCulture,
+        System.Globalization.DateTimeStyles.None,
+        out var parsedDate))
     {
-        if (!TryGetUserId(out var userId))
-            return Unauthorized();
-
-        if (!DateTime.TryParseExact(
-            date,
-            "yyyy-MM-dd",
-            System.Globalization.CultureInfo.InvariantCulture,
-            System.Globalization.DateTimeStyles.None,
-            out var parsedDate))
+        return BadRequest(new
         {
-            return BadRequest(new
-            {
-                message = "Date must use yyyy-MM-dd format."
-            });
-        }
-
-        var startDate = parsedDate.Date;
-        var endDate = startDate.AddDays(1);
-
-        var operation = await _context.OperationHistories
-            .AsNoTracking()
-            .Where(item =>
-                item.UserId == userId &&
-                item.OperationDate >= startDate &&
-                item.OperationDate < endDate)
-            .OrderByDescending(item => item.CreatedAt)
-            .FirstOrDefaultAsync();
-
-        if (operation == null)
-            return NotFound(new
-            {
-                message = "No operation exists for this date."
-            });
-
-        return Ok(new { status = operation.Status });
+            message = "Date must use yyyy-MM-dd format."
+        });
     }
+
+    var startDate = parsedDate.Date;
+    var endDate = startDate.AddDays(1);
+
+    var operation = await _context.OperationHistories
+        .AsNoTracking()
+        .Where(item =>
+            item.UserId == userId &&
+            item.OperationDate >= startDate &&
+            item.OperationDate < endDate)
+        .OrderByDescending(item => item.CreatedAt)
+        .FirstOrDefaultAsync();
+
+    if (operation == null)
+    {
+        return NotFound(new
+        {
+            message = "No operation exists for this date."
+        });
+    }
+
+    var ownedAreaIds = await _context.Areas
+        .AsNoTracking()
+        .Where(area => area.UserId == userId)
+        .Select(area => area.AreaId)
+        .ToListAsync();
+
+    var hasWasteData = await _context.WasteRecords
+        .AsNoTracking()
+        .AnyAsync(record =>
+            ownedAreaIds.Contains(record.AreaId) &&
+            record.CollectionDate >= startDate &&
+            record.CollectionDate < endDate);
+
+    return Ok(new
+    {
+        status = operation.Status,
+        hasWasteData
+    });
+}
+
 
     [HttpPut("routes/p90/save")]
     public async Task<IActionResult> SaveP90Routes(
@@ -823,4 +902,127 @@ public class MlController : ControllerBase
             updatedAt = savedPlan.UpdatedAt
         });
     }
+
+
+private async Task GenerateAndSavePredictionInsightAsync(
+    int userId,
+    DateTime targetDate)
+{
+    // Do not call ML again if this date already has a saved insight.
+    var existingInsight = await _context.AiPredictionInsights
+        .AnyAsync(item =>
+            item.UserId == userId &&
+            item.TargetDate == targetDate.Date);
+
+    if (existingInsight)
+        return;
+
+    var predictions = await _mlService.GetPredictionsAsync(
+        userId,
+        targetDate.ToString("yyyy-MM-dd"));
+
+    if (!predictions.TryGetProperty("predictions", out var rows) ||
+        rows.ValueKind != JsonValueKind.Array)
+    {
+        throw new InvalidOperationException(
+            "The ML service returned an invalid predictions response.");
+    }
+
+    decimal predictedWaste = 0;
+
+    foreach (var row in rows.EnumerateArray())
+    {
+        if (row.TryGetProperty("P50Kg", out var p50) &&
+            p50.TryGetDecimal(out var value))
+        {
+            predictedWaste += value;
+        }
+    }
+
+    predictedWaste = Math.Round(predictedWaste, 2);
+
+    var today = GetPhilippineOperationDate();
+
+    // Find areas belonging to this user.
+    var ownedAreaIds = await _context.Areas
+        .Where(area => area.UserId == userId)
+        .Select(area => area.AreaId)
+        .ToListAsync();
+
+    // Get daily totals from dates before today.
+    var dailyTotals = await _context.WasteRecords
+        .AsNoTracking()
+        .Where(record =>
+            ownedAreaIds.Contains(record.AreaId) &&
+            record.CollectionDate < today &&
+            record.WeightKg >= 0)
+        .GroupBy(record => record.CollectionDate.Date)
+        .Select(group => new
+        {
+            Date = group.Key,
+            Total = group.Sum(record => record.WeightKg)
+        })
+        .OrderByDescending(day => day.Date)
+        .Take(7)
+        .ToListAsync();
+
+    if (dailyTotals.Count == 0)
+    {
+        throw new InvalidOperationException(
+            "There is not enough historical waste data to calculate a baseline.");
+    }
+
+    decimal normalWaste = Math.Round(
+        dailyTotals.Average(day => day.Total), 2);
+
+    decimal changePercent = normalWaste > 0
+        ? Math.Round(
+            ((predictedWaste - normalWaste) / normalWaste) * 100, 2)
+        : 0;
+
+    string level;
+    string message;
+    string action;
+
+    if (changePercent >= 20)
+    {
+        level = "Much higher than normal";
+        message = "High waste generation expected";
+        action = "Prepare additional collection capacity";
+    }
+    else if (changePercent >= 5)
+    {
+        level = "Slightly higher";
+        message = "Waste generation expected to increase";
+        action = "Prepare for increased waste volume";
+    }
+    else if (changePercent >= -5)
+    {
+        level = "Around normal";
+        message = "Waste generation expected to remain normal";
+        action = "Proceed with the planned collection capacity";
+    }
+    else
+    {
+        level = "Lower than normal";
+        message = "Waste generation expected to decrease";
+        action = "Adjust collection capacity accordingly";
+    }
+
+    _context.AiPredictionInsights.Add(new AiPredictionInsight
+    {
+        UserId = userId,
+        GeneratedAt = DateTime.UtcNow,
+        TargetDate = targetDate.Date,
+        PredictedWasteKg = predictedWaste,
+        NormalWasteKg = normalWaste,
+        PredictionChangePercent = changePercent,
+        PredictionLevel = level,
+        InsightMessage = message,
+        SuggestedAction = action
+    });
+
+    await _context.SaveChangesAsync();
+}
+
 }

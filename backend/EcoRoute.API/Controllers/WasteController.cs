@@ -6,6 +6,7 @@ using System.Security.Claims;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using EcoRoute.API.Models;
+using EcoRoute.API.Services;
 
 namespace EcoRoute.API.Controllers;
 
@@ -15,10 +16,14 @@ namespace EcoRoute.API.Controllers;
 public class WasteController : ControllerBase
 {
     private readonly EcoRouteDbContext _context;
+    private readonly PredictionInsightService _predictionInsightService;
 
-    public WasteController(EcoRouteDbContext context)
+    public WasteController(
+        EcoRouteDbContext context,
+        PredictionInsightService predictionInsightService)
     {
         _context = context;
+        _predictionInsightService = predictionInsightService;
     }
 
     [HttpGet]
@@ -579,6 +584,25 @@ public class WasteController : ControllerBase
                 message =
                     "The report could not be saved. No waste records were imported."
             });
+        }
+
+        Console.WriteLine(
+    $"CSV committed. Generating insight for user {userId}, target date {operationDay.AddDays(1):yyyy-MM-dd}");
+
+        try
+        {
+            var targetDate = operationDay.AddDays(1);
+
+            await _predictionInsightService.GenerateAndSavePredictionInsightAsync(
+                userId,
+                targetDate);
+        }
+        catch (Exception ex)
+        {
+            // The CSV upload has already committed.
+            // Log the error without failing the successful upload.
+            Console.WriteLine(
+                $"Prediction insight generation failed for user {userId}: {ex.Message}");
         }
 
         return Ok(new

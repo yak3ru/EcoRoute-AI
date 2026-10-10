@@ -22,6 +22,67 @@ namespace EcoRoute.API.Migrations
 
             MySqlModelBuilderExtensions.AutoIncrementColumns(modelBuilder);
 
+            modelBuilder.Entity("EcoRoute.API.Models.AiPredictionInsight", b =>
+                {
+                    b.Property<int>("InsightId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("InsightId");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("InsightId"));
+
+                    b.Property<DateTime>("GeneratedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("GeneratedAt");
+
+                    b.Property<string>("InsightMessage")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("varchar(255)")
+                        .HasColumnName("InsightMessage");
+
+                    b.Property<decimal>("NormalWasteKg")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("decimal(12,2)")
+                        .HasColumnName("NormalWasteKg");
+
+                    b.Property<decimal>("PredictedWasteKg")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("decimal(12,2)")
+                        .HasColumnName("PredictedWasteKg");
+
+                    b.Property<decimal>("PredictionChangePercent")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("decimal(10,2)")
+                        .HasColumnName("PredictionChangePercent");
+
+                    b.Property<string>("PredictionLevel")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)")
+                        .HasColumnName("PredictionLevel");
+
+                    b.Property<string>("SuggestedAction")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("varchar(255)")
+                        .HasColumnName("SuggestedAction");
+
+                    b.Property<DateTime>("TargetDate")
+                        .HasColumnType("date")
+                        .HasColumnName("TargetDate");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int")
+                        .HasColumnName("UserId");
+
+                    b.HasKey("InsightId");
+
+                    b.HasIndex("UserId", "TargetDate");
+
+                    b.ToTable("ai_prediction_insights", (string)null);
+                });
+
             modelBuilder.Entity("EcoRoute.API.Models.Area", b =>
                 {
                     b.Property<int>("AreaId")
@@ -590,6 +651,15 @@ namespace EcoRoute.API.Migrations
                     b.HasIndex("AreaId", "CollectionDate");
 
                     b.ToTable("waste_records", (string)null);
+                });
+
+            modelBuilder.Entity("EcoRoute.API.Models.AiPredictionInsight", b =>
+                {
+                    b.HasOne("EcoRoute.API.Models.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("EcoRoute.API.Models.Area", b =>

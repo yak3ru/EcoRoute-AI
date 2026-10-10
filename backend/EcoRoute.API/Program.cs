@@ -56,6 +56,7 @@ builder.Services.AddHttpClient("PythonML", client =>
 });
 
 builder.Services.AddScoped<MlService>();
+builder.Services.AddScoped<PredictionInsightService>();
 
 // AUTHENTICATION
 

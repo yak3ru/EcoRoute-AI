@@ -24,6 +24,8 @@ public class EcoRouteDbContext : DbContext
     public DbSet<TwoFactorChallenge> TwoFactorChallenges => Set<TwoFactorChallenge>();
     public DbSet<TrustedDevice> TrustedDevices => Set<TrustedDevice>();
     public DbSet<OperationReportUpload> OperationReportUploads { get; set; } = null!;
+    public DbSet<AiPredictionInsight> AiPredictionInsights
+    => Set<AiPredictionInsight>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -530,5 +532,71 @@ public class EcoRouteDbContext : DbContext
 
             entity.HasIndex(d => d.UserId);
         });
+
+
+        // AI PREDICTION INSIGHTS
+
+        modelBuilder.Entity<AiPredictionInsight>(entity =>
+        {
+            entity.ToTable("ai_prediction_insights");
+
+            entity.HasKey(i => i.InsightId);
+
+            entity.Property(i => i.InsightId)
+                .HasColumnName("InsightId")
+                .ValueGeneratedOnAdd();
+
+            entity.Property(i => i.UserId)
+                .HasColumnName("UserId")
+                .IsRequired();
+
+            entity.HasOne<User>()
+                .WithMany()
+                .HasForeignKey(i => i.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.Property(i => i.GeneratedAt)
+                .HasColumnName("GeneratedAt")
+                .IsRequired();
+
+            entity.Property(i => i.TargetDate)
+                .HasColumnName("TargetDate")
+                .HasColumnType("date")
+                .IsRequired();
+
+            entity.Property(i => i.PredictedWasteKg)
+                .HasColumnName("PredictedWasteKg")
+                .HasPrecision(12, 2);
+
+            entity.Property(i => i.NormalWasteKg)
+                .HasColumnName("NormalWasteKg")
+                .HasPrecision(12, 2);
+
+            entity.Property(i => i.PredictionChangePercent)
+                .HasColumnName("PredictionChangePercent")
+                .HasPrecision(10, 2);
+
+            entity.Property(i => i.PredictionLevel)
+                .HasColumnName("PredictionLevel")
+                .HasMaxLength(100)
+                .IsRequired();
+
+            entity.Property(i => i.InsightMessage)
+                .HasColumnName("InsightMessage")
+                .HasMaxLength(255)
+                .IsRequired();
+
+            entity.Property(i => i.SuggestedAction)
+                .HasColumnName("SuggestedAction")
+                .HasMaxLength(255)
+                .IsRequired();
+
+            entity.HasIndex(i => new
+            {
+                i.UserId,
+                i.TargetDate
+            });
+        });
+
     }
 }

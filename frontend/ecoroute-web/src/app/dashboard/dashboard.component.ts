@@ -180,116 +180,119 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
   // ============================================================
 
   // Checks the current operation status and loads the correct dashboard data.
-  private loadDashboardData(): void {
-    const today =
-      this.toLocalDateString(new Date());
+  
+private loadDashboardData(): void {
+  const today = this.toLocalDateString(new Date());
 
-    this.subscriptions.add(
-      this.http
-        .get<{ status: string }>(
-          `${this.mlApiUrl}/routes/operation/status/${today}`
-        )
-        .subscribe({
-          next: response => {
-            if (response?.status === 'Cancelled') {
-              this.dashboardMode = 'previous';
-              this.loadPreviousOperation();
-              this.loadPredictionForDate(today);
-              return;
-            }
+  this.subscriptions.add(
+    this.http
+      .get<{ status: string; hasWasteData: boolean }>(
+        `${this.mlApiUrl}/routes/operation/status/${today}`
+      )
+      .subscribe({
+        next: response => {
+          this.dashboardMode = 'current';
 
-            this.dashboardMode = 'current';
-            this.loadCurrentOperation(today);
-          },
+          if (response.status === 'Cancelled') {
+            this.dashboardMode = 'previous';
+            this.loadPreviousOperation();
+            this.loadPredictionForDate(today);
+            return;
+          }
+
+          if (
+            response.status === 'Completed' &&
+            !response.hasWasteData
+          ) {
+            this.loadCurrentOperation(today, false);
+            this.loadPredictionForDate(today);
+            return;
+          }
+
+          this.loadCurrentOperation(today);
+        },
 
           error: error => {
-            if (error.status === 404) {
-              this.dashboardMode = 'previous';
-              this.loadPreviousOperation();
-              this.loadPredictionForDate(today);
-              return;
+            if (error.status !== 404) {
+              console.error(
+                'Failed to load dashboard operation status:',
+                error
+              );
             }
-
-            console.error(
-              'Failed to load dashboard operation status:',
-              error
-            );
 
             this.dashboardMode = 'previous';
             this.loadPreviousOperation();
             this.loadPredictionForDate(today);
           }
-        })
-    );
-  }
+      })
+  );
+}
+
 
   // Loads the AI waste prediction for the selected date.
-  private loadPredictionForDate(
-    targetDate: string
-  ): void {
-    this.subscriptions.add(
-      this.http
-        .get<any>(
-          `${this.mlApiUrl}/predictions?targetDate=${targetDate}`
-        )
-        .subscribe({
-          next: response => {
-            this.predictionTarget =
-              targetDate ===
-              this.toLocalDateString(new Date())
-                ? 'today'
-                : 'tomorrow';
+  
+private loadPredictionForDate(
+  targetDate: string
+): void {
+  this.subscriptions.add(
+    this.http
+      .get<any>(
+        `${this.mlApiUrl}/insights?targetDate=${targetDate}`
+      )
+      .subscribe({
+        next: response => {
+          this.predictionTarget =
+            targetDate ===
+            this.toLocalDateString(new Date())
+              ? 'today'
+              : 'tomorrow';
 
-            const predictions =
-              response?.predictions ?? [];
+          this.aiPredictedWaste =
+            Number(response?.predictedWasteKg ?? 0);
 
-            this.aiPredictedWaste =
-              predictions.reduce(
-                (
-                  total: number,
-                  prediction: any
-                ) =>
-                  total +
-                  Number(
-                    prediction.P50Kg || 0
-                  ),
-                0
-              );
+          this.aiNormalWaste =
+            Number(response?.normalWasteKg ?? 0);
 
-            this.aiPredictedWaste =
-              Math.round(
-                this.aiPredictedWaste * 100
-              ) / 100;
+          this.aiPredictionChange =
+            Number(response?.predictionChangePercent ?? 0);
 
-            console.log(
-              'Prediction target:',
-              targetDate
-            );
+          this.predictionLevel =
+            response?.predictionLevel ?? '';
 
-            console.log(
-              'Predicted waste:',
-              this.aiPredictedWaste
-            );
+          this.predictionInsight =
+            response?.insightMessage ?? '';
 
-            this.loadNormalWasteBaseline();
-          },
+          this.predictionAction =
+            response?.suggestedAction ?? '';
 
-          error: error => {
-            console.error(
-              'Failed to load prediction:',
-              error
-            );
+          console.log(
+            'Saved insight target:',
+            targetDate
+          );
 
-            this.aiPredictedWaste = 0;
-            this.aiNormalWaste = 0;
-            this.aiPredictionChange = 0;
-            this.predictionLevel = '';
-            this.predictionInsight = '';
-            this.predictionAction = '';
-          }
-        })
-    );
-  }
+          console.log(
+            'Saved predicted waste:',
+            this.aiPredictedWaste
+          );
+        },
+
+        error: error => {
+          console.error(
+            'Failed to load saved prediction insight:',
+            error
+          );
+
+          this.aiPredictedWaste = 0;
+          this.aiNormalWaste = 0;
+          this.aiPredictionChange = 0;
+          this.predictionLevel = '';
+          this.predictionInsight = '';
+          this.predictionAction = '';
+        }
+      })
+  );
+}
+
 
   // Loads recent waste records to calculate the normal waste baseline.
   private loadNormalWasteBaseline(): void {
@@ -516,7 +519,8 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
 
   // Loads the current operation and updates the dashboard route information.
   private loadCurrentOperation(
-    date: string
+    date: string,
+    predictNextDay: boolean = true
   ): void {
     this.subscriptions.add(
       this.http
@@ -534,7 +538,7 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
 
             this.mapOperationDate = date;
 
-            this.loadActualWaste(date);
+            this.loadActualWaste(date, predictNextDay);
 
             this.updateCollectionMap();
           },
@@ -671,7 +675,7 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
       ) / 100;
   }
 
-  // Loads the actual collected waste for the selected operation date.
+  // load the actual collected waste for the selected operation date.
   private loadActualWaste(
     date: string,
     predictNextDay: boolean = true
@@ -821,7 +825,12 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
   }
 
   // Formats the actual waste value for display.
+  
   get wasteDisplay(): string {
+    if (!this.hasWasteData) {
+      return 'No data';
+    }
+
     return `${(
       this.wasteValue / 1000
     ).toFixed(1)} tons`;
