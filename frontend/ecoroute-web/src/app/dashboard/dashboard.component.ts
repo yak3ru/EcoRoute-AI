@@ -78,7 +78,7 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
   // CHART DATA
   // ============================================================
 
-  chartStartDate = this.getStartOfChartPeriod();
+  chartStartDate = new Date(0);
 
   chartDays: {
     date: Date;
@@ -157,6 +157,7 @@ ngOnInit(): void {
       .subscribe({
         next: response => {
           this.systemDate = response.currentDate;
+          this.chartStartDate = this.getStartOfChartPeriod();
 
           const [year, month, day] =
             response.currentDate.split('-').map(Number);
@@ -170,9 +171,11 @@ ngOnInit(): void {
             day: 'numeric',
             year: 'numeric'
           });
-
+          
           this.loadAreaLocations();
           this.loadDashboardData();
+          this.loadCollectionHistory();
+
         },
         error: error => {
           console.error(
@@ -186,6 +189,7 @@ ngOnInit(): void {
 
 
   // Initializes the chart and map after the dashboard view is ready.
+  
   ngAfterViewInit(): void {
     this.createWasteChart();
     this.createCollectionMap();
@@ -193,8 +197,6 @@ ngOnInit(): void {
     if (this.mapOperationDate) {
       this.updateCollectionMap();
     }
-
-    this.loadCollectionHistory();
   }
 
   // Cleans up subscriptions, the chart, and the map when the component is destroyed.
