@@ -168,7 +168,7 @@
 .history-card {
   width: 100%;
   min-width: 0;
-  height: clamp(300px, 29vh, 285px);
+  height: 320px;
   padding: 20px 36px 18px;
   background: #ffffff;
   border-radius: 38px;
@@ -246,7 +246,7 @@
 .insight-card {
   width: 100%;
   min-width: 0;
-  height: clamp(300px, 29vh, 285px);
+  height: 320px;
   padding: 18px 20px 14px;
   box-sizing: border-box;
   border-radius: 22px;
@@ -536,7 +536,7 @@
   .insight-card {
     width: 100%;
     min-width: 0;
-    height: 260px;
+    height: 300px;
   }
 
   .chart-container {
@@ -613,4 +613,21 @@
   .map-card {
     border-radius: 24px;
   }
+}
+
+.insight-fallback-label {
+  margin: 12px 0;
+  color: #777;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.insight-empty-state {
+  margin-top: 24px;
+  padding: 24px;
+  border-radius: 12px;
+  background: #ffffff;
+  color: #777;
+  text-align: center;
+  line-height: 1.6;
 }

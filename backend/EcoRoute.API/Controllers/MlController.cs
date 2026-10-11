@@ -62,6 +62,7 @@ public class MlController : ControllerBase
     }
 
 
+
 [HttpGet("insights")]
 public async Task<IActionResult> GetPredictionInsight(
     [FromQuery] string? targetDate = null)
@@ -70,6 +71,9 @@ public async Task<IActionResult> GetPredictionInsight(
         return Unauthorized();
 
     var target = GetPhilippineOperationDate();
+
+            Console.WriteLine($"AI Insight requested by UserId: {userId}");
+Console.WriteLine($"AI Insight target date: {target:yyyy-MM-dd}");
 
     if (!string.IsNullOrWhiteSpace(targetDate))
     {
@@ -89,6 +93,7 @@ public async Task<IActionResult> GetPredictionInsight(
         target = parsedDate.Date;
     }
 
+    // First, try to find an insight for the requested date.
     var insight = await _context.AiPredictionInsights
         .AsNoTracking()
         .Where(item =>
@@ -98,6 +103,7 @@ public async Task<IActionResult> GetPredictionInsight(
         .Select(item => new
         {
             item.TargetDate,
+            item.GeneratedAt,
             item.PredictedWasteKg,
             item.NormalWasteKg,
             item.PredictionChangePercent,
@@ -107,15 +113,59 @@ public async Task<IActionResult> GetPredictionInsight(
         })
         .FirstOrDefaultAsync();
 
+    var isFallback = false;
+
+    // If today's/requested date has no insight, get the latest
+    // previously saved insight belonging to this user.
     if (insight == null)
     {
-        return NotFound(new
+        insight = await _context.AiPredictionInsights
+            .AsNoTracking()
+            .Where(item =>
+                item.UserId == userId &&
+                item.TargetDate < target)
+            .OrderByDescending(item => item.TargetDate)
+            .ThenByDescending(item => item.GeneratedAt)
+            .Select(item => new
+            {
+                item.TargetDate,
+                item.GeneratedAt,
+                item.PredictedWasteKg,
+                item.NormalWasteKg,
+                item.PredictionChangePercent,
+                item.PredictionLevel,
+                item.InsightMessage,
+                item.SuggestedAction
+            })
+            .FirstOrDefaultAsync();
+
+        isFallback = insight != null;
+    }
+
+    // No insight has ever been generated for this user.
+    if (insight == null)
+    {
+        return Ok(new
         {
-            message = "No saved prediction insight exists for this date."
+            hasInsight = false,
+            isFallback = false,
+            message = "No prediction available yet. Upload waste collection data to generate your first AI insight."
         });
     }
 
-    return Ok(insight);
+    return Ok(new
+    {
+        hasInsight = true,
+        isFallback,
+        insight.TargetDate,
+        insight.GeneratedAt,
+        insight.PredictedWasteKg,
+        insight.NormalWasteKg,
+        insight.PredictionChangePercent,
+        insight.PredictionLevel,
+        insight.InsightMessage,
+        insight.SuggestedAction
+    });
 }
 
 

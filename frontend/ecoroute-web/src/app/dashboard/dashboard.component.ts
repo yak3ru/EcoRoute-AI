@@ -60,6 +60,13 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
   // AI PREDICTION DATA
   // ============================================================
 
+  hasPredictionInsight = false;
+  isPredictionFallback = false;
+  predictionInsightDate = '';
+  predictionInsightEmptyMessage =
+    'No prediction available yet. Upload waste collection data to generate your first AI insight.';
+
+
   predictionLevel = '';
 
   predictionInsight = '';
@@ -273,41 +280,62 @@ private loadPredictionForDate(
         `${this.mlApiUrl}/insights?targetDate=${targetDate}`
       )
       .subscribe({
-        next: response => {
-          this.predictionTarget =
-            targetDate ===
-            this.systemDate
-              ? 'today'
-              : 'tomorrow';
+        
+next: response => {
+  console.log('AI INSIGHT API RESPONSE:', response);
 
-          this.aiPredictedWaste =
-            Number(response?.predictedWasteKg ?? 0);
+  if (response?.hasInsight === false) {
+    this.hasPredictionInsight = false;
+    this.isPredictionFallback = false;
+    this.predictionInsightDate = '';
 
-          this.aiNormalWaste =
-            Number(response?.normalWasteKg ?? 0);
+    this.aiPredictedWaste = 0;
+    this.aiNormalWaste = 0;
+    this.aiPredictionChange = 0;
+    this.predictionLevel = '';
+    this.predictionInsight = '';
+    this.predictionAction = '';
 
-          this.aiPredictionChange =
-            Number(response?.predictionChangePercent ?? 0);
+    this.predictionInsightEmptyMessage =
+      response.message ??
+      'No prediction available yet. Upload waste collection data to generate your first AI insight.';
 
-          this.predictionLevel =
-            response?.predictionLevel ?? '';
+    return;
+  }
 
-          this.predictionInsight =
-            response?.insightMessage ?? '';
+  this.hasPredictionInsight = true;
+  this.isPredictionFallback = response?.isFallback === true;
+  this.predictionInsightDate = response?.targetDate ?? targetDate;
 
-          this.predictionAction =
-            response?.suggestedAction ?? '';
+  this.predictionTarget =
+    targetDate === this.systemDate
+      ? 'today'
+      : 'tomorrow';
 
-          console.log(
-            'Saved insight target:',
-            targetDate
-          );
+  this.aiPredictedWaste =
+    Number(response?.predictedWasteKg ?? 0);
 
-          console.log(
-            'Saved predicted waste:',
-            this.aiPredictedWaste
-          );
-        },
+  this.aiNormalWaste =
+    Number(response?.normalWasteKg ?? 0);
+
+  this.aiPredictionChange =
+    Number(response?.predictionChangePercent ?? 0);
+
+  this.predictionLevel =
+    response?.predictionLevel ?? '';
+
+  this.predictionInsight =
+    response?.insightMessage ?? '';
+
+  this.predictionAction =
+    response?.suggestedAction ?? '';
+
+  console.log('hasPredictionInsight:', this.hasPredictionInsight);
+  console.log('isPredictionFallback:', this.isPredictionFallback);
+  console.log('Saved insight target:', this.predictionInsightDate);
+  console.log('Saved predicted waste:', this.aiPredictedWaste);
+},
+
 
         error: error => {
           console.error(

@@ -193,7 +193,8 @@
 
 </div>
 
-    <!-- AI INSIGHT -->
+    
+<!-- AI INSIGHT -->
 <div class="insight-card">
   <div class="insight-header">
     <div class="insight-title">
@@ -204,83 +205,100 @@
         >
       </div>
 
-      <h2>
-        EcoRoute AI Insight
-      </h2>
+      <h2>EcoRoute AI Insight</h2>
     </div>
 
     <span class="prediction-badge">
-      Prediction
+      {{ isPredictionFallback ? 'Previous Prediction' : 'Prediction' }}
     </span>
   </div>
 
-  <p class="insight-message">
-  <strong *ngIf="predictionLevel">
-    {{ predictionLevel }}
-  </strong>
-  <br>
-  {{ predictionInsight }}
-  <span *ngIf="predictionLevel">
-    {{ predictionTarget }}
-    in Barangay Talamban.
-  </span>
-</p>
+  <!-- CASE 1: No insight exists -->
+  <div
+    *ngIf="!hasPredictionInsight"
+    class="insight-empty-state"
+  >
+    <p>
+      {{ predictionInsightEmptyMessage }}
+    </p>
+  </div>
 
-  <div class="prediction-details">
+  <!-- CASE 2: Current or previous insight exists -->
+  <ng-container *ngIf="hasPredictionInsight">
 
-    <div class="prediction-row">
-      <span>Predicted:</span>
-      <strong>
-        {{ aiPredictedWaste.toLocaleString() }} kg
-      </strong>
-    </div>
-
-    <div class="prediction-row">
-      <span>Normal:</span>
-      <strong>
-        {{ aiNormalWaste.toLocaleString() }} kg
-      </strong>
-    </div>
-
+    <!-- Show only when using an older insight -->
     <div
-      class="prediction-row"
-      [class.increase]="aiPredictionChange > 0"
+      *ngIf="isPredictionFallback"
+      class="insight-fallback-label"
     >
-      <span>
-        {{ aiPredictionChange >= 0
-          ? 'Increase:'
-          : 'Decrease:' }}
-      </span>
+      Last available prediction ·
+      {{ predictionInsightDate | date:'MMMM d, y' }}
+    </div>
 
-      <strong>
-        {{ aiPredictionChange >= 0 ? '+' : '' }}{{
-          aiPredictionChange
-        }}%
+    <p class="insight-message">
+      <strong *ngIf="predictionLevel">
+        {{ predictionLevel }}
       </strong>
-    </div>
 
-  </div>
+      <br *ngIf="predictionLevel">
 
-  <div class="suggested-action">
+      {{ predictionInsight }}
 
-    <div class="action-icon">
-      !
-    </div>
+      <span *ngIf="predictionLevel">
+        {{ predictionTarget }}
+        in Barangay Talamban.
+      </span>
+    </p>
 
-    <div>
-      <div class="action-title">
-        Suggested Action
+    <div class="prediction-details">
+
+      <div class="prediction-row">
+        <span>Predicted:</span>
+        <strong>
+          {{ aiPredictedWaste.toLocaleString() }} kg
+        </strong>
       </div>
 
-      <div class="action-text">
-        {{ predictionAction }}
+      <div class="prediction-row">
+        <span>Normal:</span>
+        <strong>
+          {{ aiNormalWaste.toLocaleString() }} kg
+        </strong>
+      </div>
+
+      <div
+        class="prediction-row"
+        [class.increase]="aiPredictionChange > 0"
+      >
+        <span>
+          {{ aiPredictionChange >= 0 ? 'Increase:' : 'Decrease:' }}
+        </span>
+
+        <strong>
+          {{ aiPredictionChange >= 0 ? '+' : '' }}{{ aiPredictionChange }}%
+        </strong>
+      </div>
+
+    </div>
+
+    <div class="suggested-action">
+      <div class="action-icon">!</div>
+
+      <div>
+        <div class="action-title">
+          Suggested Action
+        </div>
+
+        <div class="action-text">
+          {{ predictionAction }}
+        </div>
       </div>
     </div>
 
-  </div>
+  </ng-container>
 </div>
 
-  </section>
+</section>
 
   <!-- COLLECTION ROUTES -->
   <section
