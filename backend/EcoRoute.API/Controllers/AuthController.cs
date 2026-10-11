@@ -530,7 +530,7 @@ public class AuthController : ControllerBase
 
         await _context.SaveChangesAsync();
 
-        Response.Cookies.Delete("ecoroute_auth", new CookieOptions { Path = "/api", Secure = true, SameSite = SameSiteMode.Lax});
+        Response.Cookies.Delete("ecoroute_auth", new CookieOptions { Path = "/api", Secure = true, SameSite = SameSiteMode.None});
         
         return Ok(new
         {
@@ -851,7 +851,7 @@ public class AuthController : ControllerBase
         {
             HttpOnly=true,
             Secure=true,
-            SameSite = SameSiteMode.Lax,
+            SameSite = SameSiteMode.None,
             Path="/api",
             Expires=rememberMe ? expiration : null, // null = cookie ends when browser closes
             IsEssential = true
