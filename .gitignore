@@ -46,7 +46,6 @@ eggs/
 # ---------- Machine Learning generated files ----------
 # Uncomment these if your ML model generates large files
 # *.pkl
-# *.joblib
 # *.h5
 # *.pt
 # *.pth
