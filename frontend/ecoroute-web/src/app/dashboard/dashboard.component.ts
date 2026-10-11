@@ -153,7 +153,9 @@ ngOnInit(): void {
         timeZone: string;
         currentDate: string;
         currentDateTime: string;
-      }>(`${environment.apiUrl}/system/time`)
+      }>(`${environment.apiUrl}/system/time`, {
+        withCredentials: true
+      })
       .subscribe({
         next: response => {
           this.systemDate = response.currentDate;

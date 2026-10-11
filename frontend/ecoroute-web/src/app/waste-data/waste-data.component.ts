@@ -123,10 +123,13 @@ export class WasteDataComponent implements OnInit {
   // LIFECYCLE
 
   // Loads the waste data when the component initializes.
-  ngOnInit(): void {
+ngOnInit(): void {
   this.http
     .get<{ currentDate: string }>(
-      `${environment.apiUrl}/system/time`
+      `${environment.apiUrl}/system/time`,
+      {
+        withCredentials: true
+      }
     )
     .subscribe({
       next: (response) => {

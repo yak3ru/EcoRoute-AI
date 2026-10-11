@@ -242,34 +242,37 @@ isSavingTruck = false;
   ];
 
   
-  ngOnInit(): void {
-    this.http
-      .get<{ currentDate: string }>(
-        `${environment.apiUrl}/system/time`
-      )
-      .subscribe({
-        next: (response) => {
-          this.systemDate = response.currentDate;
+ngOnInit(): void {
+  this.http
+    .get<{ currentDate: string }>(
+      `${environment.apiUrl}/system/time`,
+      {
+        withCredentials: true
+      }
+    )
+    .subscribe({
+      next: (response) => {
+        this.systemDate = response.currentDate;
 
-          const [year, month, day] =
-            this.systemDate.split('-').map(Number);
+        const [year, month, day] =
+          this.systemDate.split('-').map(Number);
 
-          const backendDate =
-            new Date(year, month - 1, day);
+        const backendDate =
+          new Date(year, month - 1, day);
 
-          this.selectedDate = new Date(backendDate);
-          this.calendarMonth = new Date(backendDate);
+        this.selectedDate = new Date(backendDate);
+        this.calendarMonth = new Date(backendDate);
 
-          this.loadAreasAndRoutes();
-        },
-        error: (error) => {
-          console.error(
-            'Failed to fetch system date:',
-            error
-          );
-        }
-      });
-  }
+        this.loadAreasAndRoutes();
+      },
+      error: (error) => {
+        console.error(
+          'Failed to fetch system date:',
+          error
+        );
+      }
+    });
+}
 
   ngAfterViewInit(): void {
     this.initializeMap();
