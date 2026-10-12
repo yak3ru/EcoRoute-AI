@@ -47,18 +47,42 @@ public class AuthController : ControllerBase
 
     // REGISTER
     [HttpPost("register")]
+    [EnableRateLimiting("auth")]
     public async Task<IActionResult> Register(RegisterRequest request)
     {
-        if (string.IsNullOrWhiteSpace(request.FullName) ||
-            string.IsNullOrWhiteSpace(request.Email) ||
-            string.IsNullOrWhiteSpace(request.Username) ||
+        // NORMALIZE INPUT
+        request.FullName = request.FullName?.Trim() ?? string.Empty;
+        request.Email = request.Email?.Trim().ToLowerInvariant() ?? string.Empty;
+        request.Username = request.Username?.Trim() ?? string.Empty;
+        request.Password ??= string.Empty;
+
+        if (request.FullName.Length == 0 ||
+            request.Email.Length == 0 ||
+            request.Username.Length == 0 ||
             string.IsNullOrWhiteSpace(request.Password))
         {
-            return BadRequest(new
-            {
-                message = "All required fields must be provided."
-            });
+            return BadRequest(new { message = "All required fields must be provided." });
         }
+
+        var validationError =
+            UserInputValidator.ValidateFullName(request.FullName) ??
+            UserInputValidator.ValidateEmail(request.Email) ??
+            UserInputValidator.ValidateUsername(request.Username) ??
+            UserInputValidator.ValidatePassword(request.Password);
+
+        if (validationError != null)
+        {
+            return BadRequest(new { message = validationError });
+        }
+
+        var domainError = await UserInputValidator.ValidateEmailDomainAsync(request.Email);
+
+        if (domainError != null)
+        {
+            return BadRequest(new { message = domainError });
+        }
+
+
 
         if (request.Password != request.ConfirmPassword)
         {
@@ -73,47 +97,6 @@ public class AuthController : ControllerBase
             return BadRequest(new
             {
                 message = "You must agree to the terms."
-            });
-        }
-
-        // PASSWORD REQUIREMENTS
-        if (request.Password.Length < 8)
-        {
-            return BadRequest(new
-            {
-                message = "Password must be at least 8 characters long."
-            });
-        }
-
-        if (!request.Password.Any(char.IsUpper))
-        {
-            return BadRequest(new
-            {
-                message = "Password must include at least one uppercase letter."
-            });
-        }
-
-        if (!request.Password.Any(char.IsLower))
-        {
-            return BadRequest(new
-            {
-                message = "Password must include at least one lowercase letter."
-            });
-        }
-
-        if (!request.Password.Any(char.IsDigit))
-        {
-            return BadRequest(new
-            {
-                message = "Password must include at least one number."
-            });
-        }
-
-        if (!request.Password.Any(ch => !char.IsLetterOrDigit(ch)))
-        {
-            return BadRequest(new
-            {
-                message = "Password must include at least one special character."
             });
         }
 
@@ -500,8 +483,8 @@ public class AuthController : ControllerBase
     public async Task<IActionResult> Logout()
     {
         var token = Request.Cookies["ecoroute_auth"];
-        if(string.IsNullOrWhiteSpace(token))
-            return Unauthorized (new { message = "Authorization token is required"});
+        if (string.IsNullOrWhiteSpace(token))
+            return Unauthorized(new { message = "Authorization token is required" });
 
         if (string.IsNullOrWhiteSpace(token))
         {
@@ -530,8 +513,8 @@ public class AuthController : ControllerBase
 
         await _context.SaveChangesAsync();
 
-        Response.Cookies.Delete("ecoroute_auth", new CookieOptions { Path = "/api", Secure = true, SameSite = SameSiteMode.None});
-        
+        Response.Cookies.Delete("ecoroute_auth", new CookieOptions { Path = "/api", Secure = true, SameSite = SameSiteMode.None });
+
         return Ok(new
         {
             message = "Logged out successfully."
@@ -722,45 +705,12 @@ public class AuthController : ControllerBase
             });
         }
 
-        if (request.NewPassword.Length < 8)
-        {
-            return BadRequest(new
-            {
-                message = "Password must be at least 8 characters long."
-            });
-        }
 
-        if (!request.NewPassword.Any(char.IsUpper))
+        // PASSWORD REQUIREMENTS
+        var passwordError = UserInputValidator.ValidatePassword(request.NewPassword);
+        if (passwordError != null)
         {
-            return BadRequest(new
-            {
-                message = "Password must include at least one uppercase letter."
-            });
-        }
-
-        if (!request.NewPassword.Any(char.IsLower))
-        {
-            return BadRequest(new
-            {
-                message = "Password must include at least one lowercase letter."
-            });
-        }
-
-        if (!request.NewPassword.Any(char.IsDigit))
-        {
-            return BadRequest(new
-            {
-                message = "Password must include at least one number."
-            });
-        }
-
-        if (!request.NewPassword.Any(
-            ch => !char.IsLetterOrDigit(ch)))
-        {
-            return BadRequest(new
-            {
-                message = "Password must include at least one special character."
-            });
+            return BadRequest(new { message = passwordError });
         }
 
         // PREVENT PASSWORD REUSE
@@ -845,20 +795,19 @@ public class AuthController : ControllerBase
         });
 
         await _context.SaveChangesAsync();
-        
+
         //set the cookie when a session is created
         Response.Cookies.Append("ecoroute_auth", token, new CookieOptions
         {
-            HttpOnly=true,
-            Secure=true,
+            HttpOnly = true,
+            Secure = true,
             SameSite = SameSiteMode.None,
-            Path="/api",
-            Expires=rememberMe ? expiration : null, // null = cookie ends when browser closes
+            Path = "/api",
+            Expires = rememberMe ? expiration : null, // null = cookie ends when browser closes
             IsEssential = true
 
         });
         
-       
         return new AuthResponse
         {
             UserId = user.UserId,

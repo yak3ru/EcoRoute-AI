@@ -8,6 +8,9 @@ import {
   AuthService,
   isTwoFactorRequired
 } from '../../core/services/auth.service';
+import { validateEmail, validateFullName, validatePassword, validateUsername } from '../../core/validators/user-input.validator';
+
+
 
 @Component({
   selector: 'app-signup',
@@ -38,16 +41,19 @@ export class SignupComponent {
   private readonly apiUrl = `${environment.apiUrl}`;
 
   constructor(
-  private router: Router,
-  private http: HttpClient,
-  private authService: AuthService
-) {}
+    private router: Router,
+    private http: HttpClient,
+    private authService: AuthService
+  ) { }
 
   // PASSWORD VISIBILITY
 
   togglePassword(): void {
     this.showPassword = !this.showPassword;
   }
+
+
+
 
   toggleConfirmPassword(): void {
     this.showConfirmPassword = !this.showConfirmPassword;
@@ -88,37 +94,19 @@ export class SignupComponent {
       return;
     }
 
-    // PASSWORD REQUIREMENTS
+    // FORMAT CHECKS
 
-    if (this.password.length < 8) {
-      this.errorMessage =
-        'Password must be at least 8 characters long.';
+    const validationError =
+      validateFullName(this.fullName.trim()) ??
+      validateEmail(this.email.trim()) ??
+      validateUsername(this.username.trim()) ??
+      validatePassword(this.password);
+
+    if (validationError) {
+      this.errorMessage = validationError;
       return;
     }
 
-    if (!/[A-Z]/.test(this.password)) {
-      this.errorMessage =
-        'Password must include at least one uppercase letter.';
-      return;
-    }
-
-    if (!/[a-z]/.test(this.password)) {
-      this.errorMessage =
-        'Password must include at least one lowercase letter.';
-      return;
-    }
-
-    if (!/[0-9]/.test(this.password)) {
-      this.errorMessage =
-        'Password must include at least one number.';
-      return;
-    }
-
-    if (!/[^a-zA-Z0-9]/.test(this.password)) {
-      this.errorMessage =
-        'Password must include at least one special character.';
-      return;
-    }
 
     // CONFIRM PASSWORD
 
@@ -150,38 +138,38 @@ export class SignupComponent {
         agreeToTerms: this.agreeToTerms
       }
     ).subscribe({
-      
-next: (response) => {
-  this.successMessage =
-    response?.message ?? 'Account created successfully.';
 
-  // Automatically log in the newly registered user.
-  this.authService.login({
-    usernameOrEmail: this.username.trim(),
-    password: this.password,
-    rememberMe: false
-  }).subscribe({
-    next: (loginResponse) => {
-      this.isLoading = false;
+      next: (response) => {
+        this.successMessage =
+          response?.message ?? 'Account created successfully.';
 
-      if (isTwoFactorRequired(loginResponse)) {
-        this.router.navigate(['/verify-code']);
-        return;
-      }
+        // Automatically log in the newly registered user.
+        this.authService.login({
+          usernameOrEmail: this.username.trim(),
+          password: this.password,
+          rememberMe: false
+        }).subscribe({
+          next: (loginResponse) => {
+            this.isLoading = false;
 
-      this.router.navigate(['/welcome']);
-    },
-    error: () => {
-      this.isLoading = false;
+            if (isTwoFactorRequired(loginResponse)) {
+              this.router.navigate(['/verify-code']);
+              return;
+            }
 
-      // Account creation succeeded, but login did not.
-      this.successMessage =
-        'Account created successfully. Please log in to continue.';
-      this.errorMessage = '';
-      this.router.navigate(['/login']);
-    }
-  });
-},
+            this.router.navigate(['/welcome']);
+          },
+          error: () => {
+            this.isLoading = false;
+
+            // Account creation succeeded, but login did not.
+            this.successMessage =
+              'Account created successfully. Please log in to continue.';
+            this.errorMessage = '';
+            this.router.navigate(['/login']);
+          }
+        });
+      },
 
 
       error: (error) => {

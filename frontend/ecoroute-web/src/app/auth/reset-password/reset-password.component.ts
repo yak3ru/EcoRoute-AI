@@ -4,6 +4,8 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink, ActivatedRoute } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
+import { validatePassword } from '../../core/validators/user-input.validator';
+
 
 @Component({
   selector: 'app-reset-password',
@@ -43,7 +45,7 @@ export class ResetPasswordComponent implements OnInit {
     private route: ActivatedRoute,
     private router: Router,
     private http: HttpClient
-  ) {}
+  ) { }
 
   // GET RESET TOKEN
 
@@ -98,102 +100,11 @@ export class ResetPasswordComponent implements OnInit {
       return;
     }
 
-    // PASSWORD LENGTH
-
-    if (this.newPassword.length < 8) {
-      this.errorMessage =
-        'Password must be at least 8 characters long.';
+    const passwordError = validatePassword(this.newPassword);
+    if (passwordError) {
+      this.errorMessage = passwordError;
       return;
     }
 
-    // UPPERCASE
-
-    if (!/[A-Z]/.test(this.newPassword)) {
-      this.errorMessage =
-        'Password must include at least one uppercase letter.';
-      return;
-    }
-
-    // LOWERCASE
-
-    if (!/[a-z]/.test(this.newPassword)) {
-      this.errorMessage =
-        'Password must include at least one lowercase letter.';
-      return;
-    }
-
-    // NUMBER
-
-    if (!/[0-9]/.test(this.newPassword)) {
-      this.errorMessage =
-        'Password must include at least one number.';
-      return;
-    }
-
-    // SPECIAL CHARACTER
-
-    if (!/[^a-zA-Z0-9]/.test(this.newPassword)) {
-      this.errorMessage =
-        'Password must include at least one special character.';
-      return;
-    }
-
-    // CONFIRM PASSWORD
-
-    if (this.newPassword !== this.confirmPassword) {
-      this.errorMessage =
-        'Passwords do not match.';
-      return;
-    }
-
-    // SEND RESET REQUEST
-
-    this.isLoading = true;
-
-    const request = {
-      token: this.token,
-      newPassword: this.newPassword,
-      confirmNewPassword: this.confirmPassword
-    };
-
-    this.http
-      .post<any>(
-        `${this.apiUrl}/Auth/reset-password`,
-        request
-      )
-      .subscribe({
-        // SUCCESS
-
-        next: (response) => {
-          this.isLoading = false;
-          this.isSuccess = true;
-
-          this.successMessage =
-            response?.message ??
-            'Your password has been reset successfully.';
-
-          // CLEAR PASSWORD FIELDS
-
-          this.newPassword = '';
-          this.confirmPassword = '';
-
-          // REDIRECT TO LOGIN
-
-          setTimeout(() => {
-            this.router.navigate(['/login']);
-          }, 2000);
-        },
-
-        // ERROR
-
-        error: (error) => {
-          this.isLoading = false;
-          this.isSuccess = false;
-
-          this.errorMessage =
-            error?.error?.message ??
-            'Unable to reset your password. Please try again.';
-        }
-      });
   }
 }
