@@ -19,6 +19,10 @@ export interface AuthResponse {
   isOnboardingComplete: boolean;
 }
 
+export interface OnboardingStatusResponse {
+  isOnboardingComplete: boolean;
+}
+
 
 export interface TwoFactorRequiredResponse {
   requiresTwoFactor: true;
@@ -172,6 +176,12 @@ private saveSession(response: AuthResponse): void {
   );
 }
 
+getOnboardingStatus(): Observable<OnboardingStatusResponse> {
+  return this.http.get<OnboardingStatusResponse>(
+    `${this.api.getBaseUrl()}/Onboarding/status`,
+    { withCredentials: true }
+  );
+}
 
   logout(): Observable<any> {
     return this.http

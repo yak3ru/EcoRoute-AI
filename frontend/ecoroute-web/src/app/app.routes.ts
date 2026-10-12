@@ -8,7 +8,6 @@ import { WelcomeComponent } from './onboarding/welcome/welcome.component';
 import { ImportDataComponent } from './onboarding/import-data/import-data.component';
 import { AddTrucksComponent } from './onboarding/add-trucks/add-trucks.component';
 
-
 import { TermsOfServiceComponent } from './terms-of-service/terms-of-service.component';
 import { PrivacyPolicyComponent } from './privacy-policy/privacy-policy.component';
 
@@ -39,20 +38,21 @@ export const routes: Routes = [
     component: SignupComponent
   },
 
-  {
+{
   path: 'welcome',
-  component: WelcomeComponent
-  },
-
-  {
+  component: WelcomeComponent,
+  canActivate: [authGuard]
+},
+{
   path: 'onboarding/import-data',
-  component: ImportDataComponent
-  },
-
-  {
-    path: 'onboarding/add-trucks',
-    component: AddTrucksComponent
-  },
+  component: ImportDataComponent,
+  canActivate: [authGuard]
+},
+{
+  path: 'onboarding/add-trucks',
+  component: AddTrucksComponent,
+  canActivate: [authGuard]
+},
 
   {
     path: 'terms-of-service',
@@ -80,15 +80,16 @@ export const routes: Routes = [
   },
 
   {
+  path: '',
+  pathMatch: 'full',
+  redirectTo: 'dashboard'
+},
+
+  {
     path: '',
     component: LayoutComponent,
     canActivate: [authGuard],
     children: [
-      {
-        path: '',
-        redirectTo: 'login',
-        pathMatch: 'full'
-      },
 
       {
         path: 'dashboard',
