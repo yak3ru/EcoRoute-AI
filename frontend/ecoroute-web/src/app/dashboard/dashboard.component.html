@@ -33,16 +33,19 @@
         : 'Previous Waste' }}
     </div>
 
-    <div class="summary-value">
-      {{ wasteDisplay }}
-    </div>
+   <div class="summary-value">
+  {{ !hasOperationData ? 'No Data' : wasteDisplay }}
+</div>
 
-    <div
-      class="summary-description"
-      *ngIf="dashboardMode === 'current' && !hasWasteData"
-    >
-      No collection data uploaded
-    </div>
+<div class="summary-description">
+  {{ !hasOperationData
+    ? 'Please start an operation'
+    : dashboardMode === 'current' && !hasWasteData
+      ? 'No collection data uploaded'
+      : dashboardMode === 'current'
+        ? 'Collected waste today'
+        : 'Previous operation' }}
+</div>
 
     <div
       class="summary-description"
@@ -51,12 +54,6 @@
       Collected waste today
     </div>
 
-    <div
-      class="summary-description"
-      *ngIf="dashboardMode === 'previous'"
-    >
-      Previous operation
-    </div>
   </div>
 </div>
 
@@ -77,17 +74,20 @@
         : 'Previous Prediction' }}
     </div>
 
-    <div class="summary-value">
-  {{ dashboardMode === 'current'
-    ? (aiPredictedWaste / 1000).toFixed(1) + ' tons'
-    : predictedWasteDisplay }}
+    
+<div class="summary-value">
+  {{ !hasOperationData
+    ? 'No Data'
+    : (predictedWasteValue / 1000).toFixed(1) + ' tons' }}
 </div>
 
-    <div class="summary-description">
-      {{ dashboardMode === 'current'
-        ? 'AI predicted waste'
-        : 'Previous operation' }}
-    </div>
+<div class="summary-description">
+  {{ hasOperationData
+    ? dashboardMode === 'current'
+      ? 'AI predicted waste'
+      : 'Previous operation'
+    : 'Please start an operation' }}
+</div>
   </div>
 </div>
 
@@ -109,14 +109,16 @@
     </div>
 
     <div class="summary-value">
-      {{ routeCount }}
-    </div>
+  {{ hasOperationData ? routeCount : 'No Data' }}
+</div>
 
-    <div class="summary-description">
-      {{ dashboardMode === 'current'
-        ? 'Active collection routes'
-        : 'Previous operation' }}
-    </div>
+<div class="summary-description">
+  {{ hasOperationData
+    ? dashboardMode === 'current'
+      ? 'Active collection routes'
+      : 'Previous operation'
+    : 'Please start an operation' }}
+</div>
   </div>
 </div>
 
@@ -138,14 +140,16 @@
     </div>
 
     <div class="summary-value">
-      {{ vehicleCount }}
-    </div>
+  {{ hasOperationData ? vehicleCount : 'No Data' }}
+</div>
 
-    <div class="summary-description">
-      {{ dashboardMode === 'current'
-        ? 'Vehicles deployed'
-        : 'Previous operation' }}
-    </div>
+<div class="summary-description">
+  {{ hasOperationData
+    ? dashboardMode === 'current'
+      ? 'Vehicles deployed'
+      : 'Previous operation'
+    : 'Please start an operation' }}
+</div>
   </div>
 </div>
 
@@ -332,3 +336,8 @@
   </section>
 
 </div>
+
+<app-alert-popup
+  *ngIf="showWelcomePopup"
+  [message]="welcomeMessage">
+</app-alert-popup>

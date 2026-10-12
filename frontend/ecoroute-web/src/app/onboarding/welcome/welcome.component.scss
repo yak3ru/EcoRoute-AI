@@ -1,92 +1,111 @@
 
+
 :host {
   display: block;
+  width: 100%;
   min-height: 100vh;
 }
 
 .welcome-page {
-  display: grid;
-  grid-template-columns: 1.15fr 1fr;
-  gap: 40px;
-  min-height: 100vh;
-  padding: 30px;
-  background: #ffffff;
-  box-sizing: border-box;
-}
-
-.welcome-left {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 0;
-  padding: 25px 15px;
+
+  width: 100%;
+  min-height: 100vh;
+  padding: 24px;
+  box-sizing: border-box;
+
+  background: #f3f4f3;
+}
+
+.welcome-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 100%;
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 40px 48px;
+  box-sizing: border-box;
+
+  background: #ffffff;
+  border-radius: 24px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
 }
 
 .welcome-content {
   width: 100%;
-  max-width: 680px;
+  max-width: 800px;
+  margin: 0 auto;
 }
 
+
 .welcome-label {
-  margin: 0 0 12px;
+  margin: 0 0 16px;
   color: #229b32;
-  font-size: 40px;
-  font-weight: 700;
+  font-size: 44px;
+  font-weight: 1500;
   letter-spacing: 0.5px;
+  text-align: center;
 }
 
 .brand {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 18px;
-  margin-bottom: 32px;
+  margin-bottom: 22px;
 }
 
 .brand-logo {
-  width: 100px;
-  height: 100px;
+  width: 90px;
+  height: 90px;
   object-fit: contain;
 }
 
 .brand-text h2 {
   margin: 0;
   color: #080808;
-  font-size: 40px;
-  font-weight: 750;
+  font-size: 36px;
+  font-weight: 800;
 }
 
 .brand-text p {
   margin: 4px 0 0;
   color: #111111;
-  font-size: 20px;
+  font-size: 19px;
 }
 
 .welcome-description {
-  max-width: 540px;
-  margin: 0 0 32px 12px;
+  max-width: 650px;
+  margin: 0 auto 24px;
   color: #494949;
-  font-size: 24px;
-  line-height: 1.25;
+  font-size: 21px;
+  line-height: 1.4;
+  text-align: center;
 }
 
 .workflow-card {
-  margin-bottom: 46px;
-  padding: 26px 40px;
-  border-radius: 18px;
+  margin-bottom: 28px;
+  padding: 24px 36px;
+  border-radius: 20px;
   background: #f4f8f5;
 }
 
 .workflow-card h3 {
-  margin: 0 0 12px;
-  font-size: 22px;
-  font-weight: 650;
+  margin: 0 0 14px;
+  color: #191919;
+  font-size: 24px;
+  font-weight: 750;
 }
 
 .workflow-step {
   display: grid;
-  grid-template-columns: 30px 105px 1fr;
+  grid-template-columns: 36px 120px minmax(0, 1fr);
   align-items: center;
-  gap: 12px;
+  gap: 14px;
   margin: 10px 0;
 }
 
@@ -94,35 +113,35 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
   background: #229b32;
-  color: white;
-  font-size: 12px;
-  font-weight: 600;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 700;
 }
 
 .workflow-step strong {
   color: #229b32;
-  font-size: 13px;
+  font-size: 15px;
 }
 
 .workflow-step p {
   margin: 0;
   color: #555555;
-  font-size: 13px;
+  font-size: 15px;
 }
 
 .get-started-button {
   width: 100%;
-  min-height: 62px;
+  min-height: 58px;
   border: none;
-  border-radius: 9px;
+  border-radius: 10px;
   background: #229b32;
   color: #ffffff;
-  font-size: 16px;
-  font-weight: 600;
+  font-size: 17px;
+  font-weight: 700;
   cursor: pointer;
   transition: background 0.2s ease;
 }
@@ -136,134 +155,115 @@
   outline-offset: 3px;
 }
 
-.welcome-right {
-  position: relative;
-  min-height: 650px;
-  overflow: hidden;
-  border-radius: 22px;
-  background: #344b39;
-}
-
-.hero-image {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.hero-overlay {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  padding: 38% 11% 25px;
-  background: linear-gradient(
-    to bottom,
-    rgba(0, 0, 0, 0.03) 10%,
-    rgba(0, 0, 0, 0.25) 35%,
-    rgba(0, 0, 0, 0.55) 100%
-  );
-  color: #ffffff;
-}
-
-.hero-message h2 {
-  margin: 0 0 30px;
-  font-size: clamp(27px, 2.5vw, 42px);
-  font-weight: 750;
-  line-height: 1.15;
-}
-
-.hero-message p {
-  max-width: 440px;
-  margin: 0;
-  font-size: 19px;
-  font-weight: 500;
-  line-height: 1.3;
-}
-
-.hero-footer {
-  margin: 0;
-  text-align: center;
-  font-size: 19px;
-  font-weight: 600;
-}
-
-@media (max-width: 1000px) {
+@media (max-width: 768px) {
   .welcome-page {
-    grid-template-columns: 1fr;
-    gap: 24px;
     padding: 20px;
   }
 
-  .welcome-left {
-    padding: 20px 5px;
-  }
-
-  .welcome-right {
-    min-height: 550px;
-  }
-
-  .hero-overlay {
-    padding-top: 25%;
-  }
-}
-
-@media (max-width: 600px) {
-  .welcome-page {
-    padding: 14px;
+  .welcome-container {
+    padding: 32px 24px;
+    border-radius: 20px;
   }
 
   .welcome-label {
-    font-size: 30px;
+    font-size: 38px;
+    font-weight: 900;
+  }
+
+  .brand {
+    gap: 14px;
+    margin-bottom: 24px;
   }
 
   .brand-logo {
-    width: 70px;
-    height: 70px;
+    width: 80px;
+    height: 80px;
   }
 
   .brand-text h2 {
-    font-size: 29px;
+    font-size: 30px;
   }
 
   .brand-text p {
-    font-size: 15px;
+    font-size: 16px;
   }
 
   .welcome-description {
-    margin-left: 0;
     font-size: 19px;
   }
 
   .workflow-card {
-    padding: 22px 18px;
+    padding: 24px 18px;
+    border-radius: 18px;
+  }
+
+  .workflow-card h3 {
+    font-size: 22px;
   }
 
   .workflow-step {
-    grid-template-columns: 28px 95px 1fr;
+    grid-template-columns: 32px 100px minmax(0, 1fr);
     gap: 8px;
+    margin: 12px 0;
+  }
+
+  .step-number {
+    width: 30px;
+    height: 30px;
+    font-size: 13px;
+  }
+
+  .workflow-step strong {
+    font-size: 12px;
   }
 
   .workflow-step p {
-    font-size: 11px;
+    font-size: 12px;
   }
 
-  .welcome-right {
-    min-height: 440px;
+  .get-started-button {
+    min-height: 56px;
+    font-size: 17px;
+  }
+}
+
+@media (max-width: 420px) {
+  .welcome-page {
+    padding: 12px;
   }
 
-  .hero-overlay {
-    padding: 35% 7% 20px;
+  .welcome-container {
+    padding: 28px 16px;
   }
 
-  .hero-message h2 {
-    font-size: 28px;
+  .welcome-label {
+    font-size: 31px;
   }
 
-  .hero-message p,
-  .hero-footer {
-    font-size: 15px;
+  .brand-logo {
+    width: 64px;
+    height: 64px;
+  }
+
+  .brand-text h2 {
+    font-size: 25px;
+  }
+
+  .brand-text p {
+    font-size: 13px;
+  }
+
+  .workflow-card {
+    padding: 20px 12px;
+  }
+
+  .workflow-step {
+    grid-template-columns: 28px 85px minmax(0, 1fr);
+    gap: 6px;
+  }
+
+  .workflow-step strong,
+  .workflow-step p {
+    font-size: 10px;
   }
 }

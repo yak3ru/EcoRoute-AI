@@ -1,8 +1,9 @@
 
 :host {
   display: block;
-  min-height: 100%;
-  background: #fff;
+  width: 100%;
+  min-height: 100vh;
+  background: #f3f4f3;
   color: #191919;
   font-family: inherit;
 }
@@ -16,16 +17,25 @@ input {
   font: inherit;
 }
 
+/* Page container */
+
 .onboarding-page {
-  width: 100%;
-  max-width: 1600px;
-  min-height: 100vh;
-  margin: 0 auto;
-  padding: 40px;
+  box-sizing: border-box;
+  width: calc(100% - 48px);
+  max-width: 1200px;
+  min-height: calc(100vh - 64px);
+  margin: 24px auto 40px;
+  padding: 32px 36px 32px;
+  display: flex;
+  flex-direction: column;
+
+  background: #fff;
+  border-radius: 24px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
 }
 
 .step-label {
-  margin-bottom: 18px;
+  margin: 0 0 18px;
   color: #209b38;
   font-size: 18px;
   font-weight: 700;
@@ -46,17 +56,23 @@ h1 {
   line-height: 1.6;
 }
 
-/* Main two-column layout */
+/* Two-column layout */
 
 .onboarding-grid {
   display: grid;
   grid-template-columns: minmax(0, 1.65fr) minmax(310px, 0.95fr);
-  align-items: start;
+  align-items: stretch;
   gap: 24px;
+  min-width: 0;
+  height: 450px;
+  flex: 0 0 450px;
 }
+
+/* Shared card styles */
 
 .truck-card {
   min-width: 0;
+  height: 100%;
   padding: 30px;
   border: 1px solid #d9e4db;
   border-radius: 22px;
@@ -67,6 +83,8 @@ h1 {
   min-width: 0;
 }
 
+/* Form heading */
+
 .card-heading {
   display: flex;
   align-items: center;
@@ -76,9 +94,9 @@ h1 {
 
 .step-number {
   display: flex;
+  flex: 0 0 64px;
   align-items: center;
   justify-content: center;
-  flex: 0 0 64px;
   width: 64px;
   height: 64px;
   border-radius: 18px;
@@ -108,7 +126,7 @@ h1 {
   line-height: 1.5;
 }
 
-/* Form */
+/* Form fields */
 
 .form-grid {
   display: grid;
@@ -160,6 +178,8 @@ h1 {
   box-shadow: 0 0 0 3px rgba(32, 155, 56, 0.1);
 }
 
+/* Status and feedback */
+
 .status-note {
   display: flex;
   align-items: center;
@@ -175,9 +195,9 @@ h1 {
 
 .status-dot,
 .available-badge span {
+  flex: 0 0 8px;
   width: 8px;
   height: 8px;
-  flex-shrink: 0;
   border-radius: 50%;
   background: #209b38;
 }
@@ -196,7 +216,7 @@ h1 {
   color: #208d35;
 }
 
-/* Add/edit form buttons */
+/* Form actions */
 
 .form-actions {
   display: flex;
@@ -247,17 +267,26 @@ h1 {
   background: #f6f8f6;
 }
 
-/* Added Trucks panel */
+/* Added Trucks panel
+   Grid stretches both cards to the same row height.
+   The panel fills that height and cannot grow from its contents. */
 
 .added-trucks-card {
   display: flex;
   flex-direction: column;
-  min-height: 350px;
+  align-self: stretch;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
   padding: 26px;
+  overflow: hidden;
 }
+
+/* Panel heading */
 
 .list-heading {
   display: flex;
+  flex: 0 0 auto;
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
@@ -271,6 +300,7 @@ h1 {
 
 .truck-count {
   display: flex;
+  flex: 0 0 auto;
   align-items: center;
   justify-content: center;
   min-width: 32px;
@@ -283,15 +313,16 @@ h1 {
   font-weight: 700;
 }
 
-/* Empty list */
+/* Empty state */
 
 .empty-state {
   display: flex;
-  flex: 1;
+  flex: 1 1 0;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 42px 18px;
+  min-height: 0;
+  padding: 24px 18px;
   text-align: center;
 }
 
@@ -307,7 +338,6 @@ h1 {
   background: #f4faf5;
   color: #209b38;
   font-size: 29px;
-  font-weight: 400;
 }
 
 .empty-state h3 {
@@ -324,19 +354,30 @@ h1 {
   line-height: 1.6;
 }
 
-/* Individual truck cards */
+/* Scrollable truck list
+   The list takes remaining panel space.
+   Adding more truck items increases scroll content, not panel height. */
 
-.truck-list {
+.truck-list,
+.trucks-list-scroll {
   display: flex;
+  flex: 1 1 0;
   flex-direction: column;
   gap: 14px;
-  max-height: 570px;
-  margin: 18px -4px 0 0;
-  padding-right: 4px;
+  min-width: 0;
+  min-height: 0;
+  margin: 18px 0 0;
+  padding: 0 8px 8px 0;
+  overflow-x: hidden;
   overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: #b8d9bf #f3f7f3;
 }
 
 .truck-item {
+  flex: 0 0 auto;
+  min-width: 0;
   padding: 17px;
   border: 1px solid #e2e8e3;
   border-radius: 14px;
@@ -357,9 +398,9 @@ h1 {
 
 .truck-icon {
   display: flex;
+  flex: 0 0 44px;
   align-items: center;
   justify-content: center;
-  flex: 0 0 44px;
   width: 44px;
   height: 44px;
   border-radius: 12px;
@@ -393,6 +434,7 @@ h1 {
 }
 
 .available-badge span {
+  flex-basis: 6px;
   width: 6px;
   height: 6px;
 }
@@ -449,10 +491,11 @@ h1 {
 .edit-button,
 .delete-button {
   display: inline-flex;
+  flex: 1 1 0;
   align-items: center;
   justify-content: center;
   gap: 7px;
-  flex: 1;
+  min-width: 0;
   min-height: 37px;
   padding: 0 10px;
   border-radius: 8px;
@@ -482,22 +525,51 @@ h1 {
   background: #fdecec;
 }
 
+/* Footer stays at the bottom of the panel */
+
 .list-footer {
-  margin-top: 20px;
+  flex: 0 0 auto;
+  margin-top: 12px;
   padding-top: 15px;
   border-top: 1px solid #edf0ed;
   color: #777;
   font-size: 12px;
 }
 
-/* Bottom onboarding navigation */
+/* Scrollbar */
 
+.truck-list::-webkit-scrollbar,
+.trucks-list-scroll::-webkit-scrollbar {
+  width: 8px;
+}
+
+.truck-list::-webkit-scrollbar-track,
+.trucks-list-scroll::-webkit-scrollbar-track {
+  border-radius: 8px;
+  background: #f3f7f3;
+}
+
+.truck-list::-webkit-scrollbar-thumb,
+.trucks-list-scroll::-webkit-scrollbar-thumb {
+  border-radius: 8px;
+  background: #b8d9bf;
+}
+
+.truck-list::-webkit-scrollbar-thumb:hover,
+.trucks-list-scroll::-webkit-scrollbar-thumb:hover {
+  background: #168b35;
+}
+
+/* Bottom navigation */
 .onboarding-actions {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
   gap: 16px;
-  margin-top: 28px;
+  width: 100%;
+  margin-top: auto;
+  padding-top: 28px;
+  flex: 0 0 auto;
 }
 
 .back-button,
@@ -506,13 +578,23 @@ h1 {
   align-items: center;
   justify-content: center;
   gap: 12px;
-  min-height: 50px;
-  padding: 0 24px;
+  min-height: 12px;
+  padding: 0 12px;
   border-radius: 10px;
-  font-size: 15px;
+  font-size: 12px;
   font-weight: 700;
   cursor: pointer;
   transition: background 0.2s, border-color 0.2s;
+}
+
+/* Keep Back on the far left */
+.back-button {
+  margin-right: auto;
+}
+
+/* Keep Finish Import on the far right */
+.continue-button {
+  margin-left: auto;
 }
 
 .back-button {
@@ -556,7 +638,7 @@ button:focus-visible {
 
 @media (max-width: 1100px) {
   .onboarding-page {
-    padding: 32px 26px 44px;
+    padding: 32px 26px;
   }
 
   .onboarding-grid {
@@ -586,22 +668,42 @@ button:focus-visible {
 }
 
 @media (max-width: 800px) {
+  .onboarding-page {
+    width: calc(100% - 24px);
+    min-height: calc(100vh - 24px);
+    margin: 12px auto;
+    padding: 24px 20px;
+    border-radius: 18px;
+  }
+
   .onboarding-grid {
+    height: auto;
+    flex: 0 0 auto;
     grid-template-columns: minmax(0, 1fr);
+    align-items: stretch;
   }
 
+  .form-card {
+    height: auto;
+    min-height: 450px;
+  }
+
+  /* On narrow screens the cards stack.
+     Give the truck panel its own fixed height and internal scrolling. */
   .added-trucks-card {
-    min-height: 280px;
+    height: 420px;
+    min-height: 420px;
   }
 
-  .truck-list {
-    max-height: none;
+  .truck-card {
+    padding: 24px;
   }
 }
 
 @media (max-width: 520px) {
   .onboarding-page {
-    padding: 26px 16px 34px;
+    padding: 24px 16px;
+    border-radius: 16px;
   }
 
   .step-label {
@@ -635,6 +737,17 @@ button:focus-visible {
     flex-wrap: wrap;
   }
 
+  .card-heading {
+    gap: 12px;
+  }
+
+  .step-number {
+    flex-basis: 48px;
+    width: 48px;
+    height: 48px;
+    font-size: 20px;
+  }
+
   .onboarding-actions {
     align-items: center;
   }
@@ -646,43 +759,3 @@ button:focus-visible {
     font-size: 13px;
   }
 }
-
-/* Scroll only the Added Trucks list */
-.trucks-list-scroll {
-  max-height: 520px;
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding: 0 8px 8px 0;
-  overscroll-behavior: contain;
-  scrollbar-width: thin;
-  scrollbar-color: #b8d9bf #f3f7f3;
-}
-
-/* Keep consistent spacing between truck cards */
-.trucks-list-scroll .truck-card {
-  margin-bottom: 16px;
-}
-
-.trucks-list-scroll .truck-card:last-child {
-  margin-bottom: 0;
-}
-
-/* Chrome, Safari and Edge */
-.trucks-list-scroll::-webkit-scrollbar {
-  width: 8px;
-}
-
-.trucks-list-scroll::-webkit-scrollbar-track {
-  background: #f3f7f3;
-  border-radius: 8px;
-}
-
-.trucks-list-scroll::-webkit-scrollbar-thumb {
-  background: #b8d9bf;
-  border-radius: 8px;
-}
-
-.trucks-list-scroll::-webkit-scrollbar-thumb:hover {
-  background: #168b35;
-}
-

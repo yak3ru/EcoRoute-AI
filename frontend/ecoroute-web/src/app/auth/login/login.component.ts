@@ -1,3 +1,5 @@
+import { LoadingScreenComponent } from
+  '../../shared/loading-screen/loading-screen.component';
 import { Component } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -6,7 +8,12 @@ import { AuthService, isTwoFactorRequired } from '../../core/services/auth.servi
 
 @Component({
   selector: 'app-login',
-  imports: [RouterLink, FormsModule, NgIf],
+  imports: [
+    RouterLink,
+    FormsModule,
+    NgIf,
+    LoadingScreenComponent
+  ],
   templateUrl: './login.component.html',
   styleUrl: './login.component.scss'
 })

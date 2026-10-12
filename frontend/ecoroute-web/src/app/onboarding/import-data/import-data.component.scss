@@ -704,3 +704,51 @@ button:focus-visible,
   }
 }
 
+
+/* Outer background and centered onboarding container */
+:host {
+  display: block;
+  width: 100%;
+  min-height: 100vh;
+  background: #f3f4f3;
+}
+
+.import-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 100%;
+  min-height: 100vh;
+  height: auto;
+  padding: 32px 24px;
+  box-sizing: border-box;
+
+  background: #f3f4f3;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+/* White rounded container — preserve existing content sizing */
+.import-content {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 40px 48px;
+
+  background: #ffffff;
+  border-radius: 24px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
+}
+
+@media (max-width: 700px) {
+  .import-page {
+    padding: 20px 14px;
+  }
+
+  .import-content {
+    padding: 24px 20px;
+    border-radius: 18px;
+  }
+}

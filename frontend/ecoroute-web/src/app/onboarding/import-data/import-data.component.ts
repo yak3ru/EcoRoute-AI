@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { OnboardingDraftService } from '../../core/services/onboarding-draft.service';
+import { AlertPopupComponent } from '../../shared/alert-popup/alert-popup.component';
 
 interface AreaRow {
   areaName: string;
@@ -22,7 +23,7 @@ interface WasteRow {
 @Component({
   selector: 'app-import-data',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, AlertPopupComponent],
   templateUrl: './import-data.component.html',
   styleUrl: './import-data.component.scss'
 })
@@ -35,10 +36,7 @@ export class ImportDataComponent {
   areas: AreaRow[] = [];
   wasteRecords: WasteRow[] = [];
 
-
-  areasError = '';
-  wasteError = '';
-  successMessage = '';
+  alertMessage = '';
 
   isValidating = false;
 
@@ -60,8 +58,8 @@ constructor(
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
 
-    this.areasError = '';
-    this.successMessage = '';
+    this.alertMessage = '';
+    this.alertMessage = '';
     this.areas = [];
     this.areasFile = null;
     this.onboardingDraft.areas = [];
@@ -71,7 +69,7 @@ constructor(
     }
 
     if (!file.name.toLowerCase().endsWith('.csv')) {
-      this.areasError = 'Please select a CSV file.';
+      this.alertMessage = 'Please select a CSV file.';
       input.value = '';
       return;
     }
@@ -87,14 +85,14 @@ constructor(
         this.areas = this.parseAreasCsv(content);
         this.onboardingDraft.areas = [...this.areas];
 
-        this.successMessage =
+        this.alertMessage =
           `${this.areas.length} collection areas validated successfully.`;
       } catch (error) {
         this.areas = [];
         this.areasFile = null;
         this.onboardingDraft.areas = [];
 
-        this.areasError =
+        this.alertMessage =
           error instanceof Error
             ? error.message
             : 'Unable to validate the areas CSV.';
@@ -108,7 +106,7 @@ constructor(
       this.areasFile = null;
       this.areas = [];
       this.isValidating = false;
-      this.areasError = 'Unable to read this file.';
+      this.alertMessage = 'Unable to read this file.';
     };
 
     reader.readAsText(file);
@@ -295,8 +293,8 @@ onWasteSelected(event: Event): void {
   const input = event.target as HTMLInputElement;
   const file = input.files?.[0];
 
-  this.wasteError = '';
-  this.successMessage = '';
+  this.alertMessage = '';
+  this.alertMessage = '';
   this.wasteRecords = [];
   this.wasteFile = null;
   this.onboardingDraft.wasteRecords = [];
@@ -306,7 +304,7 @@ onWasteSelected(event: Event): void {
   }
 
   if (!file.name.toLowerCase().endsWith('.csv')) {
-    this.wasteError = 'Please select a CSV file.';
+    this.alertMessage = 'Please select a CSV file.';
     input.value = '';
     return;
   }
@@ -322,14 +320,14 @@ onWasteSelected(event: Event): void {
       this.wasteRecords = this.parseWasteCsv(content);
       this.onboardingDraft.wasteRecords = [...this.wasteRecords];
 
-      this.successMessage =
+      this.alertMessage =
         `${this.wasteRecords.length} historical waste records validated successfully.`;
     } catch (error) {
       this.wasteRecords = [];
       this.wasteFile = null;
       this.onboardingDraft.wasteRecords = [];
 
-      this.wasteError =
+      this.alertMessage =
         error instanceof Error
           ? error.message
           : 'Unable to validate the historical waste CSV.';
@@ -343,7 +341,7 @@ onWasteSelected(event: Event): void {
     this.wasteFile = null;
     this.wasteRecords = [];
     this.isValidating = false;
-    this.wasteError = 'Unable to read this file.';
+    this.alertMessage = 'Unable to read this file.';
   };
 
   reader.readAsText(file);
@@ -545,25 +543,25 @@ removeAreasFile(): void {
   this.areasFile = null;
   this.areas = [];
   this.onboardingDraft.areas = [];
-  this.areasError = '';
-  this.successMessage = '';
+  this.alertMessage = '';
+  this.alertMessage = '';
 }
 
 removeWasteFile(): void {
   this.wasteFile = null;
   this.wasteRecords = [];
   this.onboardingDraft.wasteRecords = [];
-  this.wasteError = '';
-  this.successMessage = '';
+  this.alertMessage = '';
+  this.alertMessage = '';
 }
 
   // NAVIGATION
 
 
 continueSetup(): void {
-  this.areasError = '';
-  this.wasteError = '';
-  this.successMessage = '';
+  this.alertMessage = '';
+  this.alertMessage = '';
+  this.alertMessage = '';
 
   if (this.isValidating) {
     return;
@@ -571,7 +569,7 @@ continueSetup(): void {
 
   if (this.currentStep === 1) {
     if (this.areas.length === 0) {
-      this.areasError =
+      this.alertMessage =
         'Please upload and validate your collection areas first.';
       return;
     }
@@ -585,7 +583,7 @@ continueSetup(): void {
   if (this.currentStep === 2) {
     // Historical waste data is optional.
     if (this.wasteFile && this.wasteRecords.length === 0) {
-      this.wasteError =
+      this.alertMessage =
         'Please select a valid waste CSV or remove the selected file.';
       return;
     }
@@ -597,21 +595,20 @@ continueSetup(): void {
 }
 
   goBack(): void {
-    if (this.currentStep > 1) {
-      this.currentStep--;
-      this.areasError = '';
-      this.wasteError = '';
-      this.successMessage = '';
-    }
+  if (this.currentStep > 1) {
+    this.currentStep--;
+    this.onboardingDraft.currentStep = this.currentStep;
+    this.alertMessage = '';
   }
+}
 
   // PATH C: START FROM SCRATCH
 
   
 startFromScratch(): void {
-  this.areasError = '';
-  this.wasteError = '';
-  this.successMessage = '';
+  this.alertMessage = '';
+  this.alertMessage = '';
+  this.alertMessage = '';
 
   this.isValidating = true;
   this.onboardingDraft.currentStep = 1;
@@ -638,7 +635,7 @@ startFromScratch(): void {
     error: error => {
       this.isValidating = false;
 
-      this.areasError =
+      this.alertMessage =
         error?.error?.message ||
         'Unable to finish setup. Please try again.';
     }

@@ -118,15 +118,6 @@
     </p>
   </div>
 
-  <!-- VALIDATION AND IMPORT MESSAGES -->
-  <div class="message error" *ngIf="areasError" role="alert">
-    {{ areasError }}
-  </div>
-
-  <div class="message success" *ngIf="successMessage" role="status">
-    {{ successMessage }}
-  </div>
-
 </section>
 
     
@@ -141,7 +132,7 @@
       <p>Historical records help improve waste generation predictions.</p>
     </div>
 
-    <span class="optional-label">Optional</span>
+    <span class="required-label">Required</span>
   </div>
 
   <!-- ORIGINAL UPLOAD AREA -->
@@ -237,22 +228,6 @@
 
   </div>
 
-  <!-- ERROR MESSAGE -->
-  <div class="message error" *ngIf="wasteError" role="alert">
-    {{ wasteError }}
-  </div>
-
-  <!-- SUCCESS MESSAGE -->
-  <div class="message success" *ngIf="successMessage" role="status">
-    {{ successMessage }}
-  </div>
-
-  <!-- OPTIONAL DATA NOTICE -->
-  <div class="message info">
-    No historical data yet? You can continue without uploading a file.
-    EcoRoute AI can start without historical waste records.
-  </div>
-
 </section>
 
 
@@ -280,12 +255,16 @@
         Back
       </button>
 
-      
+    
 <!-- CONTINUE BUTTON -->
 <button
   type="button"
   class="continue-button"
-  [disabled]="isValidating"
+  [disabled]="
+    isValidating ||
+    (currentStep === 1 && areas.length === 0) ||
+    (currentStep === 2 && wasteRecords.length === 0)
+  "
   (click)="continueSetup()">
 
   {{ isValidating
@@ -295,11 +274,16 @@
       : 'Continue to trucks' }}
 
   <span *ngIf="!isValidating">→</span>
-
 </button>
-
 
     </footer>
 
   </main>
+
+
+<!-- REUSABLE NOTIFICATION POPUP -->
+<app-alert-popup
+  [message]="alertMessage">
+</app-alert-popup>
+
 </div>

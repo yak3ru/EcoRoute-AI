@@ -1,3 +1,4 @@
+import { AlertPopupComponent } from '../shared/alert-popup/alert-popup.component';
 import { environment } from '../../environments/environment';
 import { AfterViewInit, Component, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
@@ -8,7 +9,7 @@ import * as L from 'leaflet';
 
 @Component({
   selector: 'app-dashboard',
-  imports: [CommonModule],
+  imports: [CommonModule, AlertPopupComponent],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss'
 })
@@ -140,12 +141,15 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
   predictionChange = 0;
 
   hasWasteData = false;
+  hasOperationData = false;
 
   previousOperationDate = '';
 
   mapOperationDate = '';
 
   isMapExpanded = false;
+  welcomeMessage = ''
+  showWelcomePopup = false;
 
   // ============================================================
   // LIFECYCLE METHODS
@@ -180,11 +184,24 @@ ngOnInit(): void {
             day: 'numeric',
             year: 'numeric'
           });
-          
+
           this.loadAreaLocations();
           this.loadDashboardData();
           this.loadCollectionHistory();
 
+          // Show the welcome notification only once per browser.
+          const hasSeenWelcome =
+            localStorage.getItem('ecoroute_welcome_shown');
+
+          if (!hasSeenWelcome) {
+            this.welcomeMessage = 'Welcome to EcoRoute AI!';
+            this.showWelcomePopup = true;
+
+            localStorage.setItem(
+              'ecoroute_welcome_shown',
+              'true'
+            );
+          }
         },
         error: error => {
           console.error(
@@ -195,7 +212,6 @@ ngOnInit(): void {
       })
   );
 }
-
 
   // Initializes the chart and map after the dashboard view is ready.
   
@@ -220,6 +236,7 @@ ngOnInit(): void {
   // ============================================================
 
   // Checks the current operation status and loads the correct dashboard data.
+
   
 private loadDashboardData(): void {
   const today = this.systemDate;
@@ -707,6 +724,7 @@ startDate.setDate(
   private applyOperationData(
     response: any
   ): void {
+    this.hasOperationData = true;
     const routes =
       response?.routes ?? [];
 
@@ -744,6 +762,12 @@ startDate.setDate(
       Math.round(
         this.predictedWasteValue * 100
       ) / 100;
+
+      console.log('DASHBOARD MODE:', this.dashboardMode);
+console.log('ROUTES:', routes);
+console.log('ROUTE LOADS:', routes.map((r: any) => r.load_kg));
+console.log('TOTAL ROUTE LOAD:', this.predictedWasteValue);
+console.log('ML PREDICTION:', this.aiPredictedWaste);
   }
 
   // load the actual collected waste for the selected operation date.
@@ -873,13 +897,16 @@ startDate.setDate(
 
   // Clears the dashboard summary values when no operation is available.
   private clearDashboardData(): void {
-    this.wasteValue = 0;
-    this.predictedWasteValue = 0;
-    this.routeCount = 0;
-    this.vehicleCount = 0;
-    this.totalVehicles = 0;
-    this.hasWasteData = false;
-  }
+  this.wasteValue = 0;
+  this.predictedWasteValue = 0;
+  this.routeCount = 0;
+  this.vehicleCount = 0;
+  this.totalVehicles = 0;
+  this.hasWasteData = false;
+
+  // Reset the operation state.
+  this.hasOperationData = false;
+}
 
   // Converts a Date value into the local YYYY-MM-DD format.
   private toLocalDateString(

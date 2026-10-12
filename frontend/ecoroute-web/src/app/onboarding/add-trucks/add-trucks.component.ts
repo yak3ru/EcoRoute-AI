@@ -5,6 +5,8 @@ import { Router } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { AuthService } from '../../core/services/auth.service';
 import { OnboardingDraftService } from '../../core/services/onboarding-draft.service';
+import { LoadingScreenComponent } from '../../shared/loading-screen/loading-screen.component';
+import { AlertPopupComponent } from '../../shared/alert-popup/alert-popup.component';
 
 interface Truck {
   id: number;
@@ -19,7 +21,12 @@ interface Truck {
 @Component({
   selector: 'app-add-trucks',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [
+  CommonModule,
+  FormsModule,
+  LoadingScreenComponent,
+  AlertPopupComponent
+],
   templateUrl: './add-trucks.component.html',
   styleUrl: './add-trucks.component.scss'
 })
@@ -41,6 +48,7 @@ export class AddTrucksComponent {
 
   isSaving = false;
   isCompletingSetup = false;
+  processingPending = false;
 
   constructor(
   private router: Router,
@@ -219,6 +227,12 @@ completeSetup(): void {
     return;
   }
 
+  // If import rows were already committed, retry processing only; never post them again.
+  if (this.processingPending) {
+    this.retryProcessing();
+    return;
+  }
+
   if (this.trucks.length === 0) {
     this.errorMessage =
       'Please add at least one truck before continuing.';
@@ -255,34 +269,56 @@ completeSetup(): void {
   };
 
   this.authService.finalizeOnboarding(payload).subscribe({
-    next: () => {
-      const user = this.authService.getUser();
-
-      if (user) {
-        localStorage.setItem(
-          'ecoroute_user',
-          JSON.stringify({
-            ...user,
-            isOnboardingComplete: true
-          })
-        );
+    next: () => this.finishOnboardingSuccessfully(),
+    error: (error: HttpErrorResponse) => {
+      if (error.status === 503 && error.error?.dataSaved === true) {
+        this.processingPending = true;
+        this.errorMessage = error.error?.message ||
+          'Your files were imported, but processing needs to be retried. Do not upload them again.';
+        this.isCompletingSetup = false;
+        return;
       }
 
-      this.onboardingDraft.reset();
-      this.router.navigate(['/dashboard']);
-    },
-
-    error: (error: HttpErrorResponse) => {
       this.errorMessage = this.getErrorMessage(
         error,
         'Unable to finish setup. Your draft has been preserved. Please try again.'
       );
-
       this.isCompletingSetup = false;
     }
   });
 }
 
+
+
+retryProcessing(): void {
+  if (this.isCompletingSetup || !this.processingPending) return;
+
+  this.isCompletingSetup = true;
+  this.errorMessage = '';
+  this.authService.retryOnboardingProcessing().subscribe({
+    next: () => this.finishOnboardingSuccessfully(),
+    error: (error: HttpErrorResponse) => {
+      this.errorMessage = this.getErrorMessage(
+        error,
+        'Processing could not finish yet. Your imported data is safe; retry again.'
+      );
+      this.isCompletingSetup = false;
+    }
+  });
+}
+
+private finishOnboardingSuccessfully(): void {
+  const user = this.authService.getUser();
+  if (user) {
+    localStorage.setItem(
+      'ecoroute_user',
+      JSON.stringify({ ...user, isOnboardingComplete: true })
+    );
+  }
+  this.onboardingDraft.reset();
+  this.processingPending = false;
+  this.router.navigate(['/dashboard']);
+}
 
 
   private getErrorMessage(

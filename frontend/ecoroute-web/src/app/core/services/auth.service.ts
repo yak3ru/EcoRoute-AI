@@ -88,81 +88,6 @@ export interface HistoricalWasteImportResponse {
 }
 
 
-export interface VehicleRequest {
-  vehicleName: string;
-  capacityKg: number;
-  maximumRouteDistanceKm: number;
-  collectionStartTime: string;
-  collectionEndTime: string;
-  status: string;
-}
-
-export interface VehicleResponse {
-  vehicle: {
-    vehicleId: number;
-    userId: number;
-    vehicleName: string;
-    capacityKg: number;
-    status: string;
-    isActive: boolean;
-    createdAt: string;
-  };
-  routingConstraint: {
-    constraintId: number;
-    vehicleId: number;
-    vehicleCapacityKg: number;
-    maximumRouteDistanceKm: number;
-    collectionStartTime: string;
-    collectionEndTime: string;
-  };
-}
-
-export interface VehicleListItem {
-  vehicleId: number;
-  userId: number;
-  vehicleName: string;
-  capacityKg: number;
-  status: string;
-  isActive: boolean;
-  createdAt: string;
-  maximumRouteDistanceKm: number;
-  collectionStartTime: string;
-  collectionEndTime: string;
-}
-
-
-export interface FinalizeOnboardingArea {
-  areaName: string;
-  populationDensity: number;
-  latitude: number;
-  longitude: number;
-}
-
-export interface FinalizeOnboardingWasteRecord {
-  areaName: string;
-  collectionDate: string;
-  wasteType: string;
-  weightKg: number;
-  status: string;
-}
-
-export interface FinalizeOnboardingTruck {
-  vehicleName: string;
-  capacityKg: number;
-  maximumRouteDistanceKm: number;
-  collectionStartTime: string;
-  collectionEndTime: string;
-}
-
-export interface FinalizeOnboardingRequest {
-  areas: FinalizeOnboardingArea[];
-  wasteRecords: FinalizeOnboardingWasteRecord[];
-  trucks: FinalizeOnboardingTruck[];
-}
-
-
-
-
 @Injectable({
   providedIn: 'root'
 })
@@ -332,6 +257,46 @@ importHistoricalWaste(
   }
 
 
+finalizeOnboarding(payload: {
+  areas: AreaImportRow[];
+  wasteRecords: HistoricalWasteImportRow[];
+  trucks: {
+    vehicleName: string;
+    capacityKg: number;
+    maximumRouteDistanceKm: number;
+    collectionStartTime: string;
+    collectionEndTime: string;
+  }[];
+}): Observable<{
+  message: string;
+  isOnboardingComplete: boolean;
+  processingComplete?: boolean;
+  dataSaved?: boolean;
+  importedAreas?: number;
+  importedWasteRecords?: number;
+  importedTrucks?: number;
+}> {
+  return this.http.post<any>(
+    `${this.api.getBaseUrl()}/Onboarding/finalize`,
+    payload,
+    { withCredentials: true }
+  );
+}
+
+retryOnboardingProcessing(): Observable<{
+  message: string;
+  isOnboardingComplete: boolean;
+  processingComplete: boolean;
+  dataSaved: boolean;
+}> {
+  return this.http.post<any>(
+    `${this.api.getBaseUrl()}/Onboarding/process`,
+    {},
+    { withCredentials: true }
+  );
+}
+
+
 completeOnboarding(): Observable<{ message: string; isOnboardingComplete: boolean }> {
   return this.http.post<{
     message: string;
@@ -367,56 +332,4 @@ completeOnboarding(): Observable<{ message: string; isOnboardingComplete: boolea
   isLoggedIn(): boolean {
     return !!this.getUser();
   }
-
-
-getVehicles(): Observable<VehicleListItem[]> {
-  return this.http.get<VehicleListItem[]>(
-    `${this.api.getBaseUrl()}/Vehicles`,
-    { withCredentials: true }
-  );
-}
-
-createVehicle(
-  request: VehicleRequest
-): Observable<VehicleResponse> {
-  return this.http.post<VehicleResponse>(
-    `${this.api.getBaseUrl()}/Vehicles/with-constraints`,
-    request,
-    { withCredentials: true }
-  );
-}
-
-updateVehicle(
-  vehicleId: number,
-  request: VehicleRequest
-): Observable<VehicleResponse> {
-  return this.http.put<VehicleResponse>(
-    `${this.api.getBaseUrl()}/Vehicles/${vehicleId}/with-constraints`,
-    request,
-    { withCredentials: true }
-  );
-}
-
-deleteVehicle(vehicleId: number): Observable<{ message: string }> {
-  return this.http.delete<{ message: string }>(
-    `${this.api.getBaseUrl()}/Vehicles/${vehicleId}`,
-    { withCredentials: true }
-  );
-}
-
-
-finalizeOnboarding(payload: FinalizeOnboardingRequest) {
-  return this.http.post<{
-    message: string;
-    importedAreas: number;
-    importedWasteRecords: number;
-    importedTrucks: number;
-  }>(
-    `${this.api.getBaseUrl()}/Onboarding/finalize`,
-    payload,
-    { withCredentials: true }
-  );
-}
-
-
 }
