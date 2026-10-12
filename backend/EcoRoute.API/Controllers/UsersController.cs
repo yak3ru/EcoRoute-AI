@@ -484,18 +484,29 @@ public async Task<IActionResult> DeleteAccount(
 
         _context.RoutingConstraints.RemoveRange(routingConstraints);
 
-        // 6. Delete the user's vehicles and collection areas.
-        var vehicles = await _context.Vehicles
-            .Where(v => v.UserId == userId)
-            .ToListAsync();
+        
+ // 6. Delete area-to-disposal distances BEFORE deleting areas.
+await _context.Database.ExecuteSqlInterpolatedAsync($@"
+    DELETE FROM area_disposal_distances
+    WHERE AreaId IN (
+        SELECT AreaId
+        FROM areas
+        WHERE UserId = {userId}
+    )");
 
-        _context.Vehicles.RemoveRange(vehicles);
+// Delete the user's vehicles and collection areas.
+var vehicles = await _context.Vehicles
+    .Where(v => v.UserId == userId)
+    .ToListAsync();
 
-        var areas = await _context.Areas
-            .Where(a => a.UserId == userId)
-            .ToListAsync();
+_context.Vehicles.RemoveRange(vehicles);
 
-        _context.Areas.RemoveRange(areas);
+var areas = await _context.Areas
+    .Where(a => a.UserId == userId)
+    .ToListAsync();
+
+_context.Areas.RemoveRange(areas);
+
 
         // 7. Delete the user's saved and generated data.
         var savedRoutePlans = await _context.SavedRoutePlans

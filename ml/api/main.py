@@ -1,4 +1,6 @@
-
+from pathlib import Path
+import subprocess
+import sys
 import os
 import secrets
 import logging
@@ -44,6 +46,63 @@ def verify_ml_service_key(
             status_code=401,
             detail="Unauthorized ML service request.",
         )
+
+
+@app.post("/distances/rebuild", dependencies=[Depends(verify_ml_service_key)])
+def rebuild_distance_matrix(
+    user_id: int = Query(..., ge=1),
+    facility_id: int = Query(1, ge=1),
+):
+    """Rebuild this user's area-to-area and area-to-facility distances."""
+    ml_root = Path(__file__).resolve().parents[1]
+    script = ml_root / "data" / "rebuild_distance_matrix.py"
+
+    if not script.is_file():
+        logger.error("Distance rebuild script is missing: %s", script)
+        raise HTTPException(
+            status_code=500,
+            detail="Distance preparation is not configured.",
+        )
+
+    try:
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(script),
+                "--user-id", str(user_id),
+                "--facility-id", str(facility_id),
+            ],
+            cwd=str(ml_root),
+            capture_output=True,
+            text=True,
+            timeout=180,
+            check=False,
+        )
+    except subprocess.TimeoutExpired:
+        raise HTTPException(
+            status_code=504,
+            detail="Distance preparation timed out.",
+        )
+
+    if result.returncode != 0:
+        logger.error(
+            "Distance rebuild failed for user %s: %s",
+            user_id,
+            result.stderr[-4000:],
+        )
+        raise HTTPException(
+            status_code=500,
+            detail="Distance preparation failed.",
+        )
+
+    return {
+        "status": "success",
+        "user_id": user_id,
+        "facility_id": facility_id,
+        "message": "Distance matrix rebuilt.",
+        "output": result.stdout[-4000:],
+    }
+
 
 
 def is_missing_history(error: Exception) -> bool:

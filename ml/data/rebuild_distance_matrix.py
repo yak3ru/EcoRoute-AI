@@ -1,3 +1,4 @@
+import argparse
 import json
 import os
 from pathlib import Path
@@ -31,7 +32,39 @@ DB_PASSWORD = os.getenv("DB_PASSWORD")
 
 
 # ============================================================
-# LOAD SRP DISPOSAL DESTINATION
+# COMMAND-LINE ARGUMENTS
+# ============================================================
+
+parser = argparse.ArgumentParser(
+    description="Rebuild road distances for one EcoRoute AI user."
+)
+parser.add_argument(
+    "--user-id",
+    type=int,
+    required=True,
+    help="UserId whose active areas should be processed."
+)
+parser.add_argument(
+    "--facility-id",
+    type=int,
+    default=1,
+    help="Active disposal FacilityId to use (default: 1, SRP Dumpsite)."
+)
+args = parser.parse_args()
+
+if args.user_id < 1:
+    raise ValueError("--user-id must be a positive integer.")
+if args.facility_id < 1:
+    raise ValueError("--facility-id must be a positive integer.")
+
+USER_ID = args.user_id
+FACILITY_ID = args.facility_id
+
+print(f"Processing distance data for UserId={USER_ID}")
+
+
+# ============================================================
+# LOAD SELECTED DISPOSAL DESTINATION
 # ============================================================
 
 connection = pymysql.connect(
@@ -52,10 +85,9 @@ try:
                 Latitude,
                 Longitude
             FROM disposal_facilities
-            WHERE IsActive = 1
-            ORDER BY FacilityId
+            WHERE IsActive = 1 AND FacilityId = %s
             LIMIT 1
-        """)
+        """, (FACILITY_ID,))
 
         facility = cursor.fetchone()
 
@@ -96,9 +128,9 @@ try:
                 Latitude,
                 Longitude
             FROM areas
-            WHERE IsActive = 1
+            WHERE IsActive = 1 AND UserId = %s
             ORDER BY AreaId
-        """)
+        """, (USER_ID,))
 
         areas = cursor.fetchall()
 
@@ -106,9 +138,9 @@ finally:
     connection.close()
 
 
-if len(areas) != 10:
+if not areas:
     raise RuntimeError(
-        f"Expected 10 active areas, but found {len(areas)}."
+        f"No active collection areas were found for UserId={USER_ID}."
     )
 
 
@@ -352,8 +384,11 @@ for area_index, area in enumerate(areas):
 print(f"Calculated {len(srp_rows)} area to SRP routes.")
 
 # ============================================================
-# REPLACE OLD DISTANCE MATRIX
+# SAVE BOTH DISTANCE TABLES SAFELY FOR THIS USER
 # ============================================================
+
+area_ids = [area["AreaId"] for area in areas]
+placeholders = ", ".join(["%s"] * len(area_ids))
 
 connection = pymysql.connect(
     host=DB_HOST,
@@ -364,55 +399,32 @@ connection = pymysql.connect(
 )
 
 try:
-
+    connection.begin()
     with connection.cursor() as cursor:
-
-        print(
-            "Removing old distance matrix..."
-        )
-
-        cursor.execute(
-            "DELETE FROM distance_matrix"
-        )
-
-        print(
-            "Inserting new distance matrix..."
-        )
+        # Delete only distances whose origin AND destination belong to
+        # this user's selected active areas. Other users' rows are preserved.
+        delete_matrix_sql = f"""
+            DELETE FROM distance_matrix
+            WHERE OriginAreaId IN ({placeholders})
+              AND DestinationAreaId IN ({placeholders})
+        """
+        cursor.execute(delete_matrix_sql, tuple(area_ids + area_ids))
+        print(f"Replaced {cursor.rowcount} existing matrix rows for UserId={USER_ID}.")
 
         cursor.executemany(
             """
             INSERT INTO distance_matrix
-(
-    OriginAreaId,
-    DestinationAreaId,
-    DistanceKm,
-    TravelTimeMinutes
-)
-VALUES (%s, %s, %s, %s)
+            (
+                OriginAreaId,
+                DestinationAreaId,
+                DistanceKm,
+                TravelTimeMinutes
+            )
+            VALUES (%s, %s, %s, %s)
             """,
             matrix_rows
         )
 
-    connection.commit()
-
-finally:
-    connection.close()
-
-
-# ============================================================
-# SAVE AREA TO SRP DISTANCES
-# ============================================================
-
-connection = pymysql.connect(
-    host=DB_HOST,
-    port=DB_PORT,
-    user=DB_USER,
-    password=DB_PASSWORD,
-    database=DB_NAME
-)
-
-try:
-    with connection.cursor() as cursor:
         cursor.executemany(
             """
             INSERT INTO area_disposal_distances
@@ -431,11 +443,14 @@ try:
         )
 
     connection.commit()
+    print(f"Saved {len(srp_rows)} area-to-disposal distances.")
+
+except Exception:
+    connection.rollback()
+    raise
 
 finally:
     connection.close()
-
-print(f"Saved {len(srp_rows)} area to SRP distances.")
 
 
 # ============================================================
@@ -444,7 +459,7 @@ print(f"Saved {len(srp_rows)} area to SRP distances.")
 
 print()
 print("=" * 60)
-print("DISTANCE MATRIX REBUILT SUCCESSFULLY")
+print(f"DISTANCE MATRIX REBUILT SUCCESSFULLY FOR USER {USER_ID}")
 print("=" * 60)
 
 print()

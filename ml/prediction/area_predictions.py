@@ -73,25 +73,26 @@ def prepare_prediction_data(user_id: int):
     )
 
     # Aggregate waste by area and collection date.
-    data = (
-        raw_data.groupby(
-            [
-                "AreaId",
-                "AreaName",
-                "CollectionDate",
-                "PopulationDensity",
-                "ActivityLevel",
-                "CollectionFrequency",
-                "ActivityLevelNumeric",
-                "CollectionFrequencyNumeric",
-                "Latitude",
-                "Longitude",
-            ],
-            as_index=False,
-        )["WeightKg"]
-        .sum()
-        .rename(columns={"WeightKg": "TotalWasteKg"})
-    )
+    
+    data = raw_data.groupby(
+    [
+        "AreaId",
+        "AreaName",
+        "CollectionDate",
+        "PopulationDensity",
+        "ActivityLevel",
+        "CollectionFrequency",
+        "ActivityLevelNumeric",
+        "CollectionFrequencyNumeric",
+        "Latitude",
+        "Longitude",
+    ],
+    as_index=False,
+    dropna=False,
+)["WeightKg"].sum().rename(
+    columns={"WeightKg": "TotalWasteKg"}
+)
+
 
     # Sort chronologically for historical calculations.
     data = data.sort_values(

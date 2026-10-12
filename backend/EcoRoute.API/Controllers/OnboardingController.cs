@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using EcoRoute.API.Models;
+using EcoRoute.API.Services;
 
 namespace EcoRoute.API.Controllers;
 
@@ -14,10 +15,14 @@ namespace EcoRoute.API.Controllers;
 public class OnboardingController : ControllerBase
 {
     private readonly EcoRouteDbContext _context;
+    private readonly MlService _mlService;
 
-    public OnboardingController(EcoRouteDbContext context)
+    public OnboardingController(
+        EcoRouteDbContext context,
+        MlService mlService)
     {
         _context = context;
+        _mlService = mlService;
     }
 
     // GET: api/Onboarding/status
@@ -450,20 +455,44 @@ if (duplicateWasteRecord)
                 await _context.SaveChangesAsync();
             }
 
-            user.IsOnboardingComplete = true;
+            // Import rows first. The Python ML service uses its own DB connection,
+            // so it must run only after this transaction commits. Do not mark
+            // onboarding complete until distance and prediction processing succeeds.
+            user.IsOnboardingComplete = false;
             user.UpdatedAt = now;
 
             await _context.SaveChangesAsync();
             await transaction.CommitAsync();
 
-            return Ok(new
+            try
             {
-                message = "Onboarding data saved successfully.",
-                isOnboardingComplete = true,
-                importedAreas = areaEntities.Count,
-                importedWasteRecords = wasteRecords.Count,
-                importedTrucks = trucks.Count
-            });
+                await ProcessImportedDataAsync(userId);
+                user.IsOnboardingComplete = true;
+                user.UpdatedAt = DateTime.UtcNow;
+                await _context.SaveChangesAsync();
+
+                return Ok(new
+                {
+                    message = "Import completed. Distance data and waste predictions are ready.",
+                    isOnboardingComplete = true,
+                    processingComplete = true,
+                    importedAreas = areaEntities.Count,
+                    importedWasteRecords = wasteRecords.Count,
+                    importedTrucks = trucks.Count
+                });
+            }
+            catch (Exception)
+            {
+                // Data is already committed. The client must use /process to retry;
+                // it must not submit the same imports a second time.
+                return StatusCode(503, new
+                {
+                    message = "Your data was imported, but distance preparation or prediction generation did not finish. Retry processing; do not upload the same files again.",
+                    dataSaved = true,
+                    processingComplete = false,
+                    isOnboardingComplete = false
+                });
+            }
         }
         catch (Exception)
         {
@@ -477,6 +506,90 @@ if (duplicateWasteRecord)
         }
     }
 
+
+    // POST: api/Onboarding/process
+    // Retry processing after import data has already been committed.
+    [HttpPost("process")]
+    public async Task<IActionResult> ProcessImportedData()
+    {
+        var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!int.TryParse(userIdClaim, out var userId))
+        {
+            return Unauthorized(new { message = "Invalid authenticated user." });
+        }
+
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.UserId == userId);
+        if (user == null)
+        {
+            return Unauthorized(new { message = "User account not found." });
+        }
+
+        var hasAreas = await _context.Areas.AnyAsync(a => a.UserId == userId && a.IsActive);
+        var hasWaste = await _context.WasteRecords
+            .AnyAsync(w => _context.Areas.Any(a => a.AreaId == w.AreaId && a.UserId == userId));
+        if (!hasAreas || !hasWaste)
+        {
+            return Conflict(new
+            {
+                message = "Import collection areas and historical waste records before processing.",
+                dataSaved = false,
+                processingComplete = false
+            });
+        }
+
+        try
+        {
+            await ProcessImportedDataAsync(userId);
+            user.IsOnboardingComplete = true;
+            user.UpdatedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+
+            return Ok(new
+            {
+                message = "Distance data and waste predictions are ready.",
+                dataSaved = true,
+                processingComplete = true,
+                isOnboardingComplete = true
+            });
+        }
+        catch (Exception)
+        {
+            user.IsOnboardingComplete = false;
+            user.UpdatedAt = DateTime.UtcNow;
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception saveException)
+            {
+                // Processing is already reported as failed; leave the DB error to server logs.
+                // Avoid exposing database details to the client.
+            }
+            return StatusCode(503, new
+            {
+                message = "Processing is still unavailable. Your imported data is safe; please retry.",
+                dataSaved = true,
+                processingComplete = false,
+                isOnboardingComplete = false
+            });
+        }
+    }
+
+    private async Task ProcessImportedDataAsync(int userId)
+    {
+        // Facility 1 is the configured default disposal destination in this prototype.
+        await _mlService.RebuildDistanceMatrixAsync(userId, facilityId: 1);
+
+        var predictionResult = await _mlService.GetPredictionsAsync(userId);
+        if (!predictionResult.TryGetProperty("status", out var status) ||
+            !string.Equals(status.GetString(), "success", StringComparison.OrdinalIgnoreCase) ||
+            !predictionResult.TryGetProperty("predictions", out var predictions) ||
+            predictions.ValueKind != System.Text.Json.JsonValueKind.Array ||
+            predictions.GetArrayLength() == 0)
+        {
+            throw new InvalidOperationException("The prediction service did not return usable predictions.");
+        }
+    }
 }
 
 
