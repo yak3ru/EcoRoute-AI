@@ -1,0 +1,400 @@
+:host {
+  display: block;
+  min-height: 100vh;
+  background: #ffffff;
+  color: #171717;
+}
+
+.import-page {
+  box-sizing: border-box;
+  min-height: 100vh;
+  padding: 32px 36px 24px;
+}
+
+.import-content {
+  width: 100%;
+  max-width: 1080px;
+  margin: 0 auto;
+}
+
+.page-header {
+  margin-bottom: 32px;
+}
+
+.step-label {
+  margin: 0 0 14px;
+  color: #229b32;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.page-header h1 {
+  margin: 0 0 12px;
+  font-size: clamp(30px, 3vw, 44px);
+  font-weight: 750;
+  line-height: 1.15;
+  letter-spacing: -1.2px;
+}
+
+.page-description {
+  max-width: 850px;
+  margin: 0;
+  color: #5b5b5b;
+  font-size: clamp(15px, 1.3vw, 18px);
+  line-height: 1.6;
+}
+
+.upload-card {
+  padding: 28px;
+  border: 1px solid #e0e7e1;
+  border-radius: 18px;
+  background: #ffffff;
+}
+
+.section-heading {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.section-icon {
+  display: grid;
+  flex: 0 0 52px;
+  height: 52px;
+  place-items: center;
+  border-radius: 13px;
+  background: #eaf6ec;
+  color: #229b32;
+  font-size: 20px;
+  font-weight: 750;
+}
+
+.section-title {
+  flex: 1;
+  min-width: 0;
+}
+
+.section-title h2 {
+  margin: 0 0 5px;
+  font-size: clamp(19px, 1.7vw, 25px);
+  font-weight: 750;
+}
+
+.section-title p {
+  margin: 0;
+  color: #696969;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.required-label {
+  flex-shrink: 0;
+  padding: 8px 14px;
+  border-radius: 24px;
+  background: #eaf6ec;
+  color: #18872a;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.drop-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 265px;
+  box-sizing: border-box;
+  padding: 26px 20px;
+  border: 1px dashed #85c98f;
+  border-radius: 16px;
+  background: #f7faf7;
+  text-align: center;
+}
+
+.upload-icon {
+  display: grid;
+  width: 54px;
+  height: 54px;
+  margin-bottom: 14px;
+  place-items: center;
+  border-radius: 50%;
+  background: #229b32;
+  color: #ffffff;
+}
+
+.upload-icon span {
+  font-size: 32px;
+  font-weight: 400;
+  line-height: 1;
+}
+
+.drop-zone h3 {
+  max-width: 100%;
+  margin: 0 0 9px;
+  overflow-wrap: anywhere;
+  font-size: clamp(18px, 1.6vw, 23px);
+  font-weight: 750;
+}
+
+.upload-description {
+  margin: 0 0 20px;
+  color: #686868;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.browse-button {
+  display: inline-flex;
+  min-width: 190px;
+  min-height: 46px;
+  box-sizing: border-box;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 20px;
+  border: 1px solid #229b32;
+  border-radius: 9px;
+  background: #ffffff;
+  color: #18872a;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.browse-button:hover {
+  background: #edf7ef;
+}
+
+.template-link {
+  margin-top: 17px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #18872a;
+  font-size: 15px;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  cursor: pointer;
+}
+
+.column-hint {
+  margin: 16px 0 0;
+  color: #696969;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.file-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 14px;
+  padding: 12px 16px;
+  border-radius: 9px;
+  background: #edf8ef;
+  color: #187b29;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.file-status button {
+  flex-shrink: 0;
+  border: 0;
+  background: transparent;
+  color: #187b29;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.message {
+  margin-top: 14px;
+  padding: 12px 15px;
+  border-radius: 9px;
+  font-size: 13px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.message.error {
+  background: #fff0f0;
+  color: #b42318;
+}
+
+.message.success {
+  background: #edf8ef;
+  color: #187b29;
+}
+
+.page-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.scratch-button,
+.continue-button {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  padding: 0 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.scratch-button {
+  padding-left: 0;
+  border: 0;
+  background: transparent;
+  color: #229b32;
+}
+
+.scratch-button span {
+  font-size: 21px;
+}
+
+.scratch-button:hover {
+  color: #147624;
+}
+
+.continue-button {
+  min-width: 150px;
+  border: 1px solid #229b32;
+  background: #229b32;
+  color: #ffffff;
+}
+
+.continue-button:hover:not(:disabled) {
+  background: #18872a;
+}
+
+.continue-button:disabled {
+  border-color: #d4e4d6;
+  background: #d4e4d6;
+  cursor: not-allowed;
+}
+
+button:focus-visible,
+.browse-button:focus-visible {
+  outline: 3px solid #a8dfaf;
+  outline-offset: 3px;
+}
+
+@media (max-width: 700px) {
+  .import-page {
+    padding: 24px 16px;
+  }
+
+  .page-header {
+    margin-bottom: 24px;
+  }
+
+  .step-label {
+    margin-bottom: 12px;
+  }
+
+  .page-header h1 {
+    letter-spacing: -0.6px;
+  }
+
+  .upload-card {
+    padding: 18px;
+    border-radius: 14px;
+  }
+
+  .section-heading {
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+
+  .section-icon {
+    flex-basis: 44px;
+    height: 44px;
+    border-radius: 10px;
+    font-size: 17px;
+  }
+
+  .section-title {
+    min-width: 0;
+  }
+
+  .required-label {
+    margin-left: 56px;
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+
+  .drop-zone {
+    min-height: 230px;
+    padding: 22px 12px;
+    border-radius: 12px;
+  }
+
+  .upload-icon {
+    width: 46px;
+    height: 46px;
+  }
+
+  .upload-icon span {
+    font-size: 28px;
+  }
+
+  .browse-button {
+    min-width: 0;
+    width: 100%;
+    max-width: 230px;
+    min-height: 44px;
+    font-size: 14px;
+  }
+
+  .template-link {
+    font-size: 14px;
+  }
+
+  .column-hint {
+    font-size: 11px;
+  }
+
+  .page-footer {
+    margin-top: 20px;
+  }
+
+  .scratch-button,
+  .continue-button {
+    min-height: 42px;
+    padding: 0 10px;
+    font-size: 12px;
+  }
+
+  .scratch-button {
+    padding-left: 0;
+  }
+
+  .continue-button {
+    min-width: 110px;
+  }
+}
+
+@media (max-width: 380px) {
+  .page-footer {
+    align-items: flex-start;
+  }
+
+  .scratch-button,
+  .continue-button {
+    font-size: 11px;
+  }
+
+  .required-label {
+    margin-left: 0;
+  }
+}

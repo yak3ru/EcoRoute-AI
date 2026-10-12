@@ -16,7 +16,9 @@ export interface AuthResponse {
   email: string;
   username: string;
   role: string;
+  isOnboardingComplete: boolean;
 }
+
 
 export interface TwoFactorRequiredResponse {
   requiresTwoFactor: true;
@@ -155,19 +157,21 @@ export class AuthService {
     sessionStorage.setItem(this.twoFactorKey, JSON.stringify(pending));
   }
 
-  private saveSession(response: AuthResponse): void {
+  
+private saveSession(response: AuthResponse): void {
+  localStorage.setItem(
+    this.userKey,
+    JSON.stringify({
+      userId: response.userId,
+      fullName: response.fullName,
+      email: response.email,
+      username: response.username,
+      role: response.role,
+      isOnboardingComplete: response.isOnboardingComplete
+    })
+  );
+}
 
-    localStorage.setItem(
-      this.userKey,
-      JSON.stringify({
-        userId: response.userId,
-        fullName: response.fullName,
-        email: response.email,
-        username: response.username,
-        role: response.role
-      })
-    );
-  }
 
   logout(): Observable<any> {
     return this.http

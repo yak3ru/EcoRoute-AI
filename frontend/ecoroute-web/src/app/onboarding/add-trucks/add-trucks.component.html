@@ -1,0 +1,250 @@
+
+<div class="onboarding-page">
+  <div class="step-label">STEP 3 OF 3</div>
+
+  <h1>Add your collection trucks</h1>
+
+  <p class="page-description">
+    Configure your collection trucks to help EcoRoute AI plan efficient
+    waste collection routes.
+  </p>
+
+  <div class="onboarding-grid">
+    <!-- LEFT: EXISTING TRUCK FORM -->
+    <section class="truck-card form-card">
+      <div class="card-heading">
+        <div class="step-number">03</div>
+
+        <div class="heading-text">
+          <h2>{{ editingTruckId !== null ? 'Edit truck details' : 'Add collection trucks' }}</h2>
+          <p>
+            {{
+              editingTruckId !== null
+                ? 'Update the details of your selected truck.'
+                : 'Provide the capacity and collection schedule for your trucks.'
+            }}
+          </p>
+        </div>
+      </div>
+
+      <form (ngSubmit)="submitTruck()" #truckForm="ngForm">
+        <div class="form-grid">
+          <div class="form-group full-width">
+            <label for="vehicleName">Truck Name</label>
+            <input
+              id="vehicleName"
+              name="vehicleName"
+              type="text"
+              placeholder="e.g. Truck 01"
+              [(ngModel)]="vehicleName"
+              maxlength="100"
+              autocomplete="off"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="capacityKg">Capacity (kg)</label>
+            <input
+              id="capacityKg"
+              name="capacityKg"
+              type="number"
+              placeholder="e.g. 5000"
+              [(ngModel)]="capacityKg"
+              min="0.01"
+              step="0.01"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="maximumRouteDistanceKm">
+              Maximum Route Distance (km)
+            </label>
+            <input
+              id="maximumRouteDistanceKm"
+              name="maximumRouteDistanceKm"
+              type="number"
+              placeholder="e.g. 50"
+              [(ngModel)]="maximumRouteDistanceKm"
+              min="0.01"
+              step="0.01"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="collectionStartTime">Collection Start Time</label>
+            <input
+              id="collectionStartTime"
+              name="collectionStartTime"
+              type="time"
+              [(ngModel)]="collectionStartTime"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="collectionEndTime">Collection End Time</label>
+            <input
+              id="collectionEndTime"
+              name="collectionEndTime"
+              type="time"
+              [(ngModel)]="collectionEndTime"
+              required
+            />
+          </div>
+        </div>
+
+        <div class="status-note">
+          <span class="status-dot"></span>
+          <span>Default truck status: <strong>Available</strong></span>
+        </div>
+
+        <p class="feedback error-message" *ngIf="errorMessage" role="alert">
+          {{ errorMessage }}
+        </p>
+
+        <p class="feedback success-message" *ngIf="successMessage" role="status">
+          {{ successMessage }}
+        </p>
+
+        <div class="form-actions">
+          <button
+            *ngIf="editingTruckId !== null"
+            type="button"
+            class="cancel-edit-button"
+            (click)="cancelEdit()"
+          >
+            Cancel Edit
+          </button>
+
+          <button
+            type="submit"
+            class="add-button"
+            [disabled]="truckForm.invalid"
+          >
+            <span>{{ editingTruckId !== null ? 'Save Changes' : 'Add Truck' }}</span>
+            <span>{{ editingTruckId !== null ? '✓' : '+' }}</span>
+          </button>
+        </div>
+      </form>
+    </section>
+
+    <!-- RIGHT: ADDED TRUCKS LIST -->
+    <aside class="truck-card added-trucks-card">
+      <div class="list-heading">
+        <div>
+          <h2>Added Trucks</h2>
+          <p>Manage your collection fleet.</p>
+        </div>
+
+        <span class="truck-count">{{ trucks.length }}</span>
+      </div>
+
+      <div class="empty-state" *ngIf="trucks.length === 0">
+        <div class="empty-icon">＋</div>
+        <h3>No trucks added yet</h3>
+        <p>
+          Fill out the form and select Add Truck. Your trucks will appear here.
+        </p>
+      </div>
+
+      <div class="truck-list" *ngIf="trucks.length > 0">
+        <article
+          class="truck-item"
+          *ngFor="let truck of trucks"
+          [class.is-editing]="editingTruckId === truck.id"
+        >
+          <div class="truck-item-top">
+            <div class="truck-icon">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <rect x="2" y="5" width="13" height="12" rx="2"></rect>
+                <path d="M15 9h4l3 4v4h-7"></path>
+                <circle cx="7" cy="19" r="2"></circle>
+                <circle cx="18" cy="19" r="2"></circle>
+              </svg>
+            </div>
+
+            <div class="truck-identity">
+              <h3>{{ truck.vehicleName }}</h3>
+              <span class="available-badge">
+                <span></span>
+                {{ truck.status }}
+              </span>
+            </div>
+          </div>
+
+          <div class="truck-details">
+            <div>
+              <span>Capacity</span>
+              <strong>{{ truck.capacityKg | number:'1.0-2' }} kg</strong>
+            </div>
+
+            <div>
+              <span>Max distance</span>
+              <strong>{{ truck.maximumRouteDistanceKm | number:'1.0-2' }} km</strong>
+            </div>
+          </div>
+
+          <div class="truck-schedule">
+            <span>Collection schedule</span>
+            <strong>
+              {{ truck.collectionStartTime }} – {{ truck.collectionEndTime }}
+            </strong>
+          </div>
+
+          <div class="truck-actions">
+            <button
+              type="button"
+              class="edit-button"
+              (click)="editTruck(truck)"
+            >
+              <span>✎</span> Edit
+            </button>
+
+            <button
+              type="button"
+              class="delete-button"
+              (click)="deleteTruck(truck.id)"
+            >
+              <span>×</span> Delete
+            </button>
+          </div>
+        </article>
+      </div>
+
+      <div class="list-footer" *ngIf="trucks.length > 0">
+        {{ trucks.length }} {{ trucks.length === 1 ? 'truck' : 'trucks' }} added
+      </div>
+    </aside>
+  </div>
+
+  <!-- ONBOARDING NAVIGATION -->
+  <div class="onboarding-actions">
+    <button
+      type="button"
+      class="back-button"
+      (click)="goBack()"
+    >
+      <span>←</span> Back
+    </button>
+
+    <button
+      type="button"
+      class="continue-button"
+      [disabled]="trucks.length === 0"
+      (click)="completeSetup()"
+    >
+      Complete Setup <span>→</span>
+    </button>
+  </div>
+</div>

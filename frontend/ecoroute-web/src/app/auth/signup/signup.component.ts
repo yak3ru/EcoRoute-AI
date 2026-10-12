@@ -4,6 +4,10 @@ import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { NgIf } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
+import {
+  AuthService,
+  isTwoFactorRequired
+} from '../../core/services/auth.service';
 
 @Component({
   selector: 'app-signup',
@@ -34,9 +38,10 @@ export class SignupComponent {
   private readonly apiUrl = `${environment.apiUrl}`;
 
   constructor(
-    private router: Router,
-    private http: HttpClient
-  ) {}
+  private router: Router,
+  private http: HttpClient,
+  private authService: AuthService
+) {}
 
   // PASSWORD VISIBILITY
 
@@ -145,19 +150,39 @@ export class SignupComponent {
         agreeToTerms: this.agreeToTerms
       }
     ).subscribe({
-      next: (response) => {
-        this.isLoading = false;
+      
+next: (response) => {
+  this.successMessage =
+    response?.message ?? 'Account created successfully.';
 
-        this.successMessage =
-          response?.message ??
-          'Account created successfully.';
+  // Automatically log in the newly registered user.
+  this.authService.login({
+    usernameOrEmail: this.username.trim(),
+    password: this.password,
+    rememberMe: false
+  }).subscribe({
+    next: (loginResponse) => {
+      this.isLoading = false;
 
-        // REDIRECT TO LOGIN
+      if (isTwoFactorRequired(loginResponse)) {
+        this.router.navigate(['/verify-code']);
+        return;
+      }
 
-        setTimeout(() => {
-          this.router.navigate(['/login']);
-        }, 1000);
-      },
+      this.router.navigate(['/welcome']);
+    },
+    error: () => {
+      this.isLoading = false;
+
+      // Account creation succeeded, but login did not.
+      this.successMessage =
+        'Account created successfully. Please log in to continue.';
+      this.errorMessage = '';
+      this.router.navigate(['/login']);
+    }
+  });
+},
+
 
       error: (error) => {
         this.isLoading = false;

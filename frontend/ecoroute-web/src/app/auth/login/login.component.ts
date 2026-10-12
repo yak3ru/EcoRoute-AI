@@ -68,7 +68,9 @@ export class LoginComponent {
           return;
         }
 
-        this.router.navigate(['/dashboard']);
+        this.router.navigate([
+          response.isOnboardingComplete ? '/dashboard' : '/welcome'
+        ]);
       },
 
       error: (error) => {

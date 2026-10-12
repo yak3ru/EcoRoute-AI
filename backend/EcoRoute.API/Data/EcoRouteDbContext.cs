@@ -326,6 +326,11 @@ public class EcoRouteDbContext : DbContext
 
             entity.Property(u => u.PasswordChangedAt)
                 .HasColumnName("PasswordChangedAt");
+
+            entity.Property(u => u.IsOnboardingComplete)
+                .HasColumnName("IsOnboardingComplete")
+                .HasDefaultValue(false)
+                .IsRequired();
         });
 
         // USER SESSIONS

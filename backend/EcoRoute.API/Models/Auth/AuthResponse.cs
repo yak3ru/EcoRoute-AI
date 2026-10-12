@@ -1,3 +1,4 @@
+
 namespace EcoRoute.API.Models.Auth;
 
 public class AuthResponse
@@ -12,6 +13,9 @@ public class AuthResponse
 
     public string Role { get; set; } = string.Empty;
 
-    // ALWAYS FALSE HERE, SEE TwoFactorRequiredResponse
+    public bool IsOnboardingComplete { get; set; }
+
+    // Always false for a successful authenticated session.
+    // See TwoFactorRequiredResponse for pending 2FA.
     public bool RequiresTwoFactor => false;
 }

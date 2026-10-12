@@ -1,0 +1,199 @@
+
+<div class="import-page">
+  <main class="import-content">
+
+    <header class="page-header">
+      <p class="step-label">STEP {{ currentStep }} OF 3</p>
+
+      <h1>
+        {{ currentStep === 1
+          ? 'Import your collection areas'
+          : 'Import your historical waste records' }}
+      </h1>
+
+      <p class="page-description">
+        {{ currentStep === 1
+          ? 'Upload your collection areas to help EcoRoute AI prepare for waste prediction and route planning.'
+          : 'Upload your historical waste records to help EcoRoute AI learn waste generation patterns and make better predictions.' }}
+      </p>
+    </header>
+
+    <!-- STEP 1: COLLECTION AREAS -->
+    <section class="upload-card" *ngIf="currentStep === 1">
+
+      <div class="section-heading">
+        <div class="section-icon">01</div>
+
+        <div class="section-title">
+          <h2>Import collection areas</h2>
+          <p>Collection areas are required to plan routes.</p>
+        </div>
+
+        <span class="required-label">Required</span>
+      </div>
+
+      <div class="drop-zone">
+        <div class="upload-icon">
+          <span>↑</span>
+        </div>
+
+        <h3>
+          {{ areasFile ? areasFile.name : 'Upload your areas CSV' }}
+        </h3>
+
+        <p class="upload-description">
+          Select a CSV file containing your collection areas.
+        </p>
+
+        <label class="browse-button">
+          Browse areas CSV
+          <input
+            type="file"
+            accept=".csv,text/csv"
+            (change)="onAreasSelected($event)"
+            hidden
+          >
+        </label>
+
+        <button
+          type="button"
+          class="template-link"
+          (click)="downloadAreasTemplate()"
+        >
+          Download areas template
+        </button>
+
+        <p class="column-hint">
+          AreaName, PopulationDensity, Latitude, Longitude
+        </p>
+      </div>
+
+      <div class="file-status" *ngIf="areas.length > 0">
+        <span>
+          ✓ {{ areas.length }} collection areas validated
+        </span>
+
+        <button type="button" (click)="removeAreasFile()">
+          Remove
+        </button>
+      </div>
+
+      <div class="message error" *ngIf="areasError" role="alert">
+        {{ areasError }}
+      </div>
+
+      <div class="message success" *ngIf="successMessage" role="status">
+        {{ successMessage }}
+      </div>
+
+    </section>
+
+    <!-- STEP 2: HISTORICAL WASTE RECORDS -->
+    <section class="upload-card" *ngIf="currentStep === 2">
+
+      <div class="section-heading">
+        <div class="section-icon">02</div>
+
+        <div class="section-title">
+          <h2>Import historical waste records</h2>
+          <p>
+            Historical records help improve waste generation predictions.
+          </p>
+        </div>
+
+        <span class="optional-label">Optional</span>
+      </div>
+
+      <div class="drop-zone">
+        <div class="upload-icon">
+          <span>↑</span>
+        </div>
+
+        <h3>
+          {{ wasteFile ? wasteFile.name : 'Upload your waste data CSV' }}
+        </h3>
+
+        <p class="upload-description">
+          Select a CSV file containing your historical waste records.
+        </p>
+
+        <label class="browse-button">
+          Browse waste CSV
+          <input
+            type="file"
+            accept=".csv,text/csv"
+            (change)="onWasteSelected($event)"
+            hidden
+          >
+        </label>
+
+        <button
+          type="button"
+          class="template-link"
+          (click)="downloadWasteTemplate()"
+        >
+          Download waste data template
+        </button>
+
+        <p class="column-hint">
+          Use the official EcoRoute AI waste data template.
+        </p>
+      </div>
+
+      <div class="file-status" *ngIf="wasteFile">
+        <span>
+          ✓ {{ wasteFile.name }} selected
+        </span>
+
+        <button type="button" (click)="removeWasteFile()">
+          Remove
+        </button>
+      </div>
+
+      <div class="message error" *ngIf="wasteError" role="alert">
+        {{ wasteError }}
+      </div>
+
+      <div class="message info">
+        No historical data yet? You can continue without uploading a file.
+        EcoRoute AI can start without historical waste records.
+      </div>
+
+    </section>
+
+    <footer class="page-footer">
+
+      <button
+        type="button"
+        class="scratch-button"
+        *ngIf="currentStep === 1"
+        (click)="startFromScratch()"
+      >
+        <span>←</span>
+        Start from scratch
+      </button>
+
+      <button
+        type="button"
+        class="scratch-button"
+        *ngIf="currentStep === 2"
+        (click)="goBack()"
+      >
+        <span>←</span>
+        Back
+      </button>
+
+      <button
+        type="button"
+        class="continue-button"
+        [disabled]="isValidating"
+        (click)="continueSetup()"
+      >
+        {{ currentStep === 1 ? 'Continue' : 'Continue to trucks' }}
+        <span>→</span>
+      </button>
+
+    </footer>
+
+  </main>
+</div>

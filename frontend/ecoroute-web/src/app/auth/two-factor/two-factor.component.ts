@@ -126,10 +126,13 @@ export class TwoFactorComponent implements OnInit, OnDestroy {
     this.successMessage = '';
 
     this.authService.verifyTwoFactor(this.code).subscribe({
-      next: () => {
-        this.isVerifying = false;
-        this.router.navigate(['/dashboard']);
-      },
+      next: (response) => {
+  this.isVerifying = false;
+
+  this.router.navigate([
+    response.isOnboardingComplete ? '/dashboard' : '/welcome'
+  ]);
+},
 
       error: (error: HttpErrorResponse) => {
         this.isVerifying = false;

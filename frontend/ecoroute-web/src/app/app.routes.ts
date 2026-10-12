@@ -4,6 +4,10 @@ import { LoginComponent } from './auth/login/login.component';
 import { SignupComponent } from './auth/signup/signup.component';
 import { ForgotPasswordComponent } from './auth/forgot-password/forgot-password.component';
 import { ResetPasswordComponent } from './auth/reset-password/reset-password.component';
+import { WelcomeComponent } from './onboarding/welcome/welcome.component';
+import { ImportDataComponent } from './onboarding/import-data/import-data.component';
+import { AddTrucksComponent } from './onboarding/add-trucks/add-trucks.component';
+
 
 import { TermsOfServiceComponent } from './terms-of-service/terms-of-service.component';
 import { PrivacyPolicyComponent } from './privacy-policy/privacy-policy.component';
@@ -33,6 +37,21 @@ export const routes: Routes = [
   {
     path: 'signup',
     component: SignupComponent
+  },
+
+  {
+  path: 'welcome',
+  component: WelcomeComponent
+  },
+
+  {
+  path: 'onboarding/import-data',
+  component: ImportDataComponent
+  },
+
+  {
+    path: 'onboarding/add-trucks',
+    component: AddTrucksComponent
   },
 
   {

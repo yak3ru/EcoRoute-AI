@@ -1,0 +1,269 @@
+
+:host {
+  display: block;
+  min-height: 100vh;
+}
+
+.welcome-page {
+  display: grid;
+  grid-template-columns: 1.15fr 1fr;
+  gap: 40px;
+  min-height: 100vh;
+  padding: 30px;
+  background: #ffffff;
+  box-sizing: border-box;
+}
+
+.welcome-left {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  padding: 25px 15px;
+}
+
+.welcome-content {
+  width: 100%;
+  max-width: 680px;
+}
+
+.welcome-label {
+  margin: 0 0 12px;
+  color: #229b32;
+  font-size: 40px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin-bottom: 32px;
+}
+
+.brand-logo {
+  width: 100px;
+  height: 100px;
+  object-fit: contain;
+}
+
+.brand-text h2 {
+  margin: 0;
+  color: #080808;
+  font-size: 40px;
+  font-weight: 750;
+}
+
+.brand-text p {
+  margin: 4px 0 0;
+  color: #111111;
+  font-size: 20px;
+}
+
+.welcome-description {
+  max-width: 540px;
+  margin: 0 0 32px 12px;
+  color: #494949;
+  font-size: 24px;
+  line-height: 1.25;
+}
+
+.workflow-card {
+  margin-bottom: 46px;
+  padding: 26px 40px;
+  border-radius: 18px;
+  background: #f4f8f5;
+}
+
+.workflow-card h3 {
+  margin: 0 0 12px;
+  font-size: 22px;
+  font-weight: 650;
+}
+
+.workflow-step {
+  display: grid;
+  grid-template-columns: 30px 105px 1fr;
+  align-items: center;
+  gap: 12px;
+  margin: 10px 0;
+}
+
+.step-number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #229b32;
+  color: white;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.workflow-step strong {
+  color: #229b32;
+  font-size: 13px;
+}
+
+.workflow-step p {
+  margin: 0;
+  color: #555555;
+  font-size: 13px;
+}
+
+.get-started-button {
+  width: 100%;
+  min-height: 62px;
+  border: none;
+  border-radius: 9px;
+  background: #229b32;
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.get-started-button:hover {
+  background: #188527;
+}
+
+.get-started-button:focus-visible {
+  outline: 3px solid #91d89b;
+  outline-offset: 3px;
+}
+
+.welcome-right {
+  position: relative;
+  min-height: 650px;
+  overflow: hidden;
+  border-radius: 22px;
+  background: #344b39;
+}
+
+.hero-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.hero-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 38% 11% 25px;
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.03) 10%,
+    rgba(0, 0, 0, 0.25) 35%,
+    rgba(0, 0, 0, 0.55) 100%
+  );
+  color: #ffffff;
+}
+
+.hero-message h2 {
+  margin: 0 0 30px;
+  font-size: clamp(27px, 2.5vw, 42px);
+  font-weight: 750;
+  line-height: 1.15;
+}
+
+.hero-message p {
+  max-width: 440px;
+  margin: 0;
+  font-size: 19px;
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+.hero-footer {
+  margin: 0;
+  text-align: center;
+  font-size: 19px;
+  font-weight: 600;
+}
+
+@media (max-width: 1000px) {
+  .welcome-page {
+    grid-template-columns: 1fr;
+    gap: 24px;
+    padding: 20px;
+  }
+
+  .welcome-left {
+    padding: 20px 5px;
+  }
+
+  .welcome-right {
+    min-height: 550px;
+  }
+
+  .hero-overlay {
+    padding-top: 25%;
+  }
+}
+
+@media (max-width: 600px) {
+  .welcome-page {
+    padding: 14px;
+  }
+
+  .welcome-label {
+    font-size: 30px;
+  }
+
+  .brand-logo {
+    width: 70px;
+    height: 70px;
+  }
+
+  .brand-text h2 {
+    font-size: 29px;
+  }
+
+  .brand-text p {
+    font-size: 15px;
+  }
+
+  .welcome-description {
+    margin-left: 0;
+    font-size: 19px;
+  }
+
+  .workflow-card {
+    padding: 22px 18px;
+  }
+
+  .workflow-step {
+    grid-template-columns: 28px 95px 1fr;
+    gap: 8px;
+  }
+
+  .workflow-step p {
+    font-size: 11px;
+  }
+
+  .welcome-right {
+    min-height: 440px;
+  }
+
+  .hero-overlay {
+    padding: 35% 7% 20px;
+  }
+
+  .hero-message h2 {
+    font-size: 28px;
+  }
+
+  .hero-message p,
+  .hero-footer {
+    font-size: 15px;
+  }
+}

@@ -858,17 +858,16 @@ public class AuthController : ControllerBase
 
         });
         
+       
         return new AuthResponse
         {
             UserId = user.UserId,
             FullName = user.FullName,
             Email = user.Email,
             Username = user.Username,
-            Role = user.Role
+            Role = user.Role,
+            IsOnboardingComplete = user.IsOnboardingComplete
         };
-
-    
-       
     }
 
     private async Task<TrustedDevice?> FindTrustedDeviceAsync(int userId)
