@@ -131,102 +131,106 @@
       </form>
     </section>
 
-    <!-- RIGHT: ADDED TRUCKS LIST -->
-    <aside class="truck-card added-trucks-card">
-      <div class="list-heading">
-        <div>
-          <h2>Added Trucks</h2>
-          <p>Manage your collection fleet.</p>
+   
+<!-- RIGHT: ADDED TRUCKS LIST -->
+<aside class="truck-card added-trucks-card">
+
+  <div class="list-heading">
+    <div>
+      <h2>Added Trucks</h2>
+      <p>Manage your collection fleet.</p>
+    </div>
+
+    <span class="truck-count">{{ trucks.length }}</span>
+  </div>
+
+  <!-- Empty state -->
+  <div class="empty-state" *ngIf="trucks.length === 0">
+    <div class="empty-icon">＋</div>
+    <h3>No trucks added yet</h3>
+    <p>
+      Fill out the form and select Add Truck. Your trucks will appear here.
+    </p>
+  </div>
+
+  <!-- Scrollable truck list -->
+  <div class="truck-list" *ngIf="trucks.length > 0">
+    <article
+      class="truck-item"
+      *ngFor="let truck of trucks"
+      [class.is-editing]="editingTruckId === truck.id"
+    >
+      <div class="truck-item-top">
+        <div class="truck-icon">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <rect x="2" y="5" width="13" height="12" rx="2"></rect>
+            <path d="M15 9h4l3 4v4h-7"></path>
+            <circle cx="7" cy="19" r="2"></circle>
+            <circle cx="18" cy="19" r="2"></circle>
+          </svg>
         </div>
 
-        <span class="truck-count">{{ trucks.length }}</span>
+        <div class="truck-identity">
+          <h3>{{ truck.vehicleName }}</h3>
+          <span class="available-badge">
+            <span></span>
+            {{ truck.status }}
+          </span>
+        </div>
       </div>
 
-      <div class="empty-state" *ngIf="trucks.length === 0">
-        <div class="empty-icon">＋</div>
-        <h3>No trucks added yet</h3>
-        <p>
-          Fill out the form and select Add Truck. Your trucks will appear here.
-        </p>
+      <div class="truck-details">
+        <div>
+          <span>Capacity</span>
+          <strong>{{ truck.capacityKg | number:'1.0-2' }} kg</strong>
+        </div>
+
+        <div>
+          <span>Max distance</span>
+          <strong>{{ truck.maximumRouteDistanceKm | number:'1.0-2' }} km</strong>
+        </div>
       </div>
 
-      <div class="truck-list" *ngIf="trucks.length > 0">
-        <article
-          class="truck-item"
-          *ngFor="let truck of trucks"
-          [class.is-editing]="editingTruckId === truck.id"
+      <div class="truck-schedule">
+        <span>Collection schedule</span>
+        <strong>
+          {{ truck.collectionStartTime }} – {{ truck.collectionEndTime }}
+        </strong>
+      </div>
+
+      <div class="truck-actions">
+        <button
+          type="button"
+          class="edit-button"
+          (click)="editTruck(truck)"
         >
-          <div class="truck-item-top">
-            <div class="truck-icon">
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.8"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                aria-hidden="true"
-              >
-                <rect x="2" y="5" width="13" height="12" rx="2"></rect>
-                <path d="M15 9h4l3 4v4h-7"></path>
-                <circle cx="7" cy="19" r="2"></circle>
-                <circle cx="18" cy="19" r="2"></circle>
-              </svg>
-            </div>
+          <span>✎</span> Edit
+        </button>
 
-            <div class="truck-identity">
-              <h3>{{ truck.vehicleName }}</h3>
-              <span class="available-badge">
-                <span></span>
-                {{ truck.status }}
-              </span>
-            </div>
-          </div>
-
-          <div class="truck-details">
-            <div>
-              <span>Capacity</span>
-              <strong>{{ truck.capacityKg | number:'1.0-2' }} kg</strong>
-            </div>
-
-            <div>
-              <span>Max distance</span>
-              <strong>{{ truck.maximumRouteDistanceKm | number:'1.0-2' }} km</strong>
-            </div>
-          </div>
-
-          <div class="truck-schedule">
-            <span>Collection schedule</span>
-            <strong>
-              {{ truck.collectionStartTime }} – {{ truck.collectionEndTime }}
-            </strong>
-          </div>
-
-          <div class="truck-actions">
-            <button
-              type="button"
-              class="edit-button"
-              (click)="editTruck(truck)"
-            >
-              <span>✎</span> Edit
-            </button>
-
-            <button
-              type="button"
-              class="delete-button"
-              (click)="deleteTruck(truck.id)"
-            >
-              <span>×</span> Delete
-            </button>
-          </div>
-        </article>
+        <button
+          type="button"
+          class="delete-button"
+          (click)="deleteTruck(truck.id)"
+        >
+          <span>×</span> Delete
+        </button>
       </div>
-
-      <div class="list-footer" *ngIf="trucks.length > 0">
-        {{ trucks.length }} {{ trucks.length === 1 ? 'truck' : 'trucks' }} added
-      </div>
-    </aside>
+    </article>
   </div>
+
+  <div class="list-footer" *ngIf="trucks.length > 0">
+    {{ trucks.length }} {{ trucks.length === 1 ? 'truck' : 'trucks' }} added
+  </div>
+
+</aside>
 
   <!-- ONBOARDING NAVIGATION -->
   <div class="onboarding-actions">
@@ -244,7 +248,7 @@
       [disabled]="trucks.length === 0"
       (click)="completeSetup()"
     >
-      Complete Setup <span>→</span>
+      Finish Import <span>→</span>
     </button>
   </div>
 </div>

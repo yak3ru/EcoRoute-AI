@@ -646,3 +646,43 @@ button:focus-visible {
     font-size: 13px;
   }
 }
+
+/* Scroll only the Added Trucks list */
+.trucks-list-scroll {
+  max-height: 520px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 0 8px 8px 0;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: #b8d9bf #f3f7f3;
+}
+
+/* Keep consistent spacing between truck cards */
+.trucks-list-scroll .truck-card {
+  margin-bottom: 16px;
+}
+
+.trucks-list-scroll .truck-card:last-child {
+  margin-bottom: 0;
+}
+
+/* Chrome, Safari and Edge */
+.trucks-list-scroll::-webkit-scrollbar {
+  width: 8px;
+}
+
+.trucks-list-scroll::-webkit-scrollbar-track {
+  background: #f3f7f3;
+  border-radius: 8px;
+}
+
+.trucks-list-scroll::-webkit-scrollbar-thumb {
+  background: #b8d9bf;
+  border-radius: 8px;
+}
+
+.trucks-list-scroll::-webkit-scrollbar-thumb:hover {
+  background: #168b35;
+}
+

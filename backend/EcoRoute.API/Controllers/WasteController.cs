@@ -622,6 +622,188 @@ public class WasteController : ControllerBase
         });
     }
 
+
+    // Imports historical waste records during onboarding.
+    // Separate from the completed-operation report import.
+    [HttpPost("import-historical")]
+    public async Task<IActionResult> ImportHistoricalWaste(
+        [FromBody] HistoricalWasteImportRequest request)
+    {
+        var userIdValue = User.FindFirstValue(
+            ClaimTypes.NameIdentifier);
+
+        if (!int.TryParse(userIdValue, out var userId))
+            return Unauthorized();
+
+        if (request?.Records == null ||
+            request.Records.Count == 0)
+        {
+            return BadRequest(new
+            {
+                message = "At least one historical waste record is required."
+            });
+        }
+
+        if (request.Records.Count > 10000)
+        {
+            return BadRequest(new
+            {
+                message = "Maximum of 10,000 records per import."
+            });
+        }
+
+        var validWasteTypes = new[]
+        {
+            "Biodegradable",
+            "Non-biodegradable"
+        };
+
+        var errors = new List<string>();
+
+        // Load only areas belonging to the authenticated user.
+        var userAreas = await _context.Areas
+            .Where(a => a.UserId == userId)
+            .Select(a => new
+            {
+                a.AreaId,
+                a.AreaName
+            })
+            .ToListAsync();
+
+        var areasByName = userAreas
+            .GroupBy(
+                a => a.AreaName.Trim(),
+                StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(
+                g => g.Key,
+                g => g.First().AreaId,
+                StringComparer.OrdinalIgnoreCase);
+
+        var resolvedRecords = new List<WasteRecord>();
+        var seenRecords = new HashSet<string>(
+            StringComparer.OrdinalIgnoreCase);
+
+        for (var i = 0; i < request.Records.Count; i++)
+        {
+            var row = request.Records[i];
+            var rowNumber = i + 2;
+
+            if (string.IsNullOrWhiteSpace(row.AreaName))
+            {
+                errors.Add($"Row {rowNumber}: AreaName is required.");
+                continue;
+            }
+
+            var areaName = row.AreaName.Trim();
+
+            if (!areasByName.TryGetValue(areaName, out var areaId))
+            {
+                errors.Add(
+                    $"Row {rowNumber}: Area '{areaName}' does not exist in your account.");
+                continue;
+            }
+
+            if (row.CollectionDate == default)
+            {
+                errors.Add(
+                    $"Row {rowNumber}: CollectionDate is required and must be valid.");
+                continue;
+            }
+
+            if (string.IsNullOrWhiteSpace(row.WasteType) ||
+                !validWasteTypes.Contains(
+                    row.WasteType.Trim(),
+                    StringComparer.OrdinalIgnoreCase))
+            {
+                errors.Add(
+                    $"Row {rowNumber}: WasteType must be Biodegradable or Non-biodegradable.");
+                continue;
+            }
+
+            if (row.WeightKg < 0 ||
+                row.WeightKg > 99999999.99m)
+            {
+                errors.Add(
+                    $"Row {rowNumber}: WeightKg must be between 0 and 99,999,999.99.");
+                continue;
+            }
+
+            // Historical records represent completed collections.
+            if (!string.Equals(
+                row.Status?.Trim(),
+                "Completed",
+                StringComparison.OrdinalIgnoreCase))
+            {
+                errors.Add(
+                    $"Row {rowNumber}: historical Status must be Completed.");
+                continue;
+            }
+
+            var date = row.CollectionDate.Date;
+            var wasteType = validWasteTypes.First(
+                type => string.Equals(
+                    type,
+                    row.WasteType.Trim(),
+                    StringComparison.OrdinalIgnoreCase));
+
+            // Reject duplicate area/date/type combinations in one upload.
+            var duplicateKey =
+                $"{areaId}|{date:yyyy-MM-dd}|{wasteType}";
+
+            if (!seenRecords.Add(duplicateKey))
+            {
+                errors.Add(
+                    $"Row {rowNumber}: Duplicate record for '{areaName}', {date:yyyy-MM-dd}, {wasteType}.");
+                continue;
+            }
+
+            resolvedRecords.Add(new WasteRecord
+            {
+                AreaId = areaId,
+                CollectionDate = date,
+                WasteType = wasteType,
+                WeightKg = row.WeightKg,
+                Status = "Completed",
+                CreatedAt = DateTime.UtcNow
+            });
+        }
+
+        if (errors.Count > 0)
+        {
+            return BadRequest(new
+            {
+                message = "Historical waste data validation failed. No records were imported.",
+                errors
+            });
+        }
+
+        await using var transaction =
+            await _context.Database.BeginTransactionAsync();
+
+        try
+        {
+            _context.WasteRecords.AddRange(resolvedRecords);
+            await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
+        }
+        catch
+        {
+            await transaction.RollbackAsync();
+
+            return StatusCode(500, new
+            {
+                message = "Historical waste data could not be saved. No records were imported."
+            });
+        }
+
+        return Ok(new
+        {
+            message = "Historical waste records imported successfully.",
+            importedCount = resolvedRecords.Count
+        });
+    }
+
+
     [HttpGet("summary")]
     public async Task<IActionResult> GetWasteSummary(
         [FromQuery] DateTime? startDate,
@@ -1037,4 +1219,23 @@ public class WasteController : ControllerBase
 
         return Ok(areaParameters);
     }
+
+public sealed class HistoricalWasteImportRequest
+{
+    public List<HistoricalWasteImportRow> Records { get; set; } = [];
+}
+
+public sealed class HistoricalWasteImportRow
+{
+    public string AreaName { get; set; } = string.Empty;
+
+    public DateTime CollectionDate { get; set; }
+
+    public string WasteType { get; set; } = string.Empty;
+
+    public decimal WeightKg { get; set; }
+
+    public string Status { get; set; } = string.Empty;
+}
+
 }

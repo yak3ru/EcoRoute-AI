@@ -23,6 +23,27 @@ export interface OnboardingStatusResponse {
   isOnboardingComplete: boolean;
 }
 
+export interface AreaImportRow {
+  areaName: string;
+  populationDensity: number;
+  latitude: number;
+  longitude: number;
+}
+
+export interface AreaImportResponse {
+  message: string;
+  importedCount: number;
+  areas: {
+    areaId: number;
+    areaName: string;
+    populationDensity: number;
+    latitude: number;
+    longitude: number;
+    isActive: boolean;
+    createdAt: string;
+  }[];
+}
+
 
 export interface TwoFactorRequiredResponse {
   requiresTwoFactor: true;
@@ -51,6 +72,96 @@ export function isTwoFactorRequired(
 ): response is TwoFactorRequiredResponse {
   return response.requiresTwoFactor === true;
 }
+
+
+export interface HistoricalWasteImportRow {
+  areaName: string;
+  collectionDate: string;
+  wasteType: string;
+  weightKg: number;
+  status: string;
+}
+
+export interface HistoricalWasteImportResponse {
+  message: string;
+  importedCount: number;
+}
+
+
+export interface VehicleRequest {
+  vehicleName: string;
+  capacityKg: number;
+  maximumRouteDistanceKm: number;
+  collectionStartTime: string;
+  collectionEndTime: string;
+  status: string;
+}
+
+export interface VehicleResponse {
+  vehicle: {
+    vehicleId: number;
+    userId: number;
+    vehicleName: string;
+    capacityKg: number;
+    status: string;
+    isActive: boolean;
+    createdAt: string;
+  };
+  routingConstraint: {
+    constraintId: number;
+    vehicleId: number;
+    vehicleCapacityKg: number;
+    maximumRouteDistanceKm: number;
+    collectionStartTime: string;
+    collectionEndTime: string;
+  };
+}
+
+export interface VehicleListItem {
+  vehicleId: number;
+  userId: number;
+  vehicleName: string;
+  capacityKg: number;
+  status: string;
+  isActive: boolean;
+  createdAt: string;
+  maximumRouteDistanceKm: number;
+  collectionStartTime: string;
+  collectionEndTime: string;
+}
+
+
+export interface FinalizeOnboardingArea {
+  areaName: string;
+  populationDensity: number;
+  latitude: number;
+  longitude: number;
+}
+
+export interface FinalizeOnboardingWasteRecord {
+  areaName: string;
+  collectionDate: string;
+  wasteType: string;
+  weightKg: number;
+  status: string;
+}
+
+export interface FinalizeOnboardingTruck {
+  vehicleName: string;
+  capacityKg: number;
+  maximumRouteDistanceKm: number;
+  collectionStartTime: string;
+  collectionEndTime: string;
+}
+
+export interface FinalizeOnboardingRequest {
+  areas: FinalizeOnboardingArea[];
+  wasteRecords: FinalizeOnboardingWasteRecord[];
+  trucks: FinalizeOnboardingTruck[];
+}
+
+
+
 
 @Injectable({
   providedIn: 'root'
@@ -183,6 +294,33 @@ getOnboardingStatus(): Observable<OnboardingStatusResponse> {
   );
 }
 
+importAreas(areas: AreaImportRow[]): Observable<AreaImportResponse> {
+  return this.http.post<AreaImportResponse>(
+    `${this.api.getBaseUrl()}/Areas/import`,
+    {
+      areas: areas.map(area => ({
+        areaName: area.areaName,
+        populationDensity: area.populationDensity,
+        latitude: area.latitude,
+        longitude: area.longitude
+      }))
+    },
+    { withCredentials: true }
+  );
+}
+
+
+importHistoricalWaste(
+  records: HistoricalWasteImportRow[]
+): Observable<HistoricalWasteImportResponse> {
+  return this.http.post<HistoricalWasteImportResponse>(
+    `${this.api.getBaseUrl()}/Waste/import-historical`,
+    { records },
+    { withCredentials: true }
+  );
+}
+
+
   logout(): Observable<any> {
     return this.http
       .post(`${this.api.getBaseUrl()}/Auth/logout`, {})
@@ -192,6 +330,19 @@ getOnboardingStatus(): Observable<OnboardingStatusResponse> {
         })
       );
   }
+
+
+completeOnboarding(): Observable<{ message: string; isOnboardingComplete: boolean }> {
+  return this.http.post<{
+    message: string;
+    isOnboardingComplete: boolean;
+  }>(
+    `${this.api.getBaseUrl()}/Onboarding/complete`,
+    {},
+    { withCredentials: true }
+  );
+}
+
 
   clearSession(): void {
     localStorage.removeItem(this.tokenKey);
@@ -216,4 +367,56 @@ getOnboardingStatus(): Observable<OnboardingStatusResponse> {
   isLoggedIn(): boolean {
     return !!this.getUser();
   }
+
+
+getVehicles(): Observable<VehicleListItem[]> {
+  return this.http.get<VehicleListItem[]>(
+    `${this.api.getBaseUrl()}/Vehicles`,
+    { withCredentials: true }
+  );
+}
+
+createVehicle(
+  request: VehicleRequest
+): Observable<VehicleResponse> {
+  return this.http.post<VehicleResponse>(
+    `${this.api.getBaseUrl()}/Vehicles/with-constraints`,
+    request,
+    { withCredentials: true }
+  );
+}
+
+updateVehicle(
+  vehicleId: number,
+  request: VehicleRequest
+): Observable<VehicleResponse> {
+  return this.http.put<VehicleResponse>(
+    `${this.api.getBaseUrl()}/Vehicles/${vehicleId}/with-constraints`,
+    request,
+    { withCredentials: true }
+  );
+}
+
+deleteVehicle(vehicleId: number): Observable<{ message: string }> {
+  return this.http.delete<{ message: string }>(
+    `${this.api.getBaseUrl()}/Vehicles/${vehicleId}`,
+    { withCredentials: true }
+  );
+}
+
+
+finalizeOnboarding(payload: FinalizeOnboardingRequest) {
+  return this.http.post<{
+    message: string;
+    importedAreas: number;
+    importedWasteRecords: number;
+    importedTrucks: number;
+  }>(
+    `${this.api.getBaseUrl()}/Onboarding/finalize`,
+    payload,
+    { withCredentials: true }
+  );
+}
+
+
 }
