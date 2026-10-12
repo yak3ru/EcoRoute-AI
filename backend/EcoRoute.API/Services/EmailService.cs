@@ -51,24 +51,6 @@ public class EmailService : IEmailService
             _configuration["Email:FromName"]
             ?? "EcoRoute AI";
 
-        // EMAIL ASSETS
-
-        var emailAssetsPath = Path.Combine(
-            _environment.ContentRootPath,
-            "EmailAssets");
-
-        var logoPath = Path.Combine(
-            emailAssetsPath,
-            "ecoroute-logo.svg");
-
-        var mailIconPath = Path.Combine(
-            emailAssetsPath,
-            "mail.svg");
-
-        var lockShieldPath = Path.Combine(
-            emailAssetsPath,
-            "lock-shield.svg");
-
         // CREATE EMAIL
 
         var message = new MimeMessage();
@@ -171,7 +153,7 @@ public class EmailService : IEmailService
                                     >
 
                                         <img
-                                            src=""cid:ecoroute-logo""
+                                            src=""https://ecorouteai.com/assets/images/ecoroute-logo.png""
                                             alt=""EcoRoute AI""
                                             width=""78""
                                             height=""78""
@@ -256,7 +238,7 @@ public class EmailService : IEmailService
                                     >
 
                                         <img
-                                            src=""cid:mail-icon""
+                                            src=""https://ecorouteai.com/assets/images/mail.png""
                                             alt=""Password Reset""
                                             width=""85""
                                             height=""85""
@@ -470,7 +452,7 @@ public class EmailService : IEmailService
                                     >
 
                                         <img
-                                            src=""cid:lock-shield""
+                                            src=""https://ecorouteai.com/assets/images/lock-shield.png""
                                             alt=""Security""
                                             width=""42""
                                             height=""42""
@@ -556,49 +538,6 @@ public class EmailService : IEmailService
 
         bodyBuilder.HtmlBody = html;
 
-        // EMBED LOGO
-
-        if (File.Exists(logoPath))
-        {
-            var logo = bodyBuilder.LinkedResources.Add(logoPath);
-
-            logo.ContentId = "ecoroute-logo";
-            logo.ContentType.MediaType = "image";
-            logo.ContentType.MediaSubtype = "svg+xml";
-            logo.ContentDisposition = new ContentDisposition(
-                ContentDisposition.Inline);
-            logo.ContentDisposition.FileName = null;
-        }
-
-        // EMBED MAIL ICON
-
-        if (File.Exists(mailIconPath))
-        {
-            var mailIcon = bodyBuilder.LinkedResources.Add(mailIconPath);
-
-            mailIcon.ContentId = "mail-icon";
-            mailIcon.ContentType.MediaType = "image";
-            mailIcon.ContentType.MediaSubtype = "svg+xml";
-            mailIcon.ContentDisposition = new ContentDisposition(
-                ContentDisposition.Inline);
-            mailIcon.ContentDisposition.FileName = null;
-        }
-
-        // EMBED SECURITY ICON
-
-        if (File.Exists(lockShieldPath))
-        {
-            var lockShield = bodyBuilder.LinkedResources.Add(
-                lockShieldPath);
-
-            lockShield.ContentId = "lock-shield";
-            lockShield.ContentType.MediaType = "image";
-            lockShield.ContentType.MediaSubtype = "svg+xml";
-            lockShield.ContentDisposition = new ContentDisposition(
-                ContentDisposition.Inline);
-            lockShield.ContentDisposition.FileName = null;
-        }
-
         message.Body = bodyBuilder.ToMessageBody();
 
         // SEND EMAIL
@@ -660,18 +599,6 @@ public async Task SendTwoFactorCodeEmailAsync(
     string fullName,
     string code)
 {
-    var emailAssetsPath = Path.Combine(
-        _environment.ContentRootPath,
-        "EmailAssets");
-
-    var logoPath = Path.Combine(
-        emailAssetsPath,
-        "ecoroute-logo.svg");
-
-    var mailIconPath = Path.Combine(
-        emailAssetsPath,
-        "mail.svg");
-
     var message = CreateMessage(
         email,
         fullName,
@@ -768,7 +695,7 @@ public async Task SendTwoFactorCodeEmailAsync(
                                     >
 
                                         <img
-                                            src=""cid:ecoroute-logo""
+                                            src=""https://ecorouteai.com/assets/images/ecoroute-logo.png""
                                             alt=""EcoRoute AI""
                                             width=""78""
                                             height=""78""
@@ -854,7 +781,7 @@ public async Task SendTwoFactorCodeEmailAsync(
                                     >
 
                                         <img
-                                            src=""cid:mail-icon""
+                                            src=""https://ecorouteai.com/assets/images/mail.png""
                                             alt=""Verification Code""
                                             width=""85""
                                             height=""85""
@@ -1109,40 +1036,6 @@ public async Task SendTwoFactorCodeEmailAsync(
 ";
 
     bodyBuilder.HtmlBody = html;
-
-    // EMBED LOGO
-
-    if (File.Exists(logoPath))
-    {
-        var logo =
-            bodyBuilder.LinkedResources.Add(logoPath);
-
-        logo.ContentId = "ecoroute-logo";
-        logo.ContentType.MediaType = "image";
-        logo.ContentType.MediaSubtype = "svg+xml";
-        logo.ContentDisposition =
-            new ContentDisposition(
-                ContentDisposition.Inline);
-
-        logo.ContentDisposition.FileName = null;
-    }
-
-    // EMBED MAIL ICON
-
-    if (File.Exists(mailIconPath))
-    {
-        var mailIcon =
-            bodyBuilder.LinkedResources.Add(mailIconPath);
-
-        mailIcon.ContentId = "mail-icon";
-        mailIcon.ContentType.MediaType = "image";
-        mailIcon.ContentType.MediaSubtype = "svg+xml";
-        mailIcon.ContentDisposition =
-            new ContentDisposition(
-                ContentDisposition.Inline);
-
-        mailIcon.ContentDisposition.FileName = null;
-    }
 
     message.Body =
         bodyBuilder.ToMessageBody();
