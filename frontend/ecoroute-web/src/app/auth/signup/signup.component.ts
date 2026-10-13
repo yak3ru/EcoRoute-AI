@@ -84,12 +84,30 @@ saveDraftAndNavigate(route: string): void {
 
   private readonly apiUrl = `${environment.apiUrl}`;
 
-  constructor(
+  
+constructor(
   private router: Router,
   private http: HttpClient,
   private authService: AuthService
 ) {
-  this.restoreSignupDraft();
+  const navigation = this.router.getCurrentNavigation();
+  const previousUrl =
+    navigation?.previousNavigation?.finalUrl?.toString() ?? '';
+
+  const returnedFromLegalPage =
+    previousUrl.startsWith('/terms-of-service') ||
+    previousUrl.startsWith('/privacy-policy');
+
+  if (returnedFromLegalPage) {
+    this.restoreSignupDraft();
+  } else {
+    this.clearSignupDraft();
+  }
+}
+
+leaveSignup(): void {
+  this.clearSignupDraft();
+  this.router.navigate(['/login']);
 }
 
   // PASSWORD VISIBILITY

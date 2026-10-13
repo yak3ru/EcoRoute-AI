@@ -218,9 +218,12 @@
         <div class="login-link">
           Already have an account?
 
-          <a routerLink="/login">
-            Log In
-          </a>
+          <a
+  href="/login"
+  (click)="$event.preventDefault(); leaveSignup()"
+>
+  Log In
+</a>
         </div>
       </form>
     </div>
