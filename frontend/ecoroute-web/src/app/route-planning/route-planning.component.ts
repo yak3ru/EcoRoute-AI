@@ -1141,10 +1141,12 @@ confirmCancelTruck(): void {
         next: response => {
           this.currentRouteResponse = response.routeData;
 
-          this.operationStatus =
-            response.status === 'Completed'
-              ? 'Completed'
-              : 'Active';
+         this.operationStatus =
+  response.status === 'Completed'
+    ? 'Completed'
+    : response.status === 'Cancelled'
+      ? 'NotStarted'
+      : 'Active';
 
           this.routes = response.routeData.routes.map(
             (mlRoute, index) =>
@@ -1162,9 +1164,9 @@ confirmCancelTruck(): void {
           this.loadRoadGeometry();
           this.loadAvailableOperationDates();
 
-          if (this.operationStatus === 'Completed') {
-            this.showAllRoutesCompletedModal = true;
-          }
+          if (response.status === 'Completed') {
+  this.showAllRoutesCompletedModal = true;
+}
         },
 
         error: error => {
@@ -1232,9 +1234,9 @@ confirmFinishTruck(): void {
           this.loadRoadGeometry();
           this.loadAvailableOperationDates();
 
-          if (this.operationStatus === 'Completed') {
-            this.showAllRoutesCompletedModal = true;
-          }
+          if (response.status === 'Completed') {
+  this.showAllRoutesCompletedModal = true;
+}
         },
         error: error => {
           console.error('Failed to finish truck route:', error);

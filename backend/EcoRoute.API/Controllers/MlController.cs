@@ -649,28 +649,44 @@ Console.WriteLine($"AI Insight target date: {target:yyyy-MM-dd}");
 
         targetRoute["status"] = "Cancelled";
 
-        var allRoutesFinished =
-            routes.Count > 0 &&
-            routes.All(route =>
-                route != null &&
-                (
-                    string.Equals(
-                        route["status"]?.ToString(),
-                        "Completed",
-                        StringComparison.OrdinalIgnoreCase
-                    )
-                    ||
-                    string.Equals(
-                        route["status"]?.ToString(),
-                        "Cancelled",
-                        StringComparison.OrdinalIgnoreCase
-                    )
-                ));
+        
+var allRoutesFinished =
+    routes.Count > 0 &&
+    routes.All(route =>
+        route != null &&
+        (
+            string.Equals(
+                route["status"]?.ToString(),
+                "Completed",
+                StringComparison.OrdinalIgnoreCase)
+            ||
+            string.Equals(
+                route["status"]?.ToString(),
+                "Cancelled",
+                StringComparison.OrdinalIgnoreCase)
+        ));
 
-        operation.Status =
-            allRoutesFinished
-                ? "Completed"
-                : "Active";
+var allRoutesCancelled =
+    routes.Count > 0 &&
+    routes.All(route =>
+        route != null &&
+        string.Equals(
+            route["status"]?.ToString(),
+            "Cancelled",
+            StringComparison.OrdinalIgnoreCase));
+
+if (allRoutesCancelled)
+{
+    operation.Status = "Cancelled";
+}
+else if (allRoutesFinished)
+{
+    operation.Status = "Completed";
+}
+else
+{
+    operation.Status = "Active";
+}
 
         operation.RouteData =
             root!.ToJsonString();
@@ -753,20 +769,6 @@ Console.WriteLine($"AI Insight target date: {target:yyyy-MM-dd}");
                 message = "No routes were found in the saved operation."
             });
 
-        foreach (var route in routes)
-        {
-            if (route == null || route["status"] != null)
-                continue;
-
-            var distanceExceeded =
-                string.Equals(
-                    route["distance_exceeded"]?.ToString(),
-                    "true",
-                    StringComparison.OrdinalIgnoreCase);
-
-            route["status"] = distanceExceeded ? "Pending" : "Active";
-        }
-
         JsonNode? targetRoute = null;
 
         foreach (var route in routes)
@@ -805,34 +807,60 @@ Console.WriteLine($"AI Insight target date: {target:yyyy-MM-dd}");
 
         targetRoute["status"] = "Completed";
 
-        var allRoutesFinished = routes.Count > 0 &&
-        routes.All(route =>
-            route != null &&
-            (
-                string.Equals(
-                    route["status"]?.ToString(),
-                    "Completed",
-                    StringComparison.OrdinalIgnoreCase)
-                ||
-                string.Equals(
-                    route["status"]?.ToString(),
-                    "Cancelled",
-                    StringComparison.OrdinalIgnoreCase)
-            ));
+        
+var allRoutesFinished =
+    routes.Count > 0 &&
+    routes.All(route =>
+        route != null &&
+        (
+            string.Equals(
+                route["status"]?.ToString(),
+                "Completed",
+                StringComparison.OrdinalIgnoreCase)
+            ||
+            string.Equals(
+                route["status"]?.ToString(),
+                "Cancelled",
+                StringComparison.OrdinalIgnoreCase)
+        ));
 
-        operation.Status = allRoutesFinished ? "Completed" : "Active";
-        operation.RouteData = root!.ToJsonString();
+var allRoutesCancelled =
+    routes.Count > 0 &&
+    routes.All(route =>
+        route != null &&
+        string.Equals(
+            route["status"]?.ToString(),
+            "Cancelled",
+            StringComparison.OrdinalIgnoreCase));
 
-        await _context.SaveChangesAsync();
+
+operation.Status = allRoutesCancelled
+    ? "Cancelled"
+    : allRoutesFinished
+        ? "Completed"
+        : "Active";
+
+operation.RouteData = root!.ToJsonString();
+
+await _context.SaveChangesAsync();
+
 
         return Ok(new
         {
-            message = allRoutesFinished
-                ? "All truck routes are finished. The operation is complete."
-                : "Truck route marked as finished.",
+            
+            message = operation.Status switch
+            {
+                "Cancelled" =>
+                    "All truck routes were cancelled. The operation was cancelled.",
+                "Completed" =>
+                    "All truck routes are finished. The operation is complete.",
+                _ =>
+                    "Truck route finished. The operation is still active."
+            },
             status = operation.Status,
             routeData = JsonSerializer.Deserialize<JsonElement>(
                 operation.RouteData)
+
         });
     }
 
