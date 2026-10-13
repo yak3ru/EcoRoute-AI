@@ -602,9 +602,7 @@ continueSetup(): void {
   }
 }
 
-  // PATH C: START FROM SCRATCH
-
-  
+  // PATH C: START FROM SCRATCH ====== UNUSED METHOD FOR NOW
 startFromScratch(): void {
   this.alertMessage = '';
   this.alertMessage = '';

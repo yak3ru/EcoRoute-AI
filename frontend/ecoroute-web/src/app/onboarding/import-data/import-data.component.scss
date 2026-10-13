@@ -232,8 +232,19 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  width: 100%;
   gap: 16px;
-  margin-top: 24px;
+  margin-top: 18px;
+}
+
+.page-footer .scratch-button {
+  margin-right: auto;
+  flex-shrink: 0;
+}
+
+.page-footer .continue-button {
+  margin-left: auto;
+  flex-shrink: 0;
 }
 
 .scratch-button,
@@ -667,9 +678,8 @@ button:focus-visible,
 .page-footer {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 12px;
+  justify-content: flex-end;
+  width: 100%;
   margin-top: 18px;
 }
 
