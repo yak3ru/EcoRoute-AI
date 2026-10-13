@@ -2737,3 +2737,59 @@ button:disabled {
 .alert-ok-button:hover {
   background: #087a34;
 }
+
+.upload-modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+}
+
+.upload-modal-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 16px;
+}
+
+.download-template-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 16px 22px;
+  border: none;
+  border-radius: 12px;
+  background: #198754;
+  color: #ffffff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.download-template-btn:hover {
+  background: #157347;
+}
+
+.download-template-btn img {
+  width: 18px;
+  height: 18px;
+  filter: brightness(0) invert(1);
+}
+
+@media (max-width: 640px) {
+  .upload-modal-footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .upload-modal-actions {
+    width: 100%;
+  }
+
+  .upload-modal-actions button {
+    flex: 1;
+  }
+}

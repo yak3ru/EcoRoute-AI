@@ -1342,14 +1342,12 @@ async validateReportCsv(): Promise<void> {
       .map(header => header.trim().replace(/^"|"$/g, ''));
 
     const requiredHeaders = [
-      'WasteRecordId',
-      'AreaId',
-      'CollectionDate',
-      'WasteType',
-      'WeightKg',
-      'Status',
-      'CreatedAt'
-    ];
+  'AreaName',
+  'CollectionDate',
+  'WasteType',
+  'WeightKg',
+  'Status'
+];
 
     const missingHeaders = requiredHeaders.filter(
       header => !headers.includes(header)
@@ -1372,7 +1370,6 @@ async validateReportCsv(): Promise<void> {
     const validStatuses = [
       'completed',
       'failed',
-      'pending'
     ];
 
     for (let i = 1; i < lines.length; i++) {
@@ -1388,18 +1385,34 @@ async validateReportCsv(): Promise<void> {
         return;
       }
 
-      const areaId = values[columnIndex('AreaId')];
+      const areaName = values[columnIndex('AreaName')]?.trim();
       const collectionDate = values[columnIndex('CollectionDate')];
       const wasteType = values[columnIndex('WasteType')].toLowerCase();
       const weightKg = values[columnIndex('WeightKg')];
       const status = values[columnIndex('Status')].toLowerCase();
 
-      if (!areaId || !Number.isInteger(Number(areaId)) ||
-          Number(areaId) <= 0) {
-        this.reportValidationMessage =
-          `Error: Row ${rowNumber} has an invalid AreaId.`;
-        return;
-      }
+      if (!areaName) {
+  this.reportValidationMessage =
+    `Error: Row ${rowNumber} has a missing AreaName.`;
+  return;
+}
+
+const normalizedAreaName = areaName
+  .toLowerCase()
+  .replace(/\s+/g, ' ')
+  .trim();
+
+const matchingArea = Array.from(this.areaLocations.values())
+  .find(area =>
+    area.areaName.toLowerCase().replace(/\s+/g, ' ').trim()
+      === normalizedAreaName
+  );
+
+if (!matchingArea) {
+  this.reportValidationMessage =
+    `Error: Row ${rowNumber} has an unknown area name: "${areaName}". Check the spelling.`;
+  return;
+}
 
       if (!collectionDate ||
           Number.isNaN(Date.parse(collectionDate))) {
@@ -1430,16 +1443,35 @@ async validateReportCsv(): Promise<void> {
     }
 
     
+
 const records = lines.slice(1).map(line => {
   const values = line
     .split(',')
     .map(value => value.trim().replace(/^"|"$/g, ''));
 
+  const areaName = values[columnIndex('AreaName')].trim();
   const wasteType = values[columnIndex('WasteType')].toLowerCase();
   const status = values[columnIndex('Status')].toLowerCase();
 
+  const normalizedAreaName = areaName
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  const matchingArea = Array.from(this.areaLocations.values())
+    .find(area =>
+      area.areaName.toLowerCase().replace(/\s+/g, ' ').trim()
+        === normalizedAreaName
+    );
+
+  if (!matchingArea) {
+    throw new Error(
+      `Area "${areaName}" was not found. Please check the spelling.`
+    );
+  }
+
   return {
-    areaId: Number(values[columnIndex('AreaId')]),
+    areaId: matchingArea.areaId,
     collectionDate: new Date(
       values[columnIndex('CollectionDate')]
     ).toISOString(),
@@ -1450,6 +1482,7 @@ const records = lines.slice(1).map(line => {
     status: status.charAt(0).toUpperCase() + status.slice(1)
   };
 });
+
 
 try {
   const operationDate = this.toLocalDateString(this.selectedDate);
@@ -2341,6 +2374,28 @@ private addBaseTiles(): void {
       );
     });
   }
+
+
+downloadReportTemplate(): void {
+  const csvContent = [
+    'AreaName,CollectionDate,WasteType,WeightKg,Status',
+    'Example Area,2026-10-13,Biodegradable,100.00,Completed',
+    'Example Area,2026-10-13,Non-biodegradable,50.00,Completed'
+  ].join('\r\n');
+
+  const blob = new Blob([csvContent], {
+    type: 'text/csv;charset=utf-8;'
+  });
+
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+
+  link.href = url;
+  link.download = 'ecoroute-report-template.csv';
+  link.click();
+
+  URL.revokeObjectURL(url);
+}
 
 
 alertMessage = '';
