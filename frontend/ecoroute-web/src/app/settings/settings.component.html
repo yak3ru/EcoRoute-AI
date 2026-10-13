@@ -63,11 +63,13 @@
       </a>
 
       <!-- NOTIFICATIONS -->
-      <a
-        routerLink="notifications"
-        routerLinkActive="active"
-        class="settings-tab"
-      >
+      
+<a
+  class="settings-tab disabled"
+  aria-disabled="true"
+  (click)="$event.preventDefault()"
+>
+
         <img
           src="assets/icons/notifications.svg"
           alt=""
@@ -86,11 +88,13 @@
       </a>
 
       <!-- SYSTEM -->
-      <a
-        routerLink="system"
-        routerLinkActive="active"
-        class="settings-tab"
-      >
+      
+<a
+  class="settings-tab disabled"
+  aria-disabled="true"
+  (click)="$event.preventDefault()"
+>
+
         <img
           src="assets/icons/system.svg"
           alt=""
@@ -109,11 +113,13 @@
       </a>
 
       <!-- DATA PREFERENCES -->
-      <a
-        routerLink="data-preferences"
-        routerLinkActive="active"
-        class="settings-tab"
-      >
+      
+<a
+  class="settings-tab disabled"
+  aria-disabled="true"
+  (click)="$event.preventDefault()"
+>
+
         <img
           src="assets/icons/database.svg"
           alt=""

@@ -169,3 +169,28 @@
 .logout-icon {
   font-size: 21px;
 }
+
+
+/* Disabled sidebar items */
+.nav-item.disabled {
+  color: #a0a5ad;
+  opacity: 0.65;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Make both default and active icons gray */
+.nav-item.disabled .nav-icon {
+  filter: grayscale(100%);
+  opacity: 0.5;
+}
+
+/* Never show the green active icon for disabled items */
+.nav-item.disabled .icon-active {
+  display: none;
+}
+
+/* Keep the default gray icon visible */
+.nav-item.disabled .icon-default {
+  display: block;
+}

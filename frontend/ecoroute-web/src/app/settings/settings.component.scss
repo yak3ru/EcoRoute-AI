@@ -148,3 +148,28 @@
   overflow-x: hidden;
   padding-right: 2px;
 }
+
+
+/* Disabled settings tabs */
+.settings-tab.disabled {
+  color: #999999;
+  opacity: 0.6;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Gray out the icons */
+.settings-tab.disabled .tab-icon {
+  filter: grayscale(100%);
+  opacity: 0.6;
+}
+
+/* Gray out the titles */
+.settings-tab.disabled .tab-title {
+  color: #999999;
+}
+
+/* Gray out the descriptions */
+.settings-tab.disabled .tab-description {
+  color: #a3a3a3;
+}
