@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
-
+using EcoRoute.API.Services;
 namespace EcoRoute.API.Controllers;
 
 [ApiController]
@@ -120,8 +120,28 @@ public class UsersController : ControllerBase
         }
 
         var fullName = request.FullName.Trim();
-        var email = request.Email.Trim();
+        var email = request.Email.Trim().ToLowerInvariant();
         var username = request.Username.Trim();
+
+        var validationError =
+            UserInputValidator.ValidateFullName(fullName) ??
+            UserInputValidator.ValidateEmail(email) ??
+            UserInputValidator.ValidateUsername(username);
+
+        if (validationError != null)
+        {
+            return BadRequest(new { message = validationError });
+        }
+
+        if (!string.Equals(email, user.Email, StringComparison.OrdinalIgnoreCase))
+        {
+            var domainError = await UserInputValidator.ValidateEmailDomainAsync(email);
+            if (domainError != null)
+            {
+                return BadRequest(new { message = domainError });
+            }
+        }
+
 
         // CHECK EMAIL
         var emailExists = await _context.Users
@@ -215,50 +235,11 @@ public class UsersController : ControllerBase
             });
         }
 
-        // PASSWORD LENGTH
-        if (request.NewPassword.Length < 8)
+        // PASSWORD REQUIREMENTS
+        var passwordError = UserInputValidator.ValidatePassword(request.NewPassword);
+        if (passwordError != null)
         {
-            return BadRequest(new
-            {
-                message = "New password must be at least 8 characters long."
-            });
-        }
-
-        // UPPERCASE
-        if (!request.NewPassword.Any(char.IsUpper))
-        {
-            return BadRequest(new
-            {
-                message = "New password must include at least one uppercase letter."
-            });
-        }
-
-        // LOWERCASE
-        if (!request.NewPassword.Any(char.IsLower))
-        {
-            return BadRequest(new
-            {
-                message = "New password must include at least one lowercase letter."
-            });
-        }
-
-        // NUMBER
-        if (!request.NewPassword.Any(char.IsDigit))
-        {
-            return BadRequest(new
-            {
-                message = "New password must include at least one number."
-            });
-        }
-
-        // SPECIAL CHARACTER
-        if (!request.NewPassword.Any(
-            ch => !char.IsLetterOrDigit(ch)))
-        {
-            return BadRequest(new
-            {
-                message = "New password must include at least one special character."
-            });
+            return BadRequest(new { message = passwordError });
         }
 
         // FIND USER
@@ -790,6 +771,6 @@ _context.Areas.RemoveRange(areas);
     // GET CURRENT TOKEN
     private string GetCurrentToken()
     {
-       return Request.Cookies["ecoroute_auth"] ?? string.Empty;
+        return Request.Cookies["ecoroute_auth"] ?? string.Empty;
     }
 }
