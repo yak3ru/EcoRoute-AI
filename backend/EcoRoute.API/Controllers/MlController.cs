@@ -275,85 +275,136 @@ Console.WriteLine($"AI Insight target date: {target:yyyy-MM-dd}");
         return Ok(dates.Select(date => date.ToString("yyyy-MM-dd")));
     }
 
-    [HttpGet("routes/history/{date}")]
-    public async Task<IActionResult> GetOperationHistory(string date)
+    
+
+[HttpGet("routes/history/{date}")]
+public async Task<IActionResult> GetOperationHistory(
+    string date,
+    [FromQuery] string? searchTerm = null)
+{
+    if (!TryGetUserId(out var userId))
+        return Unauthorized();
+
+    if (!DateTime.TryParseExact(
+        date,
+        "yyyy-MM-dd",
+        System.Globalization.CultureInfo.InvariantCulture,
+        System.Globalization.DateTimeStyles.None,
+        out var parsedDate))
     {
-        if (!TryGetUserId(out var userId))
-            return Unauthorized();
-
-        if (!DateTime.TryParseExact(
-            date,
-            "yyyy-MM-dd",
-            System.Globalization.CultureInfo.InvariantCulture,
-            System.Globalization.DateTimeStyles.None,
-            out var parsedDate))
+        return BadRequest(new
         {
-            return BadRequest(new
-            {
-                message = "Date must use yyyy-MM-dd format."
-            });
-        }
+            message = "Date must use yyyy-MM-dd format."
+        });
+    }
 
-        var startDate = parsedDate.Date;
-        var endDate = startDate.AddDays(1);
+    var startDate = parsedDate.Date;
+    var endDate = startDate.AddDays(1);
 
-        var history = await _context.OperationHistories
-            .AsNoTracking()
-            .Where(item =>
-                item.UserId == userId &&
-                item.OperationDate >= startDate &&
-                item.OperationDate < endDate)
-            .OrderByDescending(item => item.CreatedAt)
-            .FirstOrDefaultAsync();
+    var history = await _context.OperationHistories
+        .AsNoTracking()
+        .Where(item =>
+            item.UserId == userId &&
+            item.OperationDate >= startDate &&
+            item.OperationDate < endDate)
+        .OrderByDescending(item => item.CreatedAt)
+        .FirstOrDefaultAsync();
 
-        if (history == null)
+    if (history == null)
+    {
+        return NotFound(new
         {
-            return NotFound(new
-            {
-                message = "No operation history exists for this date."
-            });
-        }
+            message = "No operation history exists for this date."
+        });
+    }
 
-        try
-        {
-            var routeData = JsonNode.Parse(history.RouteData);
+    try
+    {
+        var routeData = JsonNode.Parse(history.RouteData);
 
-            if (routeData is not JsonObject routeObject)
-            {
-                return StatusCode(500, new
-                {
-                    message = "The saved route data is invalid."
-                });
-            }
-
-            var today = GetPhilippineOperationDate();
-
-            var displayedStatus = history.Status;
-
-            // A paused operation becomes officially cancelled
-            // only when its operation date has passed.
-            if (
-                history.Status == "Paused" &&
-                history.OperationDate.Date < today
-            )
-            {
-                displayedStatus = "Cancelled";
-            }
-
-            routeObject["operation_status"] = displayedStatus;
-
-            return Content(
-                routeObject.ToJsonString(),
-                "application/json");
-        }
-        catch (JsonException)
+        if (routeData is not JsonObject routeObject)
         {
             return StatusCode(500, new
             {
                 message = "The saved route data is invalid."
             });
         }
+
+        var today = GetPhilippineOperationDate();
+        var displayedStatus = history.Status;
+
+        if (history.Status == "Paused" &&
+            history.OperationDate.Date < today)
+        {
+            displayedStatus = "Cancelled";
+        }
+
+        routeObject["operation_status"] = displayedStatus;
+
+        if (routeObject["routes"] is not JsonArray routes)
+        {
+            return StatusCode(500, new
+            {
+                message = "The saved route data has no valid routes array."
+            });
+        }
+
+        var term = searchTerm?.Trim();
+        var filteredRoutes = new JsonArray();
+
+        for (var i = 0; i < routes.Count; i++)
+        {
+            if (routes[i] is not JsonObject route)
+                continue;
+
+            // Use the route's position in the ORIGINAL array.
+            var routeNumber = i + 1;
+            var routeLabel = $"#{routeNumber:D2}";
+
+            var routeMatches =
+                string.IsNullOrWhiteSpace(term) ||
+                routeLabel.Contains(
+                    term,
+                    StringComparison.OrdinalIgnoreCase);
+
+            var areaMatches = false;
+
+            if (!string.IsNullOrWhiteSpace(term) &&
+                route["areas"] is JsonArray areas)
+            {
+                areaMatches = areas.Any(area =>
+                    area is JsonObject areaObject &&
+                    areaObject["area_name"] is JsonValue nameValue &&
+                    nameValue.TryGetValue<string>(out var areaName) &&
+                    areaName.Contains(
+                        term,
+                        StringComparison.OrdinalIgnoreCase));
+            }
+
+            if (!routeMatches && !areaMatches)
+                continue;
+
+            var routeCopy = (JsonObject)route.DeepClone();
+            routeCopy["route_number"] = routeNumber;
+
+            filteredRoutes.Add(routeCopy);
+        }
+
+        routeObject["routes"] = filteredRoutes;
+
+        return Content(
+            routeObject.ToJsonString(),
+            "application/json");
     }
+    catch (JsonException)
+    {
+        return StatusCode(500, new
+        {
+            message = "The saved route data is invalid."
+        });
+    }
+}
+
 
     private DateTime GetPhilippineOperationDate()
     {

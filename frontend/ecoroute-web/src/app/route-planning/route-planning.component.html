@@ -84,8 +84,8 @@
     </div>
 
     <div class="calendar-footer">
-      <span class="today-indicator">Today</span>
-      <span class="available-indicator">Operation available</span>
+      <span class="today-indicator">View operation history</span>
+      <span class="available-indicator">Select date</span>
     </div>
   </div>
 </div>
@@ -1732,31 +1732,6 @@
   </div>
 </div>
 
-@if (showAlertModal) {
-  <div class="modal-overlay" (click)="closeAlert()">
-    <div
-      class="alert-modal"
-      (click)="$event.stopPropagation()">
-
-      <div class="alert-modal-header">
-        <h2>Notification</h2>
-      </div>
-
-      <div class="alert-modal-body">
-        <p>{{ alertMessage }}</p>
-      </div>
-
-      <div class="alert-modal-footer">
-        <button
-          type="button"
-          class="alert-ok-button"
-          (click)="closeAlert()">
-          Okay
-        </button>
-      </div>
-
-    </div>
-  </div>
-}
+<app-alert-popup [message]="alertMessage"></app-alert-popup>
 
 </main>

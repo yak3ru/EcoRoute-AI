@@ -10,6 +10,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { Subscription, firstValueFrom } from 'rxjs';
+import { AlertPopupComponent } from '../shared/alert-popup/alert-popup.component';
 
 import * as L from 'leaflet';
 
@@ -36,6 +37,7 @@ interface MlRouteArea {
 }
 
 interface MlRoute {
+  route_number?: number;
   vehicle_id: number;
   vehicle_name: string;
   capacity_kg: number;
@@ -118,7 +120,8 @@ interface Vehicle {
   standalone: true,
   imports: [
   CommonModule,
-  FormsModule
+  FormsModule,
+  AlertPopupComponent
 ],
   templateUrl: './route-planning.component.html',
   styleUrl: './route-planning.component.scss'
@@ -144,7 +147,6 @@ export class RoutePlanningComponent
   private map!: L.Map;
 
   showAlertModal = false;
-  alertMessage = '';
 
   private baseTileLayer?: L.TileLayer;
 
@@ -619,8 +621,8 @@ private loadOperationRoutes(
             coordinate !== null
         );
 
-    const routeId =
-      `#${String(index + 1).padStart(2, '0')}`;
+    const routeNumber = route.route_number ?? index + 1;
+const routeId = `#${String(routeNumber).padStart(2, '0')}`;
 
     const sequence =
       route.areas.map(
@@ -747,6 +749,8 @@ openAddTruck(): void {
   this.truckCollectionEndTime = '';
   this.truckStatus = 'Available';
 
+  // Close Truck Management before opening Add Truck.
+  this.isModifyInfoOpen = false;
   this.isAddTruckOpen = true;
 }
 
@@ -810,14 +814,15 @@ saveAddTruck(): void {
         request
       )
       .subscribe({
-        next: () => {
-          this.isSavingTruck = false;
-          this.isAddTruckOpen = false;
+next: () => {
+  this.isSavingTruck = false;
+  this.isAddTruckOpen = false;
+  this.isModifyInfoOpen = true;
 
-          this.loadVehicles();
+  this.loadVehicles();
+  this.showAlert('Truck added successfully.');
+},
 
-          this.showAlert('Truck added successfully.');
-        },
 
         error: error => {
           console.error('Failed to add truck:', error);
@@ -835,6 +840,7 @@ saveAddTruck(): void {
 
 closeAddTruck(): void {
   this.isAddTruckOpen = false;
+  this.isModifyInfoOpen = true;
 }
 
 openEditTruck(vehicle: Vehicle): void {
@@ -842,7 +848,8 @@ openEditTruck(vehicle: Vehicle): void {
 
   this.truckName = vehicle.vehicleName;
   this.truckCapacityKg = vehicle.capacityKg;
-  this.truckMaximumRouteDistanceKm = vehicle.maximumRouteDistanceKm;
+  this.truckMaximumRouteDistanceKm =
+    vehicle.maximumRouteDistanceKm;
 
   this.truckCollectionStartTime =
     vehicle.collectionStartTime.substring(0, 5);
@@ -852,11 +859,14 @@ openEditTruck(vehicle: Vehicle): void {
 
   this.truckStatus = vehicle.status;
 
+  // Close Truck Management before opening Edit Truck.
+  this.isModifyInfoOpen = false;
   this.isEditTruckOpen = true;
 }
 
 closeEditTruck(): void {
   this.isEditTruckOpen = false;
+  this.isModifyInfoOpen = true;
 }
 
 saveEditTruck(): void {
@@ -894,6 +904,7 @@ saveEditTruck(): void {
   }
 
   this.isSavingTruck = true;
+  this.alertMessage = 'Truck saved successfully.';
 
   const request = {
     vehicleName: this.truckName.trim(),
@@ -1060,6 +1071,7 @@ confirmCancelOperation(): void {
         const today = this.systemDate;
 
         this.loadOperationRoutes(today, 'Cancelled');
+        this.alertMessage = 'Operation Cancelled.';
       },
       error: error => {
         console.error('Failed to cancel operation:', error);
@@ -1167,6 +1179,10 @@ confirmCancelTruck(): void {
           if (response.status === 'Completed') {
   this.showAllRoutesCompletedModal = true;
 }
+
+          if (response.status === 'Cancelled') {
+            this.alertMessage = 'Operation Cancelled.';
+          }
         },
 
         error: error => {
@@ -1671,7 +1687,7 @@ private loadHistoricalRoutes(date: string): void {
   this.subscriptions.add(
     this.http
       .get<MlRoutesResponse>(
-        `${this.mlApiUrl}/routes/history/${date}`
+        `${this.mlApiUrl}/routes/history/${date}?searchTerm=${encodeURIComponent(this.searchTerm.trim())}`
       )
       .subscribe({
         next: response => {
@@ -2326,13 +2342,18 @@ private addBaseTiles(): void {
     });
   }
 
-  showAlert(message: string): void {
-  this.alertMessage = message;
-  this.showAlertModal = true;
-  }
 
-  closeAlert(): void {
-    this.showAlertModal = false;
-    this.alertMessage = '';
-  }
+alertMessage = '';
+
+showAlert(message: string): void {
+  this.alertMessage = '';
+
+  setTimeout(() => {
+    this.alertMessage = message;
+  }, 0);
+}
+
+
+
+
 }
