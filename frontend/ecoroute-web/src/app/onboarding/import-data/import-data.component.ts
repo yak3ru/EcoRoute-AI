@@ -675,6 +675,18 @@ startFromScratch(): void {
     URL.revokeObjectURL(url);
   }
 
+  logout(): void {
+    this.authService.logout().subscribe({
+      next: () => {
+        this.router.navigate(['/login']);
+      },
+      error: () => {
+        this.authService.clearSession();
+        this.router.navigate(['/login']);
+      }
+    });
+  }
+
   get hasAreasData(): boolean {
   return this.areas.length > 0;
 }

@@ -341,4 +341,16 @@ private finishOnboardingSuccessfully(): void {
 
     return fallback;
   }
+
+  logout(): void {
+    this.authService.logout().subscribe({
+      next: () => {
+        this.router.navigate(['/login']);
+      },
+      error: () => {
+        this.authService.clearSession();
+        this.router.navigate(['/login']);
+      }
+    });
+  }
 }

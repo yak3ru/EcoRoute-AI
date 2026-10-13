@@ -267,8 +267,31 @@
 
     </footer>
 
+
   </main>
 
+  <button
+  type="button"
+  class="onboarding-logout"
+  (click)="logout()"
+  aria-label="Logout"
+>
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2.5"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M10 17l5-5-5-5"></path>
+    <path d="M15 12H3"></path>
+    <path d="M14 3h5a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-5"></path>
+  </svg>
+
+  <span>Logout</span>
+</button>
 
 <!-- REUSABLE NOTIFICATION POPUP -->
 <app-alert-popup

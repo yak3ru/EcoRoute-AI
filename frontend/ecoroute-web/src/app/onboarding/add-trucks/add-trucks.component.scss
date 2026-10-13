@@ -759,3 +759,42 @@ button:focus-visible {
     font-size: 13px;
   }
 }
+
+
+
+.onboarding-logout {
+  position: fixed;
+  top: 20px;
+  right: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  padding: 8px 12px;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  box-shadow: none;
+
+  color: #222222;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+
+  svg {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+  }
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.05);
+  }
+
+  &:focus-visible {
+    outline: 2px solid #239b45;
+    outline-offset: 2px;
+  }
+}
