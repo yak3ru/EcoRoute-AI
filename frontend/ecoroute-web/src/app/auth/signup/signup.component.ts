@@ -34,6 +34,50 @@ export class SignupComponent {
   confirmPassword = '';
   agreeToTerms = false;
 
+
+private readonly signupDraftKey = 'ecoroute_signup_draft';
+
+private saveSignupDraft(): void {
+  sessionStorage.setItem(
+    this.signupDraftKey,
+    JSON.stringify({
+      fullName: this.fullName,
+      email: this.email,
+      username: this.username,
+      agreeToTerms: this.agreeToTerms
+    })
+  );
+}
+
+private restoreSignupDraft(): void {
+  const savedDraft = sessionStorage.getItem(this.signupDraftKey);
+
+  if (!savedDraft) return;
+
+  try {
+    const draft = JSON.parse(savedDraft);
+
+    this.fullName = draft.fullName ?? '';
+    this.email = draft.email ?? '';
+    this.username = draft.username ?? '';
+    this.agreeToTerms = draft.agreeToTerms ?? false;
+  } catch {
+    sessionStorage.removeItem(this.signupDraftKey);
+  }
+}
+
+private clearSignupDraft(): void {
+  sessionStorage.removeItem(this.signupDraftKey);
+}
+
+
+saveDraftAndNavigate(route: string): void {
+  this.saveSignupDraft();
+  this.router.navigate([route]);
+}
+
+
+
   isLoading = false;
   errorMessage = '';
   successMessage = '';
@@ -41,10 +85,12 @@ export class SignupComponent {
   private readonly apiUrl = `${environment.apiUrl}`;
 
   constructor(
-    private router: Router,
-    private http: HttpClient,
-    private authService: AuthService
-  ) { }
+  private router: Router,
+  private http: HttpClient,
+  private authService: AuthService
+) {
+  this.restoreSignupDraft();
+}
 
   // PASSWORD VISIBILITY
 
@@ -142,6 +188,7 @@ export class SignupComponent {
       next: (response) => {
         this.successMessage =
           response?.message ?? 'Account created successfully.';
+          this.clearSignupDraft();
 
         // Automatically log in the newly registered user.
         this.authService.login({

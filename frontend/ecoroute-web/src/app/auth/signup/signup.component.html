@@ -172,13 +172,19 @@
 
           <span class="terms-text">
             I agree to the
-            <a routerLink="/terms-of-service">
-              Terms of Service
-            </a>
+            <a
+  href="/terms-of-service"
+  (click)="$event.preventDefault(); saveDraftAndNavigate('/terms-of-service')"
+>
+  Terms of Service
+</a>
             and
-            <a routerLink="/privacy-policy">
-              Privacy Policy
-            </a>
+            <a
+  href="/privacy-policy"
+  (click)="$event.preventDefault(); saveDraftAndNavigate('/privacy-policy')"
+>
+  Privacy Policy
+</a>
           </span>
         </label>
 
