@@ -26,17 +26,20 @@
   animation: loadingFadeIn 0.3s ease-out;
 }
 
+
 .loading-logo {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 76px;
-  height: 76px;
-  margin-bottom: 18px;
-  border-radius: 22px;
-  background: #e8f5e9;
-  color: #218838;
+  margin-bottom: 16px;
 }
+
+.loading-logo-image {
+  width: 80px;
+  height: 80px;
+  object-fit: contain;
+}
+
 
 .leaf {
   font-size: 48px;

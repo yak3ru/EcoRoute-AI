@@ -309,11 +309,15 @@
     class="map-card"
     [class.expanded]="isMapExpanded"
   >
-    <div class="map-title">
-      {{ dashboardMode === 'current'
+    
+<div class="map-title">
+  {{ dashboardRoutesExist
+    ? (dashboardMode === 'current'
         ? 'Collection Routes Today'
-        : 'Previous Collection Routes' }}
-    </div>
+        : 'Previous Collection Routes')
+    : 'Collection Map' }}
+</div>
+
 
     <div
       id="collectionMap"

@@ -28,6 +28,12 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
 
   private dashboardRoutes: any[] = [];
 
+get dashboardRoutesExist(): boolean {
+  return this.dashboardRoutes.some(
+    route => (route?.areas ?? []).length > 0
+  );
+}
+
   private readonly areasApiUrl =
     `${environment.apiUrl}/areas`;
 
