@@ -99,55 +99,37 @@ export class WasteDataComponent implements OnInit {
 
   // Returns the collections filtered by search term and waste type.
   get filteredCollections() {
-    const search =
-      this.searchTerm
-        .toLowerCase()
-        .trim();
-
-    return this.recentCollections.filter(
-      collection => {
-        const areaMatch =
-          collection.area
-            .toLowerCase()
-            .includes(search);
-
-        const typeMatch =
-          this.wasteTypeFilter === 'All' ||
-          collection.type === this.wasteTypeFilter;
-
-        return areaMatch && typeMatch;
-      }
-    );
+    return this.recentCollections;
   }
 
   // LIFECYCLE
 
   // Loads the waste data when the component initializes.
-ngOnInit(): void {
-  this.http
-    .get<{ currentDate: string }>(
-      `${environment.apiUrl}/system/time`,
-      {
-        withCredentials: true
-      }
-    )
-    .subscribe({
-      next: (response) => {
-        this.systemDate = response.currentDate;
+  ngOnInit(): void {
+    this.http
+      .get<{ currentDate: string }>(
+        `${environment.apiUrl}/system/time`,
+        {
+          withCredentials: true
+        }
+      )
+      .subscribe({
+        next: (response) => {
+          this.systemDate = response.currentDate;
 
-        this.loadWasteSummary();
-        this.loadAreaWasteSummary();
-        this.loadAreaParameters();
-        this.loadRecentCollections();
-      },
-      error: (error) => {
-        console.error(
-          'Failed to fetch system date:',
-          error
-        );
-      }
-    });
-}
+          this.loadWasteSummary();
+          this.loadAreaWasteSummary();
+          this.loadAreaParameters();
+          this.loadRecentCollections();
+        },
+        error: (error) => {
+          console.error(
+            'Failed to fetch system date:',
+            error
+          );
+        }
+      });
+  }
 
   // DATA LOADING
 
@@ -170,6 +152,20 @@ ngOnInit(): void {
       params = params.set(
         'endDate',
         range.endDate
+      );
+    }
+
+    if (this.searchTerm.trim()) {
+      params = params.set(
+        'searchTerm',
+        this.searchTerm.trim()
+      );
+    }
+    
+    if (this.wasteTypeFilter !== 'All') {
+      params = params.set(
+        'wasteType',
+        this.wasteTypeFilter
       );
     }
 
@@ -467,6 +463,10 @@ getDateRange(): {
     this.loadWasteSummary();
     this.loadAreaWasteSummary();
     this.loadAreaParameters();
+    this.loadRecentCollections();
+  }
+  
+  onFilterChange(): void {
     this.loadRecentCollections();
   }
 
