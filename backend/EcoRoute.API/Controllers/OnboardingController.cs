@@ -560,7 +560,7 @@ if (duplicateWasteRecord)
             {
                 await _context.SaveChangesAsync();
             }
-            catch (Exception saveException)
+            catch (Exception)
             {
                 // Processing is already reported as failed; leave the DB error to server logs.
                 // Avoid exposing database details to the client.
