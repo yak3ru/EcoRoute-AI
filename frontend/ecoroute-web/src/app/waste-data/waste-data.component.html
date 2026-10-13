@@ -228,12 +228,15 @@
           <input
             type="text"
             placeholder="Search area..."
-            [(ngModel)]="searchTerm">
+            [(ngModel)]="searchTerm"
+            (ngModelChange)="onFilterChange()">
         </div>
 
         <!-- WASTE TYPE -->
         <div class="type-filter">
-          <select [(ngModel)]="wasteTypeFilter">
+          <select 
+            [(ngModel)]="wasteTypeFilter"
+            (ngModelChange)="onFilterChange()">
             <option value="All">
               All waste types
             </option>

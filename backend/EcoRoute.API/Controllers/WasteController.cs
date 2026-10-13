@@ -32,7 +32,8 @@ public class WasteController : ControllerBase
         [FromQuery] DateTime? startDate,
         [FromQuery] DateTime? endDate,
         [FromQuery] string? wasteType,
-        [FromQuery] string? status)
+        [FromQuery] string? status,
+        [FromQuery] string? searchTerm)
     {
         var userIdValue = User.FindFirstValue(
             ClaimTypes.NameIdentifier);
@@ -69,6 +70,9 @@ public class WasteController : ControllerBase
 
         if (!string.IsNullOrWhiteSpace(status))
             query = query.Where(w => w.Status == status);
+
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+            query = query.Where(w => w.Area!.AreaName.Contains(searchTerm));
 
         var records = await query
             .OrderByDescending(w => w.CollectionDate)
