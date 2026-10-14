@@ -64,6 +64,16 @@ def rebuild_distance_matrix(
             detail="Distance preparation is not configured.",
         )
 
+    env = os.environ.copy()
+    existing_pythonpath = env.get("PYTHONPATH", "")
+
+    python_paths = list(sys.path)
+
+    if existing_pythonpath:
+        python_paths.append(existing_pythonpath)
+
+    env["PYTHONPATH"] = os.pathsep.join(python_paths)
+
     try:
         result = subprocess.run(
             [
@@ -77,6 +87,7 @@ def rebuild_distance_matrix(
             text=True,
             timeout=180,
             check=False,
+            env=env,
         )
     except subprocess.TimeoutExpired:
         raise HTTPException(
