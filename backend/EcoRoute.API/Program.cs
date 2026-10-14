@@ -89,18 +89,30 @@ builder.Services.AddAuthentication(
         // SESSION VALIDATION
 
         options.Events = new JwtBearerEvents
-        {
-            OnMessageReceived = context =>
 {
-    var token = context.Request.Cookies["ecoroute_auth"];
+    OnMessageReceived = context =>
+    {
+        var token = context.Request.Cookies["ecoroute_auth"];
 
-    Console.WriteLine(
-        $"Auth cookie received: {!string.IsNullOrWhiteSpace(token)}"
-    );
+        Console.WriteLine(
+            $"Path: {context.Request.Path} | " +
+            $"Auth cookie received: {!string.IsNullOrWhiteSpace(token)}"
+        );
 
-    context.Token = token;
-    return Task.CompletedTask;
-},
+        context.Token = token;
+        return Task.CompletedTask;
+    },
+
+    OnAuthenticationFailed = context =>
+    {
+        Console.WriteLine(
+            $"AUTHENTICATION FAILED: {context.Request.Path} | " +
+            $"{context.Exception.Message}"
+        );
+
+        return Task.CompletedTask;
+    },
+
 
             OnTokenValidated = async context =>
             {
