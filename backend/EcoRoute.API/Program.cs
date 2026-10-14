@@ -91,10 +91,16 @@ builder.Services.AddAuthentication(
         options.Events = new JwtBearerEvents
         {
             OnMessageReceived = context =>
-                {
-                    context.Token = context.Request.Cookies["ecoroute_auth"];
-                    return Task.CompletedTask;
-                },
+{
+    var token = context.Request.Cookies["ecoroute_auth"];
+
+    Console.WriteLine(
+        $"Auth cookie received: {!string.IsNullOrWhiteSpace(token)}"
+    );
+
+    context.Token = token;
+    return Task.CompletedTask;
+},
 
             OnTokenValidated = async context =>
             {
