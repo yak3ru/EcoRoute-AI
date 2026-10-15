@@ -4,6 +4,11 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { UserService, UserProfile } from '../../core/services/user.service';
 import { AuthService } from '../../core/services/auth.service';
+import {
+  validateFullName,
+  validateEmail,
+  validateUsername
+} from '../../core/validators/user-input.validator';
 
 @Component({
   selector: 'app-account',
@@ -103,53 +108,65 @@ export class AccountComponent implements OnInit {
     this.isEditing = false;
   }
 
-  saveProfile(): void {
-    this.errorMessage = '';
-    this.successMessage = '';
+  
+saveProfile(): void {
+  this.errorMessage = '';
+  this.successMessage = '';
 
-    if (!this.editFullName.trim()) {
-      this.errorMessage = 'Full name is required.';
-      return;
-    }
+  // VALIDATE FULL NAME
+  const fullNameError = validateFullName(this.editFullName);
 
-    if (!this.editEmail.trim()) {
-      this.errorMessage = 'Email address is required.';
-      return;
-    }
-
-    if (!this.editUsername.trim()) {
-      this.errorMessage = 'Username is required.';
-      return;
-    }
-
-    this.isSaving = true;
-
-    this.userService.updateAccount({
-      fullName: this.editFullName.trim(),
-      email: this.editEmail.trim(),
-      username: this.editUsername.trim()
-    }).subscribe({
-      next: (response) => {
-        this.isSaving = false;
-
-        this.successMessage =
-          response?.message ??
-          'Your account information has been updated successfully.';
-
-        this.isEditing = false;
-
-        this.loadUser();
-      },
-
-      error: (error) => {
-        this.isSaving = false;
-
-        this.errorMessage =
-          error.error?.message ??
-          'Unable to update your account information.';
-      }
-    });
+  if (fullNameError) {
+    this.errorMessage = fullNameError;
+    return;
   }
+
+  // VALIDATE EMAIL
+  const emailError = validateEmail(this.editEmail);
+
+  if (emailError) {
+    this.errorMessage = emailError;
+    return;
+  }
+
+  // VALIDATE USERNAME
+  const usernameError = validateUsername(this.editUsername);
+
+  if (usernameError) {
+    this.errorMessage = usernameError;
+    return;
+  }
+
+  // SUBMIT VALIDATED DATA
+  this.isSaving = true;
+
+  this.userService.updateAccount({
+    fullName: this.editFullName.trim(),
+    email: this.editEmail.trim(),
+    username: this.editUsername.trim()
+  }).subscribe({
+    next: (response) => {
+      this.isSaving = false;
+
+      this.successMessage =
+        response?.message ??
+        'Your account information has been updated successfully.';
+
+      this.isEditing = false;
+
+      this.loadUser();
+    },
+
+    error: (error) => {
+      this.isSaving = false;
+
+      this.errorMessage =
+        error.error?.message ??
+        'Unable to update your account information.';
+    }
+  });
+}
+
 
   openDeleteModal(): void {
     this.showDeleteModal = true;
