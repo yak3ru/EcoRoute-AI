@@ -16,7 +16,6 @@ import { validateEmail, validateFullName, validatePassword, validateUsername } f
   selector: 'app-signup',
   standalone: true,
   imports: [
-    RouterLink,
     FormsModule,
     NgIf
   ],

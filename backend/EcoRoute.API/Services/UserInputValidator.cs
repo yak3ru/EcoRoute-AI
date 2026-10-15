@@ -36,23 +36,60 @@ public static class UserInputValidator
         }
     }
 
+    
     // FULL NAME
     public static string? ValidateFullName(string fullName)
     {
+        fullName = fullName.Trim();
+
         if (fullName.Length < 2)
-            return "Full name is too short.";
-        if (fullName.Length > 150)
-            return "Full name can't be longer than 150 characters.";
+            return "Full name must contain at least 2 characters.";
+
+        if (fullName.Length > 50)
+            return "Full name can't be longer than 50 characters.";
+
+        if (Regex.IsMatch(fullName, @"\s{2,}"))
+            return "Full name cannot contain repeated spaces.";
+
+        if (!char.IsUpper(fullName[0]))
+            return "Full name must start with a capital letter.";
+
         if (fullName.Any(char.IsDigit))
             return "Full name can't contain numbers.";
-        if (fullName.Any(ch => !char.IsLetter(ch) && ch != ' ' && ch != '.' && ch != '\'' && ch != '-'))
-            return "Full name can't contain special characters (only . ' - are allowed).";
-        if (!char.IsLetter(fullName[0]))
-            return "Full name must start with a letter.";
+
+        if (fullName.Any(ch =>
+            !char.IsLetter(ch) &&
+            ch != ' ' &&
+            ch != '.' &&
+            ch != '\'' &&
+            ch != '-'))
+        {
+            return "Full name can only contain letters, spaces, periods, apostrophes, and hyphens.";
+        }
+
         if (!fullName.Contains(' '))
             return "Please enter both your first and last name.";
+
+        var words = Regex.Split(fullName, @"[\s.-]+");
+
+        foreach (var word in words)
+        {
+            if (word.Length == 0)
+                continue;
+
+            if (!char.IsUpper(word[0]))
+                return "Each name part must start with a capital letter.";
+
+            if (word.Length > 1 &&
+                word.Skip(1).Any(char.IsUpper))
+            {
+                return "Each name part must start with a capital letter followed by lowercase letters.";
+            }
+        }
+
         return null;
     }
+
 
     // EMAIL
     public static string? ValidateEmail(string email)
@@ -78,21 +115,38 @@ public static class UserInputValidator
         return null;
     }
 
+    
     // USERNAME
     public static string? ValidateUsername(string username)
     {
+        username = username.Trim();
+
         if (username.Length < 3)
             return "Username must be at least 3 characters.";
+
         if (username.Length > 30)
             return "Username can't be longer than 30 characters.";
+
         if (username.Any(char.IsWhiteSpace))
             return "Username can't contain spaces.";
-        if (username.Contains('@'))
-            return "Username can't contain @.";
+
         if (!Regex.IsMatch(username, @"^[a-zA-Z0-9._-]+$"))
-            return "Username can't contain special characters (only . _ - are allowed).";
+        {
+            return "Username can only contain letters, numbers, periods, underscores, and hyphens.";
+        }
+
+        if (!Regex.IsMatch(username, @"[a-zA-Z0-9]"))
+            return "Username must contain at least one letter or number.";
+
+        if (Regex.IsMatch(username, @"^[._-]|[._-]$"))
+            return "Username cannot start or end with a period, underscore, or hyphen.";
+
+        if (Regex.IsMatch(username, @"[._-]{2,}"))
+            return "Username cannot contain consecutive special characters.";
+
         return null;
     }
+
 
     // PASSWORD
     public static string? ValidatePassword(string password)
